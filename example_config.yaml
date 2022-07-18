@@ -1,0 +1,24 @@
+global:
+  listenAddr: ":5555"
+  logging: "trace"  # panic,fatal,warm,info,debug,trace
+beacon:
+  proxyTimeoutSeconds: 30
+  apiAllowPaths:
+    #- .*
+    - "^/eth/v1/node/identity$"
+    - "^/eth/v1/node/peer_count$"
+    - "^/eth/v1/node/version$"
+    - "^/eth/v1/node/syncing$"
+  upstreams:
+  - name: node1
+    address: http://localhost:5052
+  - name: node2
+    address: http://localhost:5053
+  - name: node3
+    address: http://localhost:5054
+  - name: node4
+    address: http://localhost:5055
+  - name: node5
+    address: http://localhost:5056
+  - name: node6
+    address: http://localhost:5057
