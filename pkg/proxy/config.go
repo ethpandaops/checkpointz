@@ -26,17 +26,19 @@ type BeaconUpstream struct {
 func (c *Config) Validate() error {
 	// Check that all upstreams have different names and addresses
 	duplicates := make(map[string]struct{})
+
 	for _, u := range c.BeaconConfig.BeaconUpstreams {
 		if _, ok := duplicates[u.Name]; ok {
 			return fmt.Errorf("there's a duplicate upstream with the same name: %s", u.Name)
-		} else {
-			duplicates[u.Name] = struct{}{}
 		}
+
 		if _, ok := duplicates[u.Address]; ok {
 			return fmt.Errorf("there's a duplicate upstream with the same address: %s", u.Address)
-		} else {
-			duplicates[u.Name] = struct{}{}
 		}
+
+		duplicates[u.Name] = struct{}{}
+		duplicates[u.Address] = struct{}{}
 	}
+
 	return nil
 }

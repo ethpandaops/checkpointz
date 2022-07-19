@@ -3,7 +3,6 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -27,7 +26,6 @@ type Monitors struct {
 }
 
 func NewProxy(log *logrus.Logger, conf *Config) *Proxy {
-
 	if err := conf.Validate(); err != nil {
 		log.Fatalf("can't start proxy: %s", err)
 	}
@@ -48,46 +46,51 @@ func NewProxy(log *logrus.Logger, conf *Config) *Proxy {
 			pathRegex += "|"
 		}
 	}
+
 	p.beaconAllowedPathRegex = pathRegex
+
 	return p
 }
 
 func (p *Proxy) Serve() error {
-
 	upstreamProxies := make(map[string]*httputil.ReverseProxy)
+
 	for _, upstream := range p.Cfg.BeaconConfig.BeaconUpstreams {
 		rp, err := newHTTPReverseProxy(upstream.Address, p.Cfg.BeaconConfig.ProxyTimeoutSeconds)
 		if err != nil {
 			p.Log.WithError(err).Fatal("can't add beacon upstream server")
 		}
+
 		upstreamProxies[upstream.Name] = rp
 		endpoint := fmt.Sprintf("/proxy/beacon/%s/", upstream.Name)
 		http.HandleFunc(endpoint, p.proxyRequestHandler(rp, upstream.Name))
 	}
 
 	http.HandleFunc("/status", p.statusRequestHandler())
-
 	p.Log.WithField("listenAddr", p.Cfg.ListenAddr).Info("started proxy server")
+
 	err := http.ListenAndServe(p.Cfg.ListenAddr, nil)
 	if err != nil {
 		p.Log.WithError(err).Fatal("can't start HTTP server")
 	}
 
-	return nil
+	return err
 }
 
 func newHTTPReverseProxy(targetHost string, proxyTimeoutSeconds uint) (*httputil.ReverseProxy, error) {
-	url, err := url.Parse(targetHost)
+	u, err := url.Parse(targetHost)
 	if err != nil {
 		return nil, err
 	}
-	rp := httputil.NewSingleHostReverseProxy(url)
+
+	rp := httputil.NewSingleHostReverseProxy(u)
 	dialer := &net.Dialer{
 		Timeout: time.Duration(proxyTimeoutSeconds) * time.Second,
 	}
 	rp.Transport = &http.Transport{
 		Dial: dialer.Dial,
 	}
+
 	return rp, nil
 }
 
@@ -97,23 +100,33 @@ func (p *Proxy) proxyRequestHandler(proxy *httputil.ReverseProxy, upstreamName s
 		// Only allow GET methods for now
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
-			io.WriteString(w, "METHOD NOT ALLOWED\n")
+
+			_, err := fmt.Fprintf(w, "METHOD NOT ALLOWED\n")
+			if err != nil {
+				p.Log.WithError(err).Error("failed writing to http.ResponseWriter")
+			}
+
 			return
 		}
 		// Check if path is allowed
 		match, _ := regexp.MatchString(p.beaconAllowedPathRegex, r.URL.Path)
 		if !match {
 			w.WriteHeader(http.StatusForbidden)
-			io.WriteString(w, "FORBIDDEN. Path is not allowed\n")
+
+			_, err := fmt.Fprintf(w, "FORBIDDEN. Path is not allowed\n")
+			if err != nil {
+				p.Log.WithError(err).Error("failed writing to http.ResponseWriter")
+			}
+
 			return
 		}
+
 		proxy.ServeHTTP(w, r)
 	}
 }
 
 func (p *Proxy) statusRequestHandler() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		w.Header().Add("Content-Type", "application/json")
 
 		resp := struct {
@@ -127,6 +140,10 @@ func (p *Proxy) statusRequestHandler() func(http.ResponseWriter, *http.Request) 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Write(bytes)
+
+		_, err = w.Write(bytes)
+		if err != nil {
+			p.Log.WithError(err).Error("failed writing to status to http.ResponseWriter")
+		}
 	}
 }
