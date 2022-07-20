@@ -3,8 +3,9 @@ package proxy
 import "fmt"
 
 type Config struct {
-	BeaconConfig `yaml:"beacon"`
-	GlobalConfig `yaml:"global"`
+	GlobalConfig    `yaml:"global"`
+	BeaconConfig    `yaml:"beacon"`
+	ExecutionConfig `yaml:"execution"`
 }
 
 type GlobalConfig struct {
@@ -14,11 +15,22 @@ type GlobalConfig struct {
 
 type BeaconConfig struct {
 	BeaconUpstreams     []BeaconUpstream `yaml:"upstreams"`
-	APIAllowPath        []string         `yaml:"apiAllowPaths"`
+	APIAllowPaths       []string         `yaml:"apiAllowPaths"`
 	ProxyTimeoutSeconds uint             `yaml:"proxyTimeoutSeconds"`
 }
 
+type ExecutionConfig struct {
+	ExecutionUpstreams  []ExecutionUpstream `yaml:"upstreams"`
+	RPCAllowMethods     []string            `yaml:"rpcAllowMethods"`
+	ProxyTimeoutSeconds uint                `yaml:"proxyTimeoutSeconds"`
+}
+
 type BeaconUpstream struct {
+	Name    string `yaml:"name"`
+	Address string `yaml:"address"`
+}
+
+type ExecutionUpstream struct {
 	Name    string `yaml:"name"`
 	Address string `yaml:"address"`
 }

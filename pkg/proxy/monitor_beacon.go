@@ -21,10 +21,9 @@ type BeaconMonitor struct {
 
 type BeaconStatus struct {
 	Version   string        `json:"version"`
-	Health    string        `json:"health"`
 	Syncing   SyncInfo      `json:"syncing"`
-	PeerCount PeerCountInfo `json:"peerCount"`
-	LastCheck int64         `json:"lastCheck"`
+	PeerCount PeerCountInfo `json:"peer_count"`
+	LastCheck int64         `json:"last_check"`
 }
 
 type SyncInfo struct {
@@ -78,7 +77,7 @@ func NewBeaconMonitor(log *logrus.Logger, upstreams []BeaconUpstream) *BeaconMon
 }
 
 func (bm *BeaconMonitor) CheckAll() {
-	bm.log.WithField("count", len(bm.upstreams)).Debug("checking all nodes")
+	bm.log.WithField("count", len(bm.upstreams)).Debug("checking all beacon nodes")
 
 	var wg sync.WaitGroup
 
@@ -89,7 +88,7 @@ func (bm *BeaconMonitor) CheckAll() {
 			err := bm.Check(upstreamName)
 
 			if err != nil {
-				bm.log.WithField("upstream", upstreamName).WithError(err).Error("failed checking node")
+				bm.log.WithField("upstream", upstreamName).WithError(err).Error("failed checking beacon node")
 			}
 
 			wg.Done()
@@ -100,21 +99,21 @@ func (bm *BeaconMonitor) CheckAll() {
 }
 
 func (bm *BeaconMonitor) Check(upstreamName string) error {
-	bm.log.WithField("node", upstreamName).Debug("checking node")
-	version, err := bm.CheckNodeVersion(upstreamName)
+	bm.log.WithField("node", upstreamName).Debug("checking beacon node")
 
+	version, err := bm.CheckNodeVersion(upstreamName)
 	if err != nil {
-		bm.log.WithField("upstream", upstreamName).WithError(err).Error("failed getting node version")
+		bm.log.WithField("upstream", upstreamName).WithError(err).Error("failed getting beacon node version")
 	}
 
 	syncInfo, err := bm.CheckNodeSyncing(upstreamName)
 	if err != nil {
-		bm.log.WithField("upstream", upstreamName).WithError(err).Error("failed getting node sync info")
+		bm.log.WithField("upstream", upstreamName).WithError(err).Error("failed getting beacon node sync info")
 	}
 
 	peerCountInfo, err := bm.CheckNodePeerCount(upstreamName)
 	if err != nil {
-		bm.log.WithField("upstream", upstreamName).WithError(err).Error("failed getting node peer count info")
+		bm.log.WithField("upstream", upstreamName).WithError(err).Error("failed getting beacon node peer count info")
 	}
 
 	now := time.Now().Unix()
@@ -133,7 +132,7 @@ func (bm *BeaconMonitor) Check(upstreamName string) error {
 
 	bm.mu.Lock()
 	bm.status[upstreamName] = bs
-	defer bm.mu.Unlock()
+	bm.mu.Unlock()
 
 	return nil
 }
