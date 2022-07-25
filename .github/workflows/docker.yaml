@@ -21,7 +21,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            skylenet/eth-proxy
+            samcm/checkpointz
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule

@@ -1,25 +1,26 @@
 package main
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/samcm/checkpointz/pkg/checkpointz"
 	"github.com/sirupsen/logrus"
-	"github.com/skylenet/eth-proxy/pkg/proxy"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "eth-proxy",
-	Short: "Reverse proxy for ethereum nodes",
+	Use:   "checkpointz",
+	Short: "Checkpoint sync provider for Ethereum beacon nodes",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := initCommon()
-		p := proxy.NewProxy(log, cfg)
-		if err := p.Serve(); err != nil {
-			log.WithError(err).Fatal("failed to serve proxy server")
+		p := checkpointz.NewProvider(log, cfg)
+		if err := p.Start(context.Background()); err != nil {
+			log.WithError(err).Fatal("failed to serve")
 		}
 	},
 }
@@ -42,12 +43,12 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "config.yaml", "config file (default is config.yaml)")
 }
 
-func loadConfigFromFile(file string) (*proxy.Config, error) {
+func loadConfigFromFile(file string) (*checkpointz.Config, error) {
 	if file == "" {
 		file = "config.yaml"
 	}
 
-	config := &proxy.Config{}
+	config := &checkpointz.Config{}
 
 	yamlFile, err := os.ReadFile(file)
 	if err != nil {
@@ -61,7 +62,7 @@ func loadConfigFromFile(file string) (*proxy.Config, error) {
 	return config, nil
 }
 
-func initCommon() *proxy.Config {
+func initCommon() *checkpointz.Config {
 	log.SetFormatter(&logrus.TextFormatter{})
 
 	log.WithField("cfgFile", cfgFile).Info("loading config")

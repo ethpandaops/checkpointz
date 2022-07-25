@@ -1,11 +1,8 @@
-# eth-proxy
+# WIP: checkpointz
 
-Reverse proxy for ethereum nodes. Warning: This is very experimental.
+Name TBA
 
-### Features:
-- Status endpoint for all your beacon nodes
-- Beacon chain API path based allow list. Allows you to restrict which API endpoints you're exposing.
-- Execution JSON RPC method allow list
+A checkpoint-sync provider for Ethereum Beacon nodes. 
 
 
 ## Endpoints
@@ -73,15 +70,6 @@ Reverse proxy to a specific node by name
 ```sh
 # Beacon HTTP API
 curl -X GET 'http://localhost:5555/proxy/beacon/node1/eth/v1/node/identity'
-
-# Execution JSON RPC API
-curl -X POST 'http://localhost:5555/proxy/execution/node1/' \
-     --header 'Content-Type: application/json' --data-raw '{
-        "jsonrpc":"2.0",
-        "method":"eth_blockNumber",
-        "params":[],
-        "id":1
-}'
 ```
 
 
