@@ -19,11 +19,15 @@ global:
 
 beacon:
   upstreams:
-  - name: node1
+  - name: ef-ropsten-1
     address: http://localhost:4000
     timeoutSeconds: 30
-    dataProvider: true
-  - name: node2
+    dataProvider: false
+  - name: ef-ropsten-2
     address: http://localhost:4001
     timeoutSeconds: 30
-    dataProvider: true
+    dataProvider: false
+  - name: local-lighthouse
+    address: http://localhost:5005
+    timeoutSeconds: 30
+    dataProvider: false

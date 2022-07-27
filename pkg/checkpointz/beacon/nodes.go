@@ -2,6 +2,7 @@ package beacon
 
 import (
 	"context"
+	"math/rand"
 	"time"
 
 	sbeacon "github.com/samcm/beacon"
@@ -28,7 +29,7 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config) Nodes {
 			HealthCheckConfig: sbeacon.HealthCheckConfig{
 				Interval:            human.Duration{Duration: time.Second * 5},
 				FailedResponses:     3,
-				SuccessfulResponses: 2,
+				SuccessfulResponses: 1,
 			},
 		}
 
@@ -111,4 +112,14 @@ func (n Nodes) ReadyNodes(ctx context.Context) Nodes {
 	return n.
 		Healthy(ctx).
 		NotSyncing(ctx)
+}
+
+func (n Nodes) RandomNode(ctx context.Context) *Node {
+	nodes := n.ReadyNodes(ctx)
+
+	if len(nodes) == 0 {
+		return nil
+	}
+
+	return nodes[rand.Intn(len(nodes))]
 }
