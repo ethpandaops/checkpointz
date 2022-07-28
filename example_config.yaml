@@ -26,8 +26,8 @@ beacon:
   - name: ef-ropsten-2
     address: http://localhost:4001
     timeoutSeconds: 30
-    dataProvider: false
+    dataProvider: true
   - name: local-lighthouse
     address: http://localhost:5005
     timeoutSeconds: 30
-    dataProvider: false
+    dataProvider: true

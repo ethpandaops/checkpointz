@@ -2,6 +2,7 @@ package beacon
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"time"
 
@@ -108,18 +109,18 @@ func (n Nodes) Syncing(ctx context.Context) Nodes {
 	return nodes
 }
 
-func (n Nodes) ReadyNodes(ctx context.Context) Nodes {
+func (n Nodes) Ready(ctx context.Context) Nodes {
 	return n.
 		Healthy(ctx).
 		NotSyncing(ctx)
 }
 
-func (n Nodes) RandomNode(ctx context.Context) *Node {
-	nodes := n.ReadyNodes(ctx)
+func (n Nodes) RandomNode(ctx context.Context) (*Node, error) {
+	nodes := n.Ready(ctx)
 
 	if len(nodes) == 0 {
-		return nil
+		return nil, errors.New("no nodes found")
 	}
 
-	return nodes[rand.Intn(len(nodes))]
+	return nodes[rand.Intn(len(nodes))], nil
 }
