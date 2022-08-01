@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// WriteJSONResponse writes a JSON response to the given writer.
 func WriteJSONResponse(w http.ResponseWriter, data []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
