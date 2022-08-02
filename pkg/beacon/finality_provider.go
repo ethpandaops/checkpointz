@@ -20,6 +20,8 @@ type FinalityProvider interface {
 	Syncing(ctx context.Context) (bool, error)
 	// Finality returns the finality.
 	Finality(ctx context.Context) (*v1.Finality, error)
+	// UpstreamsStatus returns the status of all the upstreams.
+	UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error)
 	// GetBlockBySlot returns the block at the given slot.
 	GetBlockBySlot(ctx context.Context, slot phase0.Slot) (*spec.VersionedSignedBeaconBlock, error)
 	// GetBlockByRoot returns the block with the given root.

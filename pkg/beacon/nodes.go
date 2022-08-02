@@ -8,7 +8,7 @@ import (
 
 	sbeacon "github.com/samcm/beacon"
 	"github.com/samcm/beacon/human"
-	"github.com/samcm/checkpointz/pkg/checkpointz/beacon/node"
+	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
 )
 

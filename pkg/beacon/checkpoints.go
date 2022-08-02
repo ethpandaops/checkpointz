@@ -57,7 +57,6 @@ func (c Checkpoints) Majority() (*v1.Finality, error) {
 					Epoch: epoch,
 					Root:  root,
 				}
-				finality.Finalized.Root = root
 				finalizedCount = count
 			}
 		}

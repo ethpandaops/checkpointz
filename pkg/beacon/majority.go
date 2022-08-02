@@ -11,13 +11,11 @@ import (
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
 	"github.com/go-co-op/gocron"
-	"github.com/samcm/checkpointz/pkg/checkpointz/beacon/node"
+	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
 )
 
 type Majority struct {
-	FinalityProvider
-
 	log logrus.FieldLogger
 
 	nodeConfigs []node.Config
@@ -28,6 +26,8 @@ type Majority struct {
 
 	current *v1.Finality
 }
+
+var _ FinalityProvider = (*Majority)(nil)
 
 var (
 	topicFinalityUpdated = "finality_updated"
@@ -89,6 +89,10 @@ func (m *Majority) Syncing(ctx context.Context) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (m *Majority) Finality(ctx context.Context) (*v1.Finality, error) {
+	return m.current, nil
 }
 
 func (m *Majority) checkFinality(ctx context.Context) error {
@@ -318,4 +322,32 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 	m.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
 	return nil
+}
+
+func (m *Majority) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error) {
+	rsp := make(map[string]*UpstreamStatus)
+
+	for _, node := range m.nodes {
+		rsp[node.Config.Name] = &UpstreamStatus{
+			Name:    node.Config.Name,
+			Healthy: false,
+		}
+
+		if node.Beacon == nil {
+			continue
+		}
+
+		finality, err := node.Beacon.GetFinality(ctx)
+		if err != nil {
+			continue
+		}
+
+		rsp[node.Config.Name].Healthy = node.Beacon.GetStatus(ctx).Healthy()
+
+		if finality != nil {
+			rsp[node.Config.Name].Finality = finality
+		}
+	}
+
+	return rsp, nil
 }
