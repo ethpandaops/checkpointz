@@ -13,12 +13,12 @@ import (
 type BlockIDType int
 
 const (
-	Invalid BlockIDType = iota
-	Head
-	Genesis
-	Finalized
-	Slot
-	Root
+	BlockIDInvalid BlockIDType = iota
+	BlockIDHead
+	BlockIDGenesis
+	BlockIDFinalized
+	BlockIDSlot
+	BlockIDRoot
 )
 
 type BlockIdentifier struct {
@@ -39,7 +39,7 @@ func (id BlockIdentifier) Value() string {
 }
 
 func (id BlockIdentifier) AsRoot() (phase0.Root, error) {
-	if id.t != Root {
+	if id.t != BlockIDRoot {
 		return phase0.Root{}, fmt.Errorf("invalid block ID type %d", id.t)
 	}
 
@@ -47,7 +47,7 @@ func (id BlockIdentifier) AsRoot() (phase0.Root, error) {
 }
 
 func (id BlockIdentifier) AsSlot() (phase0.Slot, error) {
-	if id.t != Slot {
+	if id.t != BlockIDSlot {
 		return phase0.Slot(0), fmt.Errorf("invalid block ID type %d", id.t)
 	}
 
@@ -57,22 +57,22 @@ func (id BlockIdentifier) AsSlot() (phase0.Slot, error) {
 func NewBlockIdentifier(id string) (BlockIdentifier, error) {
 	switch id {
 	case "head":
-		return newBlockIdentifier(Head, id), nil
+		return newBlockIdentifier(BlockIDHead, id), nil
 	case "genesis":
-		return newBlockIdentifier(Genesis, id), nil
+		return newBlockIdentifier(BlockIDGenesis, id), nil
 	case "finalized":
-		return newBlockIdentifier(Finalized, id), nil
+		return newBlockIdentifier(BlockIDFinalized, id), nil
 	}
 
 	if strings.HasPrefix(id, "0x") {
-		return newBlockIdentifier(Root, id), nil
+		return newBlockIdentifier(BlockIDRoot, id), nil
 	}
 
 	if _, err := strconv.ParseInt(id, 10, 64); err == nil {
-		return newBlockIdentifier(Slot, id), nil
+		return newBlockIdentifier(BlockIDSlot, id), nil
 	}
 
-	return newBlockIdentifier(Invalid, id), fmt.Errorf("invalid block ID: %s", id)
+	return newBlockIdentifier(BlockIDInvalid, id), fmt.Errorf("invalid block ID: %s", id)
 }
 
 func newBlockIdentifier(id BlockIDType, value string) BlockIdentifier {

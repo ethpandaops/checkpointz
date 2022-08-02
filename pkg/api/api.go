@@ -35,6 +35,7 @@ func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider) *Handler {
 
 func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error {
 	router.GET("/eth/v2/beacon/blocks/:block_id", h.wrappedHandler(h.handleEthV2BeaconBlocks))
+	router.GET("/eth/v2/debug/beacon/states/:state_id", h.wrappedHandler(h.handleEthV2DebugBeaconStates))
 
 	router.GET("/checkpointz/v1/status", h.wrappedHandler(h.handleCheckpointzStatus))
 
@@ -78,7 +79,7 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 		return NewUnsupportedMediaTypeResponse(nil), err
 	}
 
-	req, err := eth.NewValidatedBeaconBlockRequestFromRequest(r, p)
+	req, err := eth.NewBlockIdentifier(p.ByName("block_id"))
 	if err != nil {
 		return NewBadRequestResponse(nil), err
 	}
@@ -103,6 +104,46 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 		return NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Bellatrix.MarshalJSON,
 			ContentTypeSSZ:  block.Bellatrix.MarshalSSZ,
+		}), nil
+	default:
+		return NewInternalServerErrorResponse(nil), errors.New("unknown block version")
+	}
+}
+
+func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON, ContentTypeSSZ}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	id, err := eth.NewStateIdentifier(p.ByName("state_id"))
+	if err != nil {
+		return NewBadRequestResponse(nil), err
+	}
+
+	state, err := h.eth.BeaconState(ctx, id)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	switch state.Version {
+	case spec.DataVersionPhase0:
+		return NewSuccessResponse(ContentTypeResolvers{
+			ContentTypeJSON: state.Phase0.MarshalJSON,
+			ContentTypeSSZ:  state.Phase0.MarshalSSZ,
+		}), nil
+	case spec.DataVersionAltair:
+		return NewSuccessResponse(ContentTypeResolvers{
+			ContentTypeJSON: state.Altair.MarshalJSON,
+			ContentTypeSSZ: func() ([]byte, error) {
+				return nil, errors.New("unspported state version")
+			},
+		}), nil
+	case spec.DataVersionBellatrix:
+		return NewSuccessResponse(ContentTypeResolvers{
+			ContentTypeJSON: state.Bellatrix.MarshalJSON,
+			ContentTypeSSZ: func() ([]byte, error) {
+				return nil, errors.New("unspported state version")
+			},
 		}), nil
 	default:
 		return NewInternalServerErrorResponse(nil), errors.New("unknown block version")

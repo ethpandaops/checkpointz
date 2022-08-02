@@ -25,23 +25,56 @@ func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider) *Handler {
 }
 
 // BeaconBlock returns the beacon block for the given block ID.
-func (h *Handler) BeaconBlock(ctx context.Context, req *BeaconBlockRequest) (*spec.VersionedSignedBeaconBlock, error) {
-	switch req.BlockID.Type() {
-	case Slot:
-		slot, err := NewSlotFromString(req.BlockID.Value())
+func (h *Handler) BeaconBlock(ctx context.Context, blockID BlockIdentifier) (*spec.VersionedSignedBeaconBlock, error) {
+	switch blockID.Type() {
+	case BlockIDSlot:
+		slot, err := NewSlotFromString(blockID.Value())
 		if err != nil {
 			return nil, err
 		}
 
 		return h.provider.GetBlockBySlot(ctx, slot)
-	case Root:
-		root, err := req.BlockID.AsRoot()
+	case BlockIDRoot:
+		root, err := blockID.AsRoot()
 		if err != nil {
 			return nil, err
 		}
 
 		return h.provider.GetBlockByRoot(ctx, root)
 	default:
-		return nil, fmt.Errorf("invalid block id type: %v", req.BlockID.Type())
+		return nil, fmt.Errorf("invalid block id type: %v", blockID.Type())
+	}
+}
+
+// BeaconBlock returns the beacon state for the given state id.
+func (h *Handler) BeaconState(ctx context.Context, stateID StateIdentifier) (*spec.VersionedBeaconState, error) {
+	switch stateID.Type() {
+	case StateIDSlot:
+		slot, err := NewSlotFromString(stateID.Value())
+		if err != nil {
+			return nil, err
+		}
+
+		return h.provider.GetBeaconStateBySlot(ctx, slot)
+	case StateIDRoot:
+		root, err := stateID.AsRoot()
+		if err != nil {
+			return nil, err
+		}
+
+		return h.provider.GetBeaconStateByStateRoot(ctx, root)
+	case StateIDFinalized:
+		finality, err := h.provider.Finality(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if finality == nil {
+			return nil, fmt.Errorf("no finality known")
+		}
+
+		return h.provider.GetBeaconStateByStateRoot(ctx, finality.Finalized.Root)
+	default:
+		return nil, fmt.Errorf("invalid state id type: %v", stateID.Type())
 	}
 }

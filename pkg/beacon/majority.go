@@ -243,6 +243,32 @@ func (m *Majority) GetBlockByStateRoot(ctx context.Context, stateRoot phase0.Roo
 	return bundle.Block(), nil
 }
 
+func (m *Majority) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*spec.VersionedBeaconState, error) {
+	bundle, err := m.bundles.GetBySlotNumber(slot)
+	if err != nil {
+		return nil, err
+	}
+
+	if bundle.State() == nil {
+		return nil, errors.New("state not found")
+	}
+
+	return bundle.State(), nil
+}
+
+func (m *Majority) GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*spec.VersionedBeaconState, error) {
+	bundle, err := m.bundles.GetByStateRoot(root)
+	if err != nil {
+		return nil, err
+	}
+
+	if bundle.State() == nil {
+		return nil, errors.New("state not found")
+	}
+
+	return bundle.State(), nil
+}
+
 func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 	m.log.Infof("Fetching a new bundle for root %#x", root)
 
@@ -305,19 +331,19 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 	}
 
 	// Fetch the bundle
-	// bundle, err := m.bundles.GetByStateRoot(stateRoot)
-	// if err != nil {
-	// 	return err
-	// }
+	bundle, err := m.bundles.GetByStateRoot(stateRoot)
+	if err != nil {
+		return err
+	}
 
-	// bundleStateRoot, err := bundle.block.StateRoot()
-	// if err != nil {
-	// 	return err
-	// }
+	bundleStateRoot, err := bundle.block.StateRoot()
+	if err != nil {
+		return err
+	}
 
-	// if bundleStateRoot != stateRoot {
-	// 	return errors.New("bundle state root does not match inserted block state root")
-	// }
+	if bundleStateRoot != stateRoot {
+		return errors.New("bundle state root does not match inserted block state root")
+	}
 
 	m.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
