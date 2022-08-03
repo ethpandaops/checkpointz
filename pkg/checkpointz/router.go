@@ -43,7 +43,9 @@ func (s *Server) Start(ctx context.Context) error {
 
 	router := httprouter.New()
 
-	s.http.Register(ctx, router)
+	if err := s.http.Register(ctx, router); err != nil {
+		return err
+	}
 
 	s.log.Fatal(http.ListenAndServe(s.Cfg.ListenAddr, router))
 

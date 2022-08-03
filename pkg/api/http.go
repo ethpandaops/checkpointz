@@ -9,7 +9,8 @@ import (
 func WriteJSONResponse(w http.ResponseWriter, data []byte) error {
 	w.Header().Set("Content-Type", "application/json")
 
-	if _, err := w.Write([]byte(fmt.Sprintf("{ \"data\": %s }", data))); err != nil {
+	//nolint:gocritic // doesnt seem to be a problem
+	if _, err := w.Write([]byte(fmt.Sprintf("{\"data\":%s}", data))); err != nil {
 		return err
 	}
 

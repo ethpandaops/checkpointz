@@ -122,5 +122,6 @@ func (n Nodes) RandomNode(ctx context.Context) (*Node, error) {
 		return nil, errors.New("no nodes found")
 	}
 
+	//nolint:gosec // not critical to worry about/will probably be replaced.
 	return nodes[rand.Intn(len(nodes))], nil
 }

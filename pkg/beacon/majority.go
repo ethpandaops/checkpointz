@@ -200,20 +200,20 @@ func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v
 		return errors.New("no data provider node available")
 	}
 
-	spec, err := upstream.Beacon.GetSpec(ctx)
+	sp, err := upstream.Beacon.GetSpec(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Calculate the epoch boundaries we need to fetch
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
-	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(spec.SlotsPerEpoch)
+	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
 	for i := uint64(1); i < historicalDistance; i++ {
-		if currentSlot-i*uint64(spec.SlotsPerEpoch) < 0 {
+		if currentSlot-(i*uint64(sp.SlotsPerEpoch)) == 0 {
 			continue
 		}
 
-		slot := phase0.Slot(currentSlot - i*uint64(spec.SlotsPerEpoch))
+		slot := phase0.Slot(currentSlot - i*uint64(sp.SlotsPerEpoch))
 
 		// Check if we've already fetched this slot.
 		bundle, err := m.bundles.GetBySlotNumber(slot)
@@ -240,7 +240,7 @@ func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v
 
 		m.log.Infof("Fetched historical block for slot %d with state_root of %#x", slot, stateRoot)
 
-		if err = m.bundles.Add(NewCheckpointBundle(
+		if err := m.bundles.Add(NewCheckpointBundle(
 			block,
 			nil,
 		)); err != nil {
@@ -291,7 +291,6 @@ func (m *Majority) GetBlockByStateRoot(ctx context.Context, stateRoot phase0.Roo
 }
 
 func (m *Majority) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*[]byte, error) {
-	m.log.WithField("slot", slot).Info("Fetching beacon state for slot")
 	bundle, err := m.bundles.GetBySlotNumber(slot)
 	if err != nil {
 		return nil, err
@@ -383,10 +382,11 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 	m.log.
 		Info("Fetched beacon state")
 
-	if err = m.bundles.Add(NewCheckpointBundle(
+	err = m.bundles.Add(NewCheckpointBundle(
 		block,
 		&beaconState,
-	)); err != nil {
+	))
+	if err != nil {
 		return err
 	}
 
