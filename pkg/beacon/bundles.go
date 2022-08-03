@@ -30,7 +30,15 @@ func (c *CheckpointBundles) Add(bundle *CheckpointBundle) error {
 		return err
 	}
 
-	c.log.WithField("root", fmt.Sprintf("%#x", root)).Info("Adding checkpoint bundle")
+	slot, err := bundle.block.Slot()
+	if err != nil {
+		return err
+	}
+
+	c.log.
+		WithField("root", fmt.Sprintf("%#x", root)).
+		WithField("slot", fmt.Sprintf("%d", slot)).
+		Info("Adding checkpoint bundle")
 
 	c.bundles = append(c.bundles, bundle)
 
@@ -44,7 +52,7 @@ func (c *CheckpointBundles) GetBySlotNumber(slot phase0.Slot) (*CheckpointBundle
 			continue
 		}
 
-		if s == slot {
+		if uint64(s) == uint64(slot) {
 			return bundle, nil
 		}
 	}

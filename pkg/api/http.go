@@ -19,7 +19,7 @@ func WriteJSONResponse(w http.ResponseWriter, data []byte) error {
 func WriteSSZResponse(w http.ResponseWriter, data []byte) error {
 	w.Header().Set("Content-Type", "application/octet-stream")
 
-	if _, err := w.Write([]byte(fmt.Sprintf("%x\n", data))); err != nil {
+	if _, err := w.Write(data); err != nil {
 		return err
 	}
 

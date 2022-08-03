@@ -62,6 +62,14 @@ func (m *Majority) Start(ctx context.Context) error {
 		return err
 	}
 
+	if _, err := s.Every("5s").Do(func() {
+		if err := m.checkGenesis(ctx); err != nil {
+			m.log.WithError(err).Error("Failed to check for genesis")
+		}
+	}); err != nil {
+		return err
+	}
+
 	s.StartAsync()
 
 	return nil
@@ -128,6 +136,45 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 	return nil
 }
 
+func (m *Majority) checkGenesis(ctx context.Context) error {
+	exists, err := m.bundles.GetBySlotNumber(phase0.Slot(0))
+	if err == nil && exists != nil {
+		return nil
+	}
+
+	readyNodes := m.nodes.Ready(ctx)
+	if len(readyNodes) == 0 {
+		return errors.New("no nodes ready")
+	}
+
+	// Grab the genesis root
+	randomNode, err := readyNodes.RandomNode(ctx)
+	if err != nil {
+		return err
+	}
+
+	genesisBlock, err := randomNode.Beacon.FetchBlock(ctx, "genesis")
+	if err != nil {
+		return err
+	}
+
+	genesisBlockRoot, err := genesisBlock.Root()
+	if err != nil {
+		return err
+	}
+
+	// Fetch the bundle
+	if err := m.fetchBundle(ctx, genesisBlockRoot); err != nil {
+		return err
+	}
+
+	m.log.WithFields(logrus.Fields{
+		"root": fmt.Sprintf("%#x", genesisBlockRoot),
+	}).Info("Fetched genesis bundle")
+
+	return nil
+}
+
 func (m *Majority) OnFinalityCheckpointUpdated(ctx context.Context, cb func(ctx context.Context, checkpoint *v1.Finality) error) {
 	m.broker.On(topicFinalityUpdated, func(checkpoint *v1.Finality) {
 		if err := cb(ctx, checkpoint); err != nil {
@@ -145,7 +192,7 @@ func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Fin
 }
 
 func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1.Finality) error {
-	historicalDistance := uint64(10)
+	historicalDistance := uint64(0)
 
 	// Download the previous n epochs worth of epoch boundaries if they don't already exist
 	upstream, err := m.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
@@ -243,7 +290,8 @@ func (m *Majority) GetBlockByStateRoot(ctx context.Context, stateRoot phase0.Roo
 	return bundle.Block(), nil
 }
 
-func (m *Majority) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*spec.VersionedBeaconState, error) {
+func (m *Majority) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*[]byte, error) {
+	m.log.WithField("slot", slot).Info("Fetching beacon state for slot")
 	bundle, err := m.bundles.GetBySlotNumber(slot)
 	if err != nil {
 		return nil, err
@@ -256,8 +304,21 @@ func (m *Majority) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (
 	return bundle.State(), nil
 }
 
-func (m *Majority) GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*spec.VersionedBeaconState, error) {
+func (m *Majority) GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*[]byte, error) {
 	bundle, err := m.bundles.GetByStateRoot(root)
+	if err != nil {
+		return nil, err
+	}
+
+	if bundle.State() == nil {
+		return nil, errors.New("state not found")
+	}
+
+	return bundle.State(), nil
+}
+
+func (m *Majority) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*[]byte, error) {
+	bundle, err := m.bundles.GetByRoot(root)
 	if err != nil {
 		return nil, err
 	}
@@ -314,18 +375,17 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 		WithField("state_root", fmt.Sprintf("%#x", stateRoot)).
 		Info("Fetched beacon block")
 
-	beaconState, err := upstream.Beacon.FetchBeaconState(ctx, fmt.Sprintf("%#x", stateRoot))
+	beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
 	if err != nil {
 		return err
 	}
 
 	m.log.
-		WithField("slot", beaconState.Bellatrix.Slot).
 		Info("Fetched beacon state")
 
 	if err = m.bundles.Add(NewCheckpointBundle(
 		block,
-		beaconState,
+		&beaconState,
 	)); err != nil {
 		return err
 	}

@@ -8,10 +8,10 @@ import (
 
 type CheckpointBundle struct {
 	block *spec.VersionedSignedBeaconBlock
-	state *spec.VersionedBeaconState
+	state *[]byte
 }
 
-func NewCheckpointBundle(block *spec.VersionedSignedBeaconBlock, state *spec.VersionedBeaconState) *CheckpointBundle {
+func NewCheckpointBundle(block *spec.VersionedSignedBeaconBlock, state *[]byte) *CheckpointBundle {
 	return &CheckpointBundle{
 		block: block,
 		state: state,
@@ -28,6 +28,6 @@ func (c *CheckpointBundle) Block() *spec.VersionedSignedBeaconBlock {
 	return c.block
 }
 
-func (c *CheckpointBundle) State() *spec.VersionedBeaconState {
+func (c *CheckpointBundle) State() *[]byte {
 	return c.state
 }

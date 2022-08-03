@@ -29,7 +29,9 @@ type FinalityProvider interface {
 	// GetBlockByStateRoot returns the block with the given root.
 	GetBlockByStateRoot(ctx context.Context, root phase0.Root) (*spec.VersionedSignedBeaconBlock, error)
 	// GetBeaconStateBySlot returns the beacon sate with the given slot.
-	GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*spec.VersionedBeaconState, error)
-	// GetBeaconStateBySlot returns the beacon sate with the given state root.
-	GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*spec.VersionedBeaconState, error)
+	GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*[]byte, error)
+	// GetBeaconStateByStateRoot returns the beacon sate with the given state root.
+	GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
+	// GetBeaconStateByRoot returns the beacon sate with the given root.
+	GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
 }
