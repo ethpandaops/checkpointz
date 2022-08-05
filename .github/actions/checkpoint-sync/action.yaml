@@ -1,0 +1,76 @@
+
+name: Run a checkpoint sync test
+description: Runs a consensus client and checkpoint syncs from the running checkpointz instance.
+
+inputs:
+  consensus:
+    description: "The name of the consensus client to use (one of lighthouse, teku, prysm, nimbus, lodestar)."
+    required: true
+  network:
+    description: "The name of the network to run the test against (one of ropsten, sepolia, prater/goerli)."
+    required: true
+
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v1
+    - name: Prepare environment
+      shell: bash
+      run: |
+        mkdir $HOME/bin;
+        export PATH=$HOME/bin:$PATH;
+        echo "Running against ${{ inputs.network }} with ${{ inputs.consensus }}.";
+    - name: Build checkpointz
+      shell: bash
+      run: |
+        docker build . -t samcm/checkpointz:local;
+    - name: Configure checkpointz
+      shell: bash
+      run: |
+        cat <<EOF > config.yaml
+        global:
+          listenAddr: ":5555"
+          logging: "debug" # panic,fatal,warm,info,debug,trace
+
+        beacon:
+          upstreams:
+          - name: state-provider
+            address: https://${{ inputs.network }}.checkpoint-sync.ethdevops.io
+            timeoutSeconds: 30
+            dataProvider: true
+        EOF
+    - name: Create log directories
+      shell: bash
+      run: |
+        mkdir -p logs;
+    - name: Create docker network
+      shell: bash
+      run: |
+        docker network create eth
+    - name: Run checkpointz
+      shell: bash
+      run: |
+        echo "Starting checkpointz...";
+        docker run -d --network eth -p 5555:5555 -v $pwd:/data --name checkpointz samcm/checkpointz:local -config /data/config.yaml;
+        docker log checkpointz -f > logs/checkpointz.log;
+        echo "Checkpointz is running.";
+    - name: Wait for checkpointz to start
+      shell: bash
+      run: |
+        sleep 60;
+    - name: Run consensus client
+      uses: bash
+      run: |
+        docker run -d --name teku --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
+        docker log teku -f > logs/teku.log;
+    - uses: actions/upload-artifact@v3
+      if: ${{ always() }}
+      with:
+        name: checkpointz.log
+        path: logs/checkpointz.log
+    - uses: actions/upload-artifact@v3
+      if: ${{ always() }}
+      with:
+        name: consensus.log
+        path: logs/checkpointz.log
