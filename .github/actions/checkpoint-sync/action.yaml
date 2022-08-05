@@ -53,7 +53,7 @@ runs:
       run: |
         echo "Starting checkpointz...";
         docker run -d --network eth -p 5555:5555 -v $(pwd):/data --name checkpointz samcm/checkpointz:local --config /data/checkpointz.yaml;
-        docker logs checkpointz -f > logs/checkpointz.log;
+        docker logs checkpointz -f > logs/checkpointz.log &;
         echo "Checkpointz is running.";
     - name: Wait for checkpointz to start
       shell: bash
@@ -64,7 +64,7 @@ runs:
       run: |
         echo "Starting Teku...";
         docker run -d --name teku --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
-        docker logs teku -f > logs/teku.log;
+        docker logs teku -f > logs/teku.log &;
         echo "Teku is running.";
     - name: Wait for completion
       shell: bash
