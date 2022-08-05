@@ -28,7 +28,7 @@ runs:
     - name: Configure checkpointz
       shell: bash
       run: |
-        cat <<EOF > config.yaml
+        cat <<EOF > checkpointz.yaml
         global:
           listenAddr: ":5555"
           logging: "debug" # panic,fatal,warm,info,debug,trace
@@ -52,7 +52,7 @@ runs:
       shell: bash
       run: |
         echo "Starting checkpointz...";
-        docker run -d --network eth -p 5555:5555 -v $pwd:/data --name checkpointz samcm/checkpointz:local -config /data/config.yaml;
+        docker run -d --network eth -p 5555:5555 -v $pwd:/data --name checkpointz samcm/checkpointz:local --config /data/checkpointz.yaml;
         docker logs checkpointz -f > logs/checkpointz.log;
         echo "Checkpointz is running.";
     - name: Wait for checkpointz to start
@@ -62,8 +62,14 @@ runs:
     - name: Run consensus client
       shell: bash
       run: |
+        echo "Starting Teku...";
         docker run -d --name teku --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
         docker logs teku -f > logs/teku.log;
+        echo "Teku is running.";
+    - name: Wait for completion
+      shell: bash
+      run: |
+        sleep 120;
     - uses: actions/upload-artifact@v3
       if: ${{ always() }}
       with:
