@@ -1,0 +1,53 @@
+name: Manual Integration test
+on:
+  workflow_dispatch:
+    inputs:
+      consensus:
+        description: 'Consensus clients to use (comma seperated)'    
+        required: true
+        type: string
+        default: lighthouse, prysm, nimbus, lodestar, teku
+      network:
+        description: 'Networks to use'    
+        required: true
+        type: string
+        default: ropsten, sepolia, goerli
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      consensus: ${{ steps.set.outputs.consensus }}
+      networks: ${{ steps.set.outputs.networks }}
+    steps:
+    - id: set
+      run: |
+        consensus=$(echo ${{ inputs.consensus }} | perl -p -e "s/,/\",\"/g" | sed 's/^/[\"/g' | sed 's/$/\"]/g' | sed 's/ //g')
+        networks=$(echo ${{ inputs.network }} | perl -p -e "s/,/\",\"/g" | sed 's/^/[\"/g' | sed 's/$/\"]/g' | sed 's/ //g')
+        echo "consensus: $consensus"
+        echo "networks: $networks"
+        echo "::set-output name=consensus::$consensus"
+        echo "::set-output name=networks::$networks"
+        echo "Done!"
+  run-test:
+    needs: init
+    strategy:
+      fail-fast: false
+      matrix:
+        consensus: ${{fromJson(needs.init.outputs.consensus)}}
+        network:  ${{fromJson(needs.init.outputs.networks)}}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v1
+      - name: Print details
+        run: |
+          echo "Consensus: ${{ matrix.consensus }}"
+          echo "Network: ${{ matrix.network }}"
+      - name: Run ${{ inputs.network }}-${{ inputs.consensus }}
+        id: run-test
+        uses: ./.github/actions/checkpoint-sync
+        with:
+          ## Variables
+          consensus: ${{ matrix.consensus }}
+          network: ${{ matrix.network }}
