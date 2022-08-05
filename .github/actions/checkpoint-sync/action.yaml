@@ -72,7 +72,9 @@ runs:
       shell: bash
       run: |
         while true; do
-          if [[ $(curl -s localhost:5052/eth/v1/node/syncing | jq '.data.head_slot|tonumber') -gt 1000 ]]; then 
+          height=$(curl -s localhost:5052/eth/v1/node/syncing | jq '.data.head_slot|tonumber');
+          echo "Current synced height: $height";
+          if [[ $height -gt 1000 ]]; then 
             break;
           fi
           sleep 1;
@@ -86,4 +88,4 @@ runs:
       if: ${{ always() }}
       with:
         name: consensus.log
-        path: logs/checkpointz.log
+        path: logs/consensus.log
