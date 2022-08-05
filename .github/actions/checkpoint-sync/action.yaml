@@ -62,14 +62,24 @@ runs:
         echo "Waiting for checkpointz to have a finalized block root...";
         bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5555/eth/v1/beacon/blocks/finalized/root)" != "200" ]]; do sleep 5; done';
         echo "Checkpointz has a finalized block root.";
-    - name: Run consensus client
+    - name: Run teku client
       shell: bash
+      if:  ${{ inputs.consensus == 'teku' }}
       run: |
         echo "Starting Teku...";
         docker run -p 5052:5052 -d --name teku --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --rest-api-port=5052 --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
         docker logs teku -f &> logs/consensus.log &
         docker logs teku -f &
         echo "Teku is running.";
+    - name: Run ligthhouse client
+      shell: bash
+      if:  ${{ inputs.consensus == 'lighthouse' }}
+      run: |
+        echo "Starting Lighthouse...";
+        docker run -p 5052:5052 --network eth -d --name lighthouse lighthouse bn --network=${{ inputs.network }} --datadir=/data --checkpoint-sync-url=http://checkpointz:5555 --http --http-address=0.0.0.0 
+        docker logs lighthouse -f &> logs/consensus.log &
+        docker logs lighthouse -f &
+        echo "Lighthouse is running.";
     - name: Wait for consensus client to have checkpoint synced
       shell: bash
       run: |
