@@ -60,7 +60,7 @@ runs:
       run: |
         sleep 60;
     - name: Run consensus client
-      uses: bash
+      shell: bash
       run: |
         docker run -d --name teku --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
         docker log teku -f > logs/teku.log;
