@@ -13,4 +13,4 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-reco
   && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /bin/app /checkpointz
 EXPOSE 5555
-ENTRYPOINT ["checkpointz"]
+ENTRYPOINT ["/checkpointz"]
