@@ -24,13 +24,14 @@ type Majority struct {
 
 	bundles *CheckpointBundles
 
-	current *v1.Finality
+	head          *v1.Finality
+	currentBundle *v1.Finality
 }
 
 var _ FinalityProvider = (*Majority)(nil)
 
 var (
-	topicFinalityUpdated = "finality_updated"
+	topicFinalityHeadUpdated = "finality_head_updated"
 )
 
 func NewMajorityProvider(log logrus.FieldLogger, nodes []node.Config) FinalityProvider {
@@ -38,9 +39,12 @@ func NewMajorityProvider(log logrus.FieldLogger, nodes []node.Config) FinalityPr
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/majority"),
 		nodes:       NewNodesFromConfig(log, nodes),
-		current:     &v1.Finality{},
-		broker:      emission.NewEmitter(),
-		bundles:     NewCheckpointBundles(log),
+
+		head:          &v1.Finality{},
+		currentBundle: &v1.Finality{},
+
+		broker:  emission.NewEmitter(),
+		bundles: NewCheckpointBundles(log),
 	}
 }
 
@@ -49,8 +53,8 @@ func (m *Majority) Start(ctx context.Context) error {
 		return err
 	}
 
-	m.OnFinalityCheckpointUpdated(ctx, m.handleFinalityUpdated)
-	m.OnFinalityCheckpointUpdated(ctx, m.fetchHistoricalCheckpoints)
+	m.OnFinalityCheckpointHeadUpdated(ctx, m.handleFinalityUpdated)
+	m.OnFinalityCheckpointHeadUpdated(ctx, m.fetchHistoricalCheckpoints)
 
 	s := gocron.NewScheduler(time.Local)
 
@@ -100,7 +104,7 @@ func (m *Majority) Syncing(ctx context.Context) (bool, error) {
 }
 
 func (m *Majority) Finality(ctx context.Context) (*v1.Finality, error) {
-	return m.current, nil
+	return m.currentBundle, nil
 }
 
 func (m *Majority) checkFinality(ctx context.Context) error {
@@ -120,17 +124,15 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 
 	aggregated := NewCheckpoints(aggFinality)
 
-	finalizedMajority, err := aggregated.Majority()
+	majority, err := aggregated.Majority()
 	if err != nil {
 		return err
 	}
 
-	if m.current.Finalized == nil || finalizedMajority.Finalized.Epoch != m.current.Finalized.Epoch || finalizedMajority.Finalized.Root != m.current.Finalized.Root {
-		m.current = finalizedMajority
-
-		m.publishFinalityCheckpointUpdated(ctx, finalizedMajority)
-
-		m.log.WithField("epoch", finalizedMajority.Finalized.Epoch).WithField("root", fmt.Sprintf("%#x", finalizedMajority.Finalized.Root)).Info("New finalized checkpoint")
+	if m.head == nil || m.head.Finalized == nil || m.head.Finalized.Root != majority.Finalized.Root {
+		m.head = majority
+		m.publishFinalityCheckpointHeadUpdated(ctx, majority)
+		m.log.WithField("epoch", majority.Finalized.Epoch).WithField("root", fmt.Sprintf("%#x", majority.Finalized.Root)).Info("New finalized head checkpoint")
 	}
 
 	return nil
@@ -175,20 +177,33 @@ func (m *Majority) checkGenesis(ctx context.Context) error {
 	return nil
 }
 
-func (m *Majority) OnFinalityCheckpointUpdated(ctx context.Context, cb func(ctx context.Context, checkpoint *v1.Finality) error) {
-	m.broker.On(topicFinalityUpdated, func(checkpoint *v1.Finality) {
+func (m *Majority) OnFinalityCheckpointHeadUpdated(ctx context.Context, cb func(ctx context.Context, checkpoint *v1.Finality) error) {
+	m.broker.On(topicFinalityHeadUpdated, func(checkpoint *v1.Finality) {
 		if err := cb(ctx, checkpoint); err != nil {
 			m.log.WithError(err).Error("Failed to handle finality updated")
 		}
 	})
 }
 
-func (m *Majority) publishFinalityCheckpointUpdated(ctx context.Context, checkpoint *v1.Finality) {
-	m.broker.Emit(topicFinalityUpdated, checkpoint)
+func (m *Majority) publishFinalityCheckpointHeadUpdated(ctx context.Context, checkpoint *v1.Finality) {
+	m.broker.Emit(topicFinalityHeadUpdated, checkpoint)
 }
 
 func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Finality) error {
-	return m.fetchBundle(ctx, checkpoint.Finalized.Root)
+	if err := m.fetchBundle(ctx, checkpoint.Finalized.Root); err != nil {
+		return err
+	}
+
+	m.currentBundle = checkpoint
+
+	m.log.WithFields(
+		logrus.Fields{
+			"epoch": checkpoint.Finalized.Epoch,
+			"root":  fmt.Sprintf("%#x", checkpoint.Finalized.Root),
+		},
+	).Info("Serving a new finalized checkpoint bundle")
+
+	return nil
 }
 
 func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1.Finality) error {
