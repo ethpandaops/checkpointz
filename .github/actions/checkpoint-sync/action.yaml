@@ -76,7 +76,7 @@ runs:
       if:  ${{ inputs.consensus == 'lighthouse' }}
       run: |
         echo "Starting Lighthouse...";
-        docker run -p 5052:5052 --network eth -d --name lighthouse lighthouse bn --network=${{ inputs.network }} --datadir=/data --checkpoint-sync-url=http://checkpointz:5555 --http --http-address=0.0.0.0 
+        docker run -p 5052:5052 --network eth -d --name lighthouse sigp/lighthouse:latest lighthouse bn --network=${{ inputs.network }} --datadir=/data --checkpoint-sync-url=http://checkpointz:5555 --http --http-address=0.0.0.0 
         docker logs lighthouse -f &> logs/consensus.log &
         docker logs lighthouse -f &
         echo "Lighthouse is running.";
