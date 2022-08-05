@@ -54,6 +54,7 @@ runs:
         echo "Starting checkpointz...";
         docker run -d --network eth -p 5555:5555 -v $(pwd):/data --name checkpointz samcm/checkpointz:local --config /data/checkpointz.yaml;
         docker logs checkpointz -f &> logs/checkpointz.log &
+        docker logs checkpointz -f &
         echo "Checkpointz is running.";
     - name: Wait for checkpointz to have a finalized block root
       shell: bash
@@ -67,8 +68,9 @@ runs:
         echo "Starting Teku...";
         docker run -p 5052:5052 -d --name teku --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --rest-api-port=5052 --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
         docker logs teku -f &> logs/consensus.log &
+        docker logs teku -f &
         echo "Teku is running.";
-    - name: Wait for consensus client to have a finalized block root
+    - name: Wait for consensus client to have checkpoint synced
       shell: bash
       run: |
         while true; do
