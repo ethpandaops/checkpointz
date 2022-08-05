@@ -92,10 +92,10 @@ runs:
     - uses: actions/upload-artifact@v3
       if: ${{ always() }}
       with:
-        name: checkpointz.log
+        name: ${{ inputs.network }}-${{ inputs.consensus }}-checkpointz.log
         path: logs/checkpointz.log
     - uses: actions/upload-artifact@v3
       if: ${{ always() }}
       with:
-        name: consensus.log
+        name: ${{ inputs.network }}-${{ inputs.consensus }}-consensus.log
         path: logs/consensus.log
