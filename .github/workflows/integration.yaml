@@ -37,7 +37,7 @@ jobs:
         consensus: ${{fromJson(needs.init.outputs.consensus)}}
         network:  ${{fromJson(needs.init.outputs.networks)}}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v1
       - name: Print details
