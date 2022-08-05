@@ -58,7 +58,9 @@ runs:
     - name: Wait for checkpointz to have a finalized block root
       shell: bash
       run: |
-        bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5052/eth/v1/beacon/blocks/finalized/root)" != "200" ]]; do sleep 5; done';
+        echo "Waiting for checkpointz to have a finalized block root...";
+        bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5555/eth/v1/beacon/blocks/finalized/root)" != "200" ]]; do sleep 5; done';
+        echo "Checkpointz has a finalized block root.";
     - name: Run consensus client
       shell: bash
       run: |
