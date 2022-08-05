@@ -27,7 +27,11 @@ beacon:
   #   address: http://localhost:4001
   #   timeoutSeconds: 30
   #   dataProvider: true
-  - name: local-lighthouse
-    address: http://localhost:5005
+  # - name: local-lighthouse
+  #   address: http://localhost:5005
+  #   timeoutSeconds: 30
+  #   dataProvider: true
+  - name: remote
+    address: https://sepolia.checkpoint-sync.ethdevops.io
     timeoutSeconds: 30
     dataProvider: true

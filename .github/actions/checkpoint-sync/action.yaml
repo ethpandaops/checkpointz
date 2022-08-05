@@ -53,23 +53,23 @@ runs:
       run: |
         echo "Starting checkpointz...";
         docker run -d --network eth -p 5555:5555 -v $(pwd):/data --name checkpointz samcm/checkpointz:local --config /data/checkpointz.yaml;
-        docker logs checkpointz -f > logs/checkpointz.log &
+        docker logs checkpointz -f &> logs/checkpointz.log &
         echo "Checkpointz is running.";
-    - name: Wait for checkpointz to start
+    - name: Wait for checkpointz to have a finalized block root
       shell: bash
       run: |
-        sleep 60;
+        bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5052/eth/v1/beacon/blocks/finalized/root)" != "200" ]]; do sleep 5; done';
     - name: Run consensus client
       shell: bash
       run: |
         echo "Starting Teku...";
-        docker run -d --name teku --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
-        docker logs teku -f > logs/teku.log &
+        docker run -p 5052:5052 -d --name teku --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --rest-api-port=5052 --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
+        docker logs teku -f &> logs/consensus.log &
         echo "Teku is running.";
-    - name: Wait for completion
+    - name: Wait for consensus client to have a finalized block root
       shell: bash
       run: |
-        sleep 120;
+        bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5052/eth/v1/beacon/blocks/finalized/root)" != "200" ]]; do sleep 5; done';
     - uses: actions/upload-artifact@v3
       if: ${{ always() }}
       with:

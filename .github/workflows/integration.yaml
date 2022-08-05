@@ -22,7 +22,7 @@ jobs:
         run: |
           echo "Consensus: ${{ matrix.consensus }}"
           echo "Network: ${{ matrix.network }}"
-      - name: Run ${{ inputs.network }}-${{ inputs.consensus }}
+      - name: Run ${{ matrix.network }}-${{ matrix.consensus }}
         id: run-test
         uses: ./.github/actions/checkpoint-sync
         with:

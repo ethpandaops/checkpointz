@@ -122,6 +122,10 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, err
 		}
 
+		if block == nil {
+			return phase0.Root{}, fmt.Errorf("no genesis block")
+		}
+
 		return block.Root()
 	case BlockIDSlot:
 		slot, err := NewSlotFromString(blockID.Value())
@@ -132,6 +136,10 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 		block, err := h.provider.GetBlockBySlot(ctx, slot)
 		if err != nil {
 			return phase0.Root{}, err
+		}
+
+		if block == nil {
+			return phase0.Root{}, fmt.Errorf("no block for slot %v", slot)
 		}
 
 		return block.Root()
@@ -146,6 +154,10 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, err
 		}
 
+		if block == nil {
+			return phase0.Root{}, fmt.Errorf("no block for root %v", root)
+		}
+
 		return block.Root()
 	case BlockIDFinalized:
 		finality, err := h.provider.Finality(ctx)
@@ -153,13 +165,17 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, err
 		}
 
-		if finality == nil {
+		if finality == nil || finality.Finalized == nil {
 			return phase0.Root{}, fmt.Errorf("no finality")
 		}
 
 		block, err := h.provider.GetBlockByRoot(ctx, finality.Finalized.Root)
 		if err != nil {
 			return phase0.Root{}, err
+		}
+
+		if block == nil {
+			return phase0.Root{}, fmt.Errorf("no block for finalized root %v", finality.Finalized.Root)
 		}
 
 		return block.Root()
