@@ -384,7 +384,8 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 		WithField("state_root", fmt.Sprintf("%#x", stateRoot)).
 		Info("Fetched beacon block")
 
-	if err := m.blocks.Add(block); err != nil {
+	err = m.blocks.Add(block)
+	if err != nil {
 		return err
 	}
 
