@@ -7,9 +7,12 @@ go 1.19
 require (
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/attestantio/go-eth2-client v0.13.0 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
+	github.com/dgraph-io/ristretto v0.1.0 // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/ethereum/go-ethereum v1.10.20 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/ferranbt/fastssz v0.1.1 // indirect
@@ -17,6 +20,7 @@ require (
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/goccy/go-yaml v1.9.5 // indirect
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect

@@ -73,6 +73,10 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 			return
 		}
 
+		for header, value := range response.Headers {
+			w.Header().Set(header, value)
+		}
+
 		if err := WriteContentAwareResponse(w, data, contentType); err != nil {
 			h.log.WithError(err).Error("Failed to write response")
 		}
@@ -84,12 +88,12 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 		return NewUnsupportedMediaTypeResponse(nil), err
 	}
 
-	req, err := eth.NewBlockIdentifier(p.ByName("block_id"))
+	blockID, err := eth.NewBlockIdentifier(p.ByName("block_id"))
 	if err != nil {
 		return NewBadRequestResponse(nil), err
 	}
 
-	block, err := h.eth.BeaconBlock(ctx, req)
+	block, err := h.eth.BeaconBlock(ctx, blockID)
 	if err != nil {
 		return NewInternalServerErrorResponse(nil), err
 	}
@@ -130,11 +134,28 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 		return NewInternalServerErrorResponse(nil), err
 	}
 
-	return NewSuccessResponse(ContentTypeResolvers{
+	if state == nil {
+		return NewInternalServerErrorResponse(nil), errors.New("state not found")
+	}
+
+	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeSSZ: func() ([]byte, error) {
 			return *state, nil
 		},
-	}), nil
+	})
+
+	switch id.Type() {
+	case eth.StateIDRoot, eth.StateIDGenesis, eth.StateIDSlot:
+		// TODO(sam.calder-mason): This should be calculated using the Weak-Subjectivity period.
+		rsp.SetCacheControl("public, s-max-age=6000")
+	case eth.StateIDFinalized:
+		// TODO(sam.calder-mason): This should be calculated using the Weak-Subjectivity period.
+		rsp.SetCacheControl("public, s-max-age=180")
+	case eth.StateIDHead:
+		rsp.SetCacheControl("public, s-max-age=30")
+	}
+
+	return rsp, nil
 }
 
 func (h *Handler) handleCheckpointzStatus(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {

@@ -12,6 +12,7 @@ import (
 	"github.com/chuckpreslar/emission"
 	"github.com/go-co-op/gocron"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
+	"github.com/samcm/checkpointz/pkg/beacon/store"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,10 +23,11 @@ type Majority struct {
 	nodes       Nodes
 	broker      *emission.Emitter
 
-	bundles *CheckpointBundles
-
 	head          *v1.Finality
 	currentBundle *v1.Finality
+
+	blocks *store.Block
+	states *store.BeaconState
 }
 
 var _ FinalityProvider = (*Majority)(nil)
@@ -43,8 +45,9 @@ func NewMajorityProvider(log logrus.FieldLogger, nodes []node.Config) FinalityPr
 		head:          &v1.Finality{},
 		currentBundle: &v1.Finality{},
 
-		broker:  emission.NewEmitter(),
-		bundles: NewCheckpointBundles(log),
+		broker: emission.NewEmitter(),
+		blocks: store.NewBlock(log, time.Hour*3, 500),
+		states: store.NewBeaconState(log, time.Hour*1, 20),
 	}
 }
 
@@ -139,10 +142,12 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 }
 
 func (m *Majority) checkGenesis(ctx context.Context) error {
-	exists, err := m.bundles.GetBySlotNumber(phase0.Slot(0))
+	exists, err := m.blocks.GetBySlot(phase0.Slot(0))
 	if err == nil && exists != nil {
 		return nil
 	}
+
+	m.log.Debug("Fetching genesis block and state")
 
 	readyNodes := m.nodes.Ready(ctx)
 	if len(readyNodes) == 0 {
@@ -207,7 +212,7 @@ func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Fin
 }
 
 func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1.Finality) error {
-	historicalDistance := uint64(0)
+	historicalDistance := uint64(10)
 
 	// Download the previous n epochs worth of epoch boundaries if they don't already exist
 	upstream, err := m.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
@@ -231,8 +236,8 @@ func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v
 		slot := phase0.Slot(currentSlot - i*uint64(sp.SlotsPerEpoch))
 
 		// Check if we've already fetched this slot.
-		bundle, err := m.bundles.GetBySlotNumber(slot)
-		if err == nil && bundle.Block() != nil {
+		bl, err := m.blocks.GetBySlot(slot)
+		if err == nil && bl != nil {
 			continue
 		}
 
@@ -255,10 +260,7 @@ func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v
 
 		m.log.Infof("Fetched historical block for slot %d with state_root of %#x", slot, stateRoot)
 
-		if err := m.bundles.Add(NewCheckpointBundle(
-			block,
-			nil,
-		)); err != nil {
+		if err := m.blocks.Add(block); err != nil {
 			return err
 		}
 	}
@@ -267,81 +269,74 @@ func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v
 }
 
 func (m *Majority) GetBlockBySlot(ctx context.Context, slot phase0.Slot) (*spec.VersionedSignedBeaconBlock, error) {
-	bundle, err := m.bundles.GetBySlotNumber(slot)
+	block, err := m.blocks.GetBySlot(slot)
 	if err != nil {
 		return nil, err
 	}
 
-	if bundle.Block() == nil {
+	if block == nil {
 		return nil, errors.New("block not found")
 	}
 
-	return bundle.Block(), nil
+	return block, nil
 }
 
 func (m *Majority) GetBlockByRoot(ctx context.Context, root phase0.Root) (*spec.VersionedSignedBeaconBlock, error) {
-	bundle, err := m.bundles.GetByRoot(root)
+	block, err := m.blocks.GetByRoot(root)
 	if err != nil {
 		return nil, err
 	}
 
-	if bundle.Block() == nil {
+	if block == nil {
 		return nil, errors.New("block not found")
 	}
 
-	return bundle.Block(), nil
+	return block, nil
 }
 
 func (m *Majority) GetBlockByStateRoot(ctx context.Context, stateRoot phase0.Root) (*spec.VersionedSignedBeaconBlock, error) {
-	bundle, err := m.bundles.GetByStateRoot(stateRoot)
+	block, err := m.blocks.GetByStateRoot(stateRoot)
 	if err != nil {
 		return nil, err
 	}
 
-	if bundle.Block() == nil {
+	if block == nil {
 		return nil, errors.New("block not found")
 	}
 
-	return bundle.Block(), nil
+	return block, nil
 }
 
 func (m *Majority) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*[]byte, error) {
-	bundle, err := m.bundles.GetBySlotNumber(slot)
+	block, err := m.GetBlockBySlot(ctx, slot)
 	if err != nil {
 		return nil, err
 	}
 
-	if bundle.State() == nil {
-		return nil, errors.New("state not found")
+	stateRoot, err := block.StateRoot()
+	if err != nil {
+		return nil, err
 	}
 
-	return bundle.State(), nil
+	return m.states.GetByStateRoot(stateRoot)
 }
 
-func (m *Majority) GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*[]byte, error) {
-	bundle, err := m.bundles.GetByStateRoot(root)
-	if err != nil {
-		return nil, err
-	}
-
-	if bundle.State() == nil {
-		return nil, errors.New("state not found")
-	}
-
-	return bundle.State(), nil
+func (m *Majority) GetBeaconStateByStateRoot(ctx context.Context, stateRoot phase0.Root) (*[]byte, error) {
+	return m.states.GetByStateRoot(stateRoot)
 }
 
 func (m *Majority) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*[]byte, error) {
-	bundle, err := m.bundles.GetByRoot(root)
+	block, err := m.GetBlockByRoot(ctx, root)
 	if err != nil {
 		return nil, err
 	}
 
-	if bundle.State() == nil {
-		return nil, errors.New("state not found")
+	stateRoot, err := block.StateRoot()
+	if err != nil {
+		return nil, err
 	}
 
-	return bundle.State(), nil
+	return m.states.GetByStateRoot(stateRoot)
 }
 
 func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
@@ -389,6 +384,10 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 		WithField("state_root", fmt.Sprintf("%#x", stateRoot)).
 		Info("Fetched beacon block")
 
+	if err := m.blocks.Add(block); err != nil {
+		return err
+	}
+
 	beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
 	if err != nil {
 		return err
@@ -397,27 +396,8 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 	m.log.
 		Info("Fetched beacon state")
 
-	err = m.bundles.Add(NewCheckpointBundle(
-		block,
-		&beaconState,
-	))
-	if err != nil {
+	if err := m.states.Add(stateRoot, &beaconState); err != nil {
 		return err
-	}
-
-	// Fetch the bundle
-	bundle, err := m.bundles.GetByStateRoot(stateRoot)
-	if err != nil {
-		return err
-	}
-
-	bundleStateRoot, err := bundle.block.StateRoot()
-	if err != nil {
-		return err
-	}
-
-	if bundleStateRoot != stateRoot {
-		return errors.New("bundle state root does not match inserted block state root")
 	}
 
 	m.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)

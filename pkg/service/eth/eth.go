@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Handler is the Eth API handler. HTTP-level concerns should NOT be contained in this package,
+// Handler is the Eth Service handler. HTTP-level concerns should NOT be contained in this package,
 // they should be handled and reasoned with at a higher level.
 type Handler struct {
 	log      logrus.FieldLogger
@@ -21,7 +21,7 @@ type Handler struct {
 // NewHandler returns a new Handler instance.
 func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider) *Handler {
 	return &Handler{
-		log:      log.WithField("module", "api/eth"),
+		log:      log.WithField("module", "service/eth"),
 		provider: beac,
 	}
 }
