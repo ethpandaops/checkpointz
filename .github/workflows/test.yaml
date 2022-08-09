@@ -1,4 +1,4 @@
-name: pr
+name: Go Test
 
 on:
   pull_request:
