@@ -5,9 +5,14 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/samcm/checkpointz/pkg/api"
 	"github.com/samcm/checkpointz/pkg/beacon"
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	namespace = "checkpointz"
 )
 
 type Server struct {
@@ -24,7 +29,7 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 		log.Fatalf("invalid config: %s", err)
 	}
 
-	provider := beacon.NewMajorityProvider(log, conf.BeaconConfig.BeaconUpstreams)
+	provider := beacon.NewMajorityProvider(namespace, log, conf.BeaconConfig.BeaconUpstreams)
 
 	s := &Server{
 		Cfg: *conf,
@@ -47,7 +52,20 @@ func (s *Server) Start(ctx context.Context) error {
 		return err
 	}
 
+	if err := s.ServeMetrics(ctx); err != nil {
+		return err
+	}
+
 	s.log.Fatal(http.ListenAndServe(s.Cfg.ListenAddr, router))
+
+	return nil
+}
+
+func (s *Server) ServeMetrics(ctx context.Context) error {
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(s.Cfg.GlobalConfig.MetricsAddr, nil)
+	}()
 
 	return nil
 }

@@ -28,6 +28,8 @@ type Majority struct {
 
 	blocks *store.Block
 	states *store.BeaconState
+
+	metrics *Metrics
 }
 
 var _ FinalityProvider = (*Majority)(nil)
@@ -36,11 +38,11 @@ var (
 	topicFinalityHeadUpdated = "finality_head_updated"
 )
 
-func NewMajorityProvider(log logrus.FieldLogger, nodes []node.Config) FinalityProvider {
+func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.Config) FinalityProvider {
 	return &Majority{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/majority"),
-		nodes:       NewNodesFromConfig(log, nodes),
+		nodes:       NewNodesFromConfig(log, nodes, namespace),
 
 		head:          &v1.Finality{},
 		currentBundle: &v1.Finality{},
@@ -48,6 +50,8 @@ func NewMajorityProvider(log logrus.FieldLogger, nodes []node.Config) FinalityPr
 		broker: emission.NewEmitter(),
 		blocks: store.NewBlock(log, time.Hour*3, 500),
 		states: store.NewBeaconState(log, time.Hour*1, 20),
+
+		metrics: NewMetrics(namespace + "_beacon"),
 	}
 }
 
@@ -58,6 +62,11 @@ func (m *Majority) Start(ctx context.Context) error {
 
 	m.OnFinalityCheckpointHeadUpdated(ctx, m.handleFinalityUpdated)
 	m.OnFinalityCheckpointHeadUpdated(ctx, m.fetchHistoricalCheckpoints)
+	// m.OnFinalityCheckpointHeadUpdated(ctx, func(ctx context.Context, checkpoint *v1.Finality) error {
+	// 	m.metrics.SetFinalityCheckpoints("head", checkpoint)
+
+	// 	return nil
+	// })
 
 	s := gocron.NewScheduler(time.Local)
 
@@ -76,6 +85,14 @@ func (m *Majority) Start(ctx context.Context) error {
 	}); err != nil {
 		return err
 	}
+
+	// if _, err := s.Every("5s").Do(func() {
+	// 	if err := m.updateMetrics(ctx); err != nil {
+	// 		m.log.WithError(err).Error("Failed to update metrics")
+	// 	}
+	// }); err != nil {
+	// 	return err
+	// }
 
 	s.StartAsync()
 
