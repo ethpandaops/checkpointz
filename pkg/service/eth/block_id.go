@@ -107,3 +107,20 @@ func NewRootFromString(id string) (phase0.Root, error) {
 
 	return root, nil
 }
+
+func (t BlockIDType) String() string {
+	switch t {
+	case BlockIDHead:
+		return "head"
+	case BlockIDGenesis:
+		return "genesis"
+	case BlockIDFinalized:
+		return "finalized"
+	case BlockIDSlot:
+		return "slot"
+	case BlockIDRoot:
+		return "root"
+	}
+
+	return "invalid"
+}

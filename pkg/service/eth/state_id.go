@@ -79,3 +79,22 @@ func newStateIdentifier(id StateIDType, value string) StateIdentifier {
 		v: value,
 	}
 }
+
+func (t StateIDType) String() string {
+	switch t {
+	case StateIDInvalid:
+		return "invalid"
+	case StateIDHead:
+		return "head"
+	case StateIDGenesis:
+		return "genesis"
+	case StateIDFinalized:
+		return "finalized"
+	case StateIDSlot:
+		return "slot"
+	case StateIDRoot:
+		return "root"
+	}
+
+	return "invalid"
+}

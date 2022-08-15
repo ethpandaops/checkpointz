@@ -15,15 +15,17 @@ type BeaconState struct {
 	log   logrus.FieldLogger
 }
 
-func NewBeaconState(log logrus.FieldLogger, maxTTL time.Duration, maxItems int) *BeaconState {
+func NewBeaconState(log logrus.FieldLogger, maxTTL time.Duration, maxItems int, namespace string) *BeaconState {
 	c := &BeaconState{
 		log:   log.WithField("component", "beacon/store/beacon_state"),
-		store: cache.NewTTLMap(maxItems, maxTTL),
+		store: cache.NewTTLMap(maxItems, maxTTL, "state", namespace),
 	}
 
-	c.store.OnItemEvicted(func(key string, value interface{}) {
-		c.log.WithField("state_root", key).Debug("State was evicted from the cache")
+	c.store.OnItemDeleted(func(key string, value interface{}) {
+		c.log.WithField("state_root", key).Debug("State was deleted from the cache")
 	})
+
+	c.store.EnableMetrics(namespace)
 
 	return c
 }

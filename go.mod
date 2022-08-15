@@ -2,7 +2,7 @@ module github.com/samcm/checkpointz
 
 go 1.17
 
-// replace github.com/samcm/beacon => /Users/samcm/go/src/github.com/samcm/beacon
+replace github.com/samcm/beacon => /Users/samcm/go/src/github.com/samcm/beacon
 
 require (
 	github.com/attestantio/go-eth2-client v0.13.0

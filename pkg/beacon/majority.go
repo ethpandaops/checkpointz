@@ -48,8 +48,8 @@ func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.
 		currentBundle: &v1.Finality{},
 
 		broker: emission.NewEmitter(),
-		blocks: store.NewBlock(log, time.Hour*3, 500),
-		states: store.NewBeaconState(log, time.Hour*1, 20),
+		blocks: store.NewBlock(log, time.Hour*3, 500, namespace),
+		states: store.NewBeaconState(log, time.Hour*1, 20, namespace),
 
 		metrics: NewMetrics(namespace + "_beacon"),
 	}
@@ -85,14 +85,6 @@ func (m *Majority) Start(ctx context.Context) error {
 	}); err != nil {
 		return err
 	}
-
-	// if _, err := s.Every("5s").Do(func() {
-	// 	if err := m.updateMetrics(ctx); err != nil {
-	// 		m.log.WithError(err).Error("Failed to update metrics")
-	// 	}
-	// }); err != nil {
-	// 	return err
-	// }
 
 	s.StartAsync()
 
@@ -153,6 +145,8 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 		m.head = majority
 		m.publishFinalityCheckpointHeadUpdated(ctx, majority)
 		m.log.WithField("epoch", majority.Finalized.Epoch).WithField("root", fmt.Sprintf("%#x", majority.Finalized.Root)).Info("New finalized head checkpoint")
+
+		m.metrics.ObserveServingEpoch(majority.Finalized.Epoch)
 	}
 
 	return nil

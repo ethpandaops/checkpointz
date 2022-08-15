@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/julienschmidt/httprouter"
@@ -23,14 +25,18 @@ type Handler struct {
 
 	eth         *eth.Handler
 	checkpointz *checkpointz.Handler
+
+	metrics Metrics
 }
 
 func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider) *Handler {
 	return &Handler{
 		log: log.WithField("module", "api"),
 
-		eth:         eth.NewHandler(log, beac),
+		eth:         eth.NewHandler(log, beac, "checkpointz"),
 		checkpointz: checkpointz.NewHandler(log, beac),
+
+		metrics: NewMetrics("http"),
 	}
 }
 
@@ -46,10 +52,22 @@ func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error
 	return nil
 }
 
+func deriveRegisteredPath(request *http.Request, ps httprouter.Params) string {
+	registeredPath := request.URL.Path
+	for _, param := range ps {
+		registeredPath = strings.Replace(registeredPath, param.Value, fmt.Sprintf(":%s", param.Key), 1)
+	}
+
+	return registeredPath
+}
+
 func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error)) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		start := time.Now()
+
 		contentType := NewContentTypeFromRequest(r)
 		ctx := r.Context()
+		registeredPath := deriveRegisteredPath(r, p)
 
 		h.log.WithFields(logrus.Fields{
 			"method":       r.Method,
@@ -58,17 +76,30 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 			"accept":       r.Header.Get("Accept"),
 		}).Debug("Handling request")
 
-		response, err := handler(ctx, r, p, contentType)
+		h.metrics.ObserveRequest(r.Method, registeredPath)
+
+		response := &HTTPResponse{}
+
+		var err error
+
+		defer func() {
+			h.metrics.ObserveResponse(r.Method, registeredPath, fmt.Sprintf("%v", response.StatusCode), contentType.String(), time.Since(start))
+		}()
+
+		response, err = handler(ctx, r, p, contentType)
 		if err != nil {
-			// TODO(sam.calder-mason): Maybe log here?
-			http.Error(w, err.Error(), response.StatusCode)
+			if writeErr := WriteErrorResponse(w, err.Error(), response.StatusCode); writeErr != nil {
+				h.log.WithError(writeErr).Error("Failed to write error response")
+			}
 
 			return
 		}
 
 		data, err := response.MarshalAs(contentType)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			if writeErr := WriteErrorResponse(w, err.Error(), http.StatusInternalServerError); writeErr != nil {
+				h.log.WithError(writeErr).Error("Failed to write error response")
+			}
 
 			return
 		}
@@ -98,25 +129,39 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 		return NewInternalServerErrorResponse(nil), err
 	}
 
+	var rsp = &HTTPResponse{}
+
 	switch block.Version {
 	case spec.DataVersionPhase0:
-		return NewSuccessResponse(ContentTypeResolvers{
+		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Phase0.MarshalJSON,
 			ContentTypeSSZ:  block.Phase0.MarshalSSZ,
-		}), nil
+		})
 	case spec.DataVersionAltair:
-		return NewSuccessResponse(ContentTypeResolvers{
+		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Altair.MarshalJSON,
 			ContentTypeSSZ:  block.Altair.MarshalSSZ,
-		}), nil
+		})
 	case spec.DataVersionBellatrix:
-		return NewSuccessResponse(ContentTypeResolvers{
+		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Bellatrix.MarshalJSON,
 			ContentTypeSSZ:  block.Bellatrix.MarshalSSZ,
-		}), nil
+		})
 	default:
 		return NewInternalServerErrorResponse(nil), errors.New("unknown block version")
 	}
+
+	switch blockID.Type() {
+	case eth.BlockIDRoot, eth.BlockIDGenesis, eth.BlockIDSlot:
+		rsp.SetCacheControl("public, s-max-age=6000")
+	case eth.BlockIDFinalized:
+		// TODO(sam.calder-mason): This should be calculated using the Weak-Subjectivity period.
+		rsp.SetCacheControl("public, s-max-age=30")
+	case eth.BlockIDHead:
+		rsp.SetCacheControl("public, s-max-age=30")
+	}
+
+	return rsp, nil
 }
 
 func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
