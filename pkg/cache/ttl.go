@@ -22,14 +22,18 @@ type TTLMap struct {
 	l        sync.Mutex
 	maxItems int
 
-	evictCallbacks []func(string, interface{})
+	metrics Metrics
+
+	deletedCallbacks []func(string, interface{})
+	addedCallbacks   []func(string, interface{})
 }
 
 // NewTTLMap returns a new TTLMap.
-func NewTTLMap(maxItems int, ttl time.Duration) (m *TTLMap) {
+func NewTTLMap(maxItems int, ttl time.Duration, name, namespace string) (m *TTLMap) {
 	m = &TTLMap{
 		m:        make(map[string]*item, maxItems),
 		maxItems: maxItems,
+		metrics:  NewMetrics(name, namespace+"_ttlmap"),
 	}
 
 	go func() {
@@ -45,8 +49,24 @@ func NewTTLMap(maxItems int, ttl time.Duration) (m *TTLMap) {
 	return
 }
 
-func (m *TTLMap) OnItemEvicted(f func(string, interface{})) {
-	m.evictCallbacks = append(m.evictCallbacks, f)
+func (m *TTLMap) EnableMetrics(namespace string) {
+	m.metrics.Register()
+
+	m.OnItemAdded(func(k string, v interface{}) {
+		m.metrics.ObserveLen(m.Len())
+	})
+
+	m.OnItemDeleted(func(k string, v interface{}) {
+		m.metrics.ObserveLen(m.Len())
+	})
+}
+
+func (m *TTLMap) OnItemDeleted(f func(string, interface{})) {
+	m.deletedCallbacks = append(m.deletedCallbacks, f)
+}
+
+func (m *TTLMap) OnItemAdded(f func(string, interface{})) {
+	m.addedCallbacks = append(m.addedCallbacks, f)
 }
 
 func (m *TTLMap) Delete(k string) {
@@ -59,7 +79,9 @@ func (m *TTLMap) Delete(k string) {
 
 	delete(m.m, k)
 
-	for _, f := range m.evictCallbacks {
+	m.metrics.ObserveOperations(OperationDEL, 1)
+
+	for _, f := range m.deletedCallbacks {
 		go f(k, val)
 	}
 
@@ -83,6 +105,7 @@ func (m *TTLMap) evictOldestItem() {
 
 	if len(items) > 0 {
 		m.Delete(items[0].key)
+		m.metrics.ObserveOperations(OperationEVICT, 1)
 	}
 }
 
@@ -105,18 +128,30 @@ func (m *TTLMap) Add(k string, v interface{}) {
 		m.m[k] = it
 	}
 
+	m.metrics.ObserveOperations(OperationADD, 1)
+
 	it.lastAccess = time.Now()
+
+	for _, f := range m.addedCallbacks {
+		go f(k, v)
+	}
 }
 
 func (m *TTLMap) Get(k string) (interface{}, error) {
+	m.metrics.ObserveOperations(OperationGET, 1)
+
 	m.l.Lock()
 
 	defer m.l.Unlock()
 
 	it, ok := m.m[k]
 	if !ok {
+		m.metrics.ObserveMiss()
+
 		return nil, errors.New("not found")
 	}
+
+	m.metrics.ObserveHit()
 
 	it.lastAccess = time.Now()
 

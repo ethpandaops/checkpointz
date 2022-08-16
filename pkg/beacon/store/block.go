@@ -20,16 +20,16 @@ type Block struct {
 	stateRootToBlockRoot sync.Map
 }
 
-func NewBlock(log logrus.FieldLogger, maxTTL time.Duration, maxItems int) *Block {
+func NewBlock(log logrus.FieldLogger, maxTTL time.Duration, maxItems int, namespace string) *Block {
 	c := &Block{
 		log:   log.WithField("component", "beacon/store/block"),
-		store: cache.NewTTLMap(maxItems, maxTTL),
+		store: cache.NewTTLMap(maxItems, maxTTL, "block", namespace),
 
 		slotToBlockRoot:      sync.Map{},
 		stateRootToBlockRoot: sync.Map{},
 	}
 
-	c.store.OnItemEvicted(func(key string, value interface{}) {
+	c.store.OnItemDeleted(func(key string, value interface{}) {
 		c.log.WithField("block_root", key).Debug("Block was evicted from the cache")
 
 		block, ok := value.(*spec.VersionedSignedBeaconBlock)
@@ -43,6 +43,8 @@ func NewBlock(log logrus.FieldLogger, maxTTL time.Duration, maxItems int) *Block
 			c.log.WithError(err).Error("Failed to cleanup block")
 		}
 	})
+
+	c.store.EnableMetrics(namespace)
 
 	return c
 }

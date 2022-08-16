@@ -14,6 +14,7 @@ type Config struct {
 type GlobalConfig struct {
 	ListenAddr   string `yaml:"listenAddr"`
 	LoggingLevel string `yaml:"logging"`
+	MetricsAddr  string `yaml:"metricsAddr"`
 }
 
 type BeaconConfig struct {

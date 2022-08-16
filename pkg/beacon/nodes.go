@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"math/rand"
-	"time"
 
 	sbeacon "github.com/samcm/beacon"
-	"github.com/samcm/beacon/human"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
 )
@@ -19,22 +17,19 @@ type Node struct {
 
 type Nodes []*Node
 
-func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config) Nodes {
+func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace string) Nodes {
 	nodes := make(Nodes, len(configs))
 
 	for i, config := range configs {
 		sconfig := &sbeacon.Config{
-			Name:        config.Name,
-			Addr:        config.Address,
-			EventTopics: []string{},
-			HealthCheckConfig: sbeacon.HealthCheckConfig{
-				Interval:            human.Duration{Duration: time.Second * 5},
-				FailedResponses:     3,
-				SuccessfulResponses: 1,
-			},
+			Name: config.Name,
+			Addr: config.Address,
 		}
 
-		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig)
+		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, *sbeacon.DefaultOptions())
+
+		// TODO(sam.calder-mason): Can we re-enable this if we're expecting to use a full beacon node for v1?
+		snode.Options().BeaconSubscription.Enabled = false
 
 		nodes[i] = &Node{
 			Config: config,

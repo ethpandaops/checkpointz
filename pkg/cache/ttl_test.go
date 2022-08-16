@@ -7,7 +7,7 @@ import (
 )
 
 func TestItemAdds(t *testing.T) {
-	instance := NewTTLMap(10, time.Hour)
+	instance := NewTTLMap(10, time.Hour, "", "")
 
 	key := "key1"
 	value := "value1"
@@ -25,7 +25,7 @@ func TestItemAdds(t *testing.T) {
 }
 
 func TestItemDeletes(t *testing.T) {
-	instance := NewTTLMap(10, time.Hour)
+	instance := NewTTLMap(10, time.Hour, "", "")
 
 	key := "key2"
 	value := "value2"
@@ -40,7 +40,7 @@ func TestItemDeletes(t *testing.T) {
 }
 
 func TestItemDoesExpire(t *testing.T) {
-	instance := NewTTLMap(10, time.Second)
+	instance := NewTTLMap(10, time.Second, "", "")
 
 	key := "key3"
 	value := "value3"
@@ -56,7 +56,7 @@ func TestItemDoesExpire(t *testing.T) {
 }
 
 func TestMaxItems(t *testing.T) {
-	instance := NewTTLMap(3, time.Hour)
+	instance := NewTTLMap(3, time.Hour, "", "")
 	for i := 1; i <= 10; i++ {
 		instance.Add(fmt.Sprintf("key%d", i), "value")
 	}
@@ -67,7 +67,7 @@ func TestMaxItems(t *testing.T) {
 }
 
 func TestMaxItemsEvictsOldest(t *testing.T) {
-	instance := NewTTLMap(3, time.Hour)
+	instance := NewTTLMap(3, time.Hour, "", "")
 	for i := 1; i <= 10; i++ {
 		instance.Add(fmt.Sprintf("key%d", i), "value")
 	}
@@ -90,5 +90,50 @@ func TestMaxItemsEvictsOldest(t *testing.T) {
 
 	if _, err := instance.Get("key10"); err != nil {
 		t.Fatalf("Expected item to not have been evicted")
+	}
+}
+
+func TestCallbacks(t *testing.T) {
+	instance := NewTTLMap(10, time.Hour, "", "")
+
+	evictedCallback := false
+
+	instance.OnItemDeleted(func(key string, value interface{}) {
+		if key != "key4" {
+			t.Fatalf("Expected key to be key4, got %s", key)
+		}
+
+		if value != "value4" {
+			t.Fatalf("Expected value to be value4, got %s", value)
+		}
+
+		evictedCallback = true
+	})
+
+	addedCallback := false
+
+	instance.OnItemAdded(func(key string, value interface{}) {
+		if key != "key4" {
+			t.Fatalf("Expected key to be key4, got %s", key)
+		}
+
+		if value != "value4" {
+			t.Fatalf("Expected value to be value4, got %s", value)
+		}
+
+		addedCallback = true
+	})
+
+	instance.Add("key4", "value4")
+	instance.Delete("key4")
+
+	time.Sleep(time.Second * 1)
+
+	if !evictedCallback {
+		t.Fatalf("Expected evicted callback to have been called")
+	}
+
+	if !addedCallback {
+		t.Fatalf("Expected added callback to have been called")
 	}
 }
