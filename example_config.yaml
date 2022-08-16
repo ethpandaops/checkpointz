@@ -3,36 +3,9 @@ global:
   logging: "debug" # panic,fatal,warm,info,debug,trace
   metricsAddr: ":9090"
 
-#
-# Configuration for the beacon API upstreams
-#
-# beacon:
-#   proxyTimeoutSeconds: 30
-#   apiAllowPaths:
-#     #- .*
-#     - ^/eth/v1/node/identity$
-#     - ^/eth/v1/node/peer_count$
-#     - ^/eth/v1/node/version$
-#     - ^/eth/v1/node/syncing$
-#     #
-#     - ^/eth/v1/beacon/blocks/genesis/root$
-#     - ^/eth/v2/beacon/blocks/finalized$
-
 beacon:
   upstreams:
-  # - name: ef-ropsten-1
-  #   address: http://localhost:4000
-  #   timeoutSeconds: 30
-  #   dataProvider: false
-  # - name: ef-ropsten-2
-  #   address: http://localhost:4001
-  #   timeoutSeconds: 30
-  #   dataProvider: true
-  # - name: local-lighthouse
-  #   address: http://localhost:5005
-  #   timeoutSeconds: 30
-  #   dataProvider: true
   - name: remote
-    address: https://sepolia.checkpoint-sync.ethdevops.io
+    address: http://localhost:5052
     timeoutSeconds: 30
     dataProvider: true
