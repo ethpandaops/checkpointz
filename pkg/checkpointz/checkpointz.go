@@ -64,7 +64,10 @@ func (s *Server) Start(ctx context.Context) error {
 func (s *Server) ServeMetrics(ctx context.Context) error {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(s.Cfg.GlobalConfig.MetricsAddr, nil)
+
+		if err := http.ListenAndServe(s.Cfg.GlobalConfig.MetricsAddr, nil); err != nil {
+			s.log.Fatal(err)
+		}
 	}()
 
 	return nil

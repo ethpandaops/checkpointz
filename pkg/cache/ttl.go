@@ -59,7 +59,6 @@ func (m *TTLMap) EnableMetrics(namespace string) {
 	m.OnItemDeleted(func(k string, v interface{}) {
 		m.metrics.ObserveLen(m.Len())
 	})
-
 }
 
 func (m *TTLMap) OnItemDeleted(f func(string, interface{})) {

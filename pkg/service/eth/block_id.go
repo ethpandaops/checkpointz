@@ -56,11 +56,11 @@ func (id BlockIdentifier) AsSlot() (phase0.Slot, error) {
 
 func NewBlockIdentifier(id string) (BlockIdentifier, error) {
 	switch id {
-	case "head":
+	case string(IDHead):
 		return newBlockIdentifier(BlockIDHead, id), nil
-	case "genesis":
+	case string(IDGenesis):
 		return newBlockIdentifier(BlockIDGenesis, id), nil
-	case "finalized":
+	case string(IDFinalized):
 		return newBlockIdentifier(BlockIDFinalized, id), nil
 	}
 
@@ -111,16 +111,16 @@ func NewRootFromString(id string) (phase0.Root, error) {
 func (t BlockIDType) String() string {
 	switch t {
 	case BlockIDHead:
-		return "head"
+		return string(IDHead)
 	case BlockIDGenesis:
-		return "genesis"
+		return string(IDGenesis)
 	case BlockIDFinalized:
-		return "finalized"
+		return string(IDFinalized)
 	case BlockIDSlot:
-		return "slot"
+		return string(IDSlot)
 	case BlockIDRoot:
-		return "root"
+		return string(IDRoot)
 	}
 
-	return "invalid"
+	return string(IDInvalid)
 }
