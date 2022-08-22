@@ -85,7 +85,7 @@ runs:
       if:  ${{ inputs.consensus == 'prysm' }}
       run: |
         echo "Starting prysm...";
-        docker run --network eth -p 5052:5052 gcr.io/prysmaticlabs/prysm/beacon-chain:latest --datadir=/data --accept-terms-of-use --${{ inputs.network }} --clear-db --rpc-host=0.0.0.0 --monitoring-host=0.0.0.0 --http-web3provider=htp://localhost:8545 --force-clear-db --checkpoint-sync-url=http://checkpointz:5555 --genesis-beacon-api-url=http://checkpointz:5555 --grpc-gateway-port=5052
+        docker run -d --network eth -p 5052:5052 gcr.io/prysmaticlabs/prysm/beacon-chain:latest --datadir=/data --accept-terms-of-use --${{ inputs.network }} --clear-db --rpc-host=0.0.0.0 --monitoring-host=0.0.0.0 --http-web3provider=htp://localhost:8545 --force-clear-db --checkpoint-sync-url=http://checkpointz:5555 --genesis-beacon-api-url=http://checkpointz:5555 --grpc-gateway-port=5052
         docker logs prysm -f &> logs/consensus.log &
         docker logs prysm -f &
         echo "Prysm is running.";
@@ -103,7 +103,7 @@ runs:
       if:  ${{ inputs.consensus == 'lodestar' }}
       run: |
         echo "Starting lodestar...";
-        docker run --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --weakSubjectivitySyncLatest=true --weakSubjectivityServerUrl=http://checkpointz:5555  --api.rest.enabled --api.rest.host 0.0.0.0  --api.rest.port=5052
+        docker run -d --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --weakSubjectivitySyncLatest=true --weakSubjectivityServerUrl=http://checkpointz:5555  --api.rest.enabled --api.rest.host 0.0.0.0  --api.rest.port=5052
         docker logs lodestar -f &> logs/consensus.log &
         docker logs lodestar -f &
         echo "Lodestar is running.";
