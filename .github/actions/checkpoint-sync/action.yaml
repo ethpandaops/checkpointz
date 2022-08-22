@@ -85,7 +85,7 @@ runs:
       if:  ${{ inputs.consensus == 'prysm' }}
       run: |
         echo "Starting prysm...";
-        docker run -d --network eth -p 5052:5052 gcr.io/prysmaticlabs/prysm/beacon-chain:latest --datadir=/data --accept-terms-of-use --${{ inputs.network }} --clear-db --rpc-host=0.0.0.0 --monitoring-host=0.0.0.0 --http-web3provider=htp://localhost:8545 --force-clear-db --checkpoint-sync-url=http://checkpointz:5555 --genesis-beacon-api-url=http://checkpointz:5555 --grpc-gateway-port=5052
+        docker run -d --name prysm --network eth -p 5052:5052 gcr.io/prysmaticlabs/prysm/beacon-chain:latest --datadir=/data --accept-terms-of-use --${{ inputs.network }} --clear-db --rpc-host=0.0.0.0 --monitoring-host=0.0.0.0 --http-web3provider=htp://localhost:8545 --force-clear-db --checkpoint-sync-url=http://checkpointz:5555 --genesis-beacon-api-url=http://checkpointz:5555 --grpc-gateway-port=5052
         docker logs prysm -f &> logs/consensus.log &
         docker logs prysm -f &
         echo "Prysm is running.";
@@ -94,7 +94,7 @@ runs:
       if:  ${{ inputs.consensus == 'nimbus' }}
       run: |
         echo "Starting nimbus...";
-        docker run --network eth statusim/nimbus-eth2:amd64-latest trustedNodeSync --network=${{ inputs.network }} --trusted-node-url=http://checkpointz:5555 --backfill=false
+        docker run --name nimbus --network eth statusim/nimbus-eth2:amd64-latest trustedNodeSync --network=${{ inputs.network }} --trusted-node-url=http://checkpointz:5555 --backfill=false
         docker logs nimbus -f &> logs/consensus.log &
         docker logs nimbus -f &
         echo "Nimbus is running.";
@@ -103,7 +103,7 @@ runs:
       if:  ${{ inputs.consensus == 'lodestar' }}
       run: |
         echo "Starting lodestar...";
-        docker run -d --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --weakSubjectivitySyncLatest=true --weakSubjectivityServerUrl=http://checkpointz:5555  --api.rest.enabled --api.rest.host 0.0.0.0  --api.rest.port=5052
+        docker run --name lodestar -d --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --weakSubjectivitySyncLatest=true --weakSubjectivityServerUrl=http://checkpointz:5555  --api.rest.enabled --api.rest.host 0.0.0.0  --api.rest.port=5052
         docker logs lodestar -f &> logs/consensus.log &
         docker logs lodestar -f &
         echo "Lodestar is running.";
