@@ -71,7 +71,7 @@ runs:
         docker logs teku -f &> logs/consensus.log &
         docker logs teku -f &
         echo "Teku is running.";
-    - name: Run ligthhouse client
+    - name: Run lighthouse client
       shell: bash
       if:  ${{ inputs.consensus == 'lighthouse' }}
       run: |
@@ -80,8 +80,36 @@ runs:
         docker logs lighthouse -f &> logs/consensus.log &
         docker logs lighthouse -f &
         echo "Lighthouse is running.";
+    - name: Run prysm
+      shell: bash
+      if:  ${{ inputs.consensus == 'prysm' }}
+      run: |
+        echo "Starting prysm...";
+        docker run --network eth -p 5052:5052 gcr.io/prysmaticlabs/prysm/beacon-chain:latest --datadir=/data --accept-terms-of-use --${{ inputs.network }} --clear-db --rpc-host=0.0.0.0 --monitoring-host=0.0.0.0 --http-web3provider=htp://localhost:8545 --force-clear-db --checkpoint-sync-url=http://checkpointz:5555 --genesis-beacon-api-url=http://checkpointz:5555 --grpc-gateway-port=5052
+        docker logs prysm -f &> logs/consensus.log &
+        docker logs prysm -f &
+        echo "Prysm is running.";
+    - name: Run nimbus
+      shell: bash
+      if:  ${{ inputs.consensus == 'nimbus' }}
+      run: |
+        echo "Starting nimbus...";
+        docker run --network eth statusim/nimbus-eth2:amd64-latest trustedNodeSync --network=${{ inputs.network }} --trusted-node-url=http://checkpointz:5555 --backfill=false
+        docker logs nimbus -f &> logs/consensus.log &
+        docker logs nimbus -f &
+        echo "Nimbus is running.";
+    - name: Run lodestar
+      shell: bash
+      if:  ${{ inputs.consensus == 'lodestar' }}
+      run: |
+        echo "Starting lodestar...";
+        docker run --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --weakSubjectivitySyncLatest=true --weakSubjectivityServerUrl=http://checkpointz:5555  --api.rest.enabled --api.rest.host 0.0.0.0  --api.rest.port=5052
+        docker logs lodestar -f &> logs/consensus.log &
+        docker logs lodestar -f &
+        echo "Lodestar is running.";
     - name: Wait for consensus client to have checkpoint synced
       shell: bash
+      if:  ${{ inputs.consensus != 'nimbus' }}
       run: |
         while true; do
           if [[ $(curl -s localhost:5052/eth/v1/node/syncing | jq '.data.head_slot|tonumber') -gt 1000 ]]; then 
