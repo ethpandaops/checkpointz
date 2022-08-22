@@ -48,8 +48,8 @@ func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.
 		currentBundle: &v1.Finality{},
 
 		broker: emission.NewEmitter(),
-		blocks: store.NewBlock(log, time.Hour*3, 500, namespace),
-		states: store.NewBeaconState(log, time.Hour*1, 20, namespace),
+		blocks: store.NewBlock(log, time.Hour*3, 100, namespace),
+		states: store.NewBeaconState(log, time.Hour*1, 10, namespace),
 
 		metrics: NewMetrics(namespace + "_beacon"),
 	}
@@ -62,11 +62,6 @@ func (m *Majority) Start(ctx context.Context) error {
 
 	m.OnFinalityCheckpointHeadUpdated(ctx, m.handleFinalityUpdated)
 	m.OnFinalityCheckpointHeadUpdated(ctx, m.fetchHistoricalCheckpoints)
-	// m.OnFinalityCheckpointHeadUpdated(ctx, func(ctx context.Context, checkpoint *v1.Finality) error {
-	// 	m.metrics.SetFinalityCheckpoints("head", checkpoint)
-
-	// 	return nil
-	// })
 
 	s := gocron.NewScheduler(time.Local)
 
@@ -153,9 +148,17 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 }
 
 func (m *Majority) checkGenesis(ctx context.Context) error {
-	exists, err := m.blocks.GetBySlot(phase0.Slot(0))
-	if err == nil && exists != nil {
-		return nil
+	// No-Op if we already have the genesis block AND state stored.
+	// Note: this check will constantly touch the genesis block and state in their
+	// respective stores, ensuring that we never purge those items.
+	block, err := m.blocks.GetBySlot(phase0.Slot(0))
+	if err == nil && block != nil {
+		stateRoot, errr := block.StateRoot()
+		if errr == nil {
+			if state, er := m.states.GetByStateRoot(stateRoot); er == nil && state != nil {
+				return nil
+			}
+		}
 	}
 
 	m.log.Debug("Fetching genesis block and state")
