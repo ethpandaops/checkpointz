@@ -56,12 +56,12 @@ runs:
         docker logs checkpointz -f &> logs/checkpointz.log &
         docker logs checkpointz -f &
         echo "Checkpointz is running.";
-    - name: Wait for checkpointz to have a finalized block root
+    - name: Wait for checkpointz to have a finalized checkpoint
       shell: bash
       run: |
-        echo "Waiting for checkpointz to have a finalized block root...";
-        bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5555/eth/v1/beacon/blocks/finalized/root)" != "200" ]]; do sleep 5; done';
-        echo "Checkpointz has a finalized block root.";
+        echo "Waiting for checkpointz to have a finalized checkpoint...";
+        bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5555/eth/v1/beacon/states/head/finality_checkpoints)" != "200" ]]; do sleep 5; done';
+        echo "Checkpointz has a finalized checkpoint.";
     - name: Run teku client
       shell: bash
       if:  ${{ inputs.consensus == 'teku' }}
