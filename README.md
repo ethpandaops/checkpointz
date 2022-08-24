@@ -46,6 +46,18 @@ Download the latest release from the [Releases page](https://github.com/samcm/ch
 ./checkpointz --config your-config.yaml
 ```
 
+### Frontend
+
+A basic frontend is provided in this project in [`./web`](https://github.com/samcm/checkpointz/blob/master/example_config.yaml) directory which needs to be built before it can be served by the server, eg. `http://localhost:5555`.
+
+The frontend can be built with the following command;
+```bash
+# install node modules and build
+make build-web
+```
+
+Building frontend requires `npm` and `NodeJS` to be installed.
+
 ### Docker
 Available as a docker image at [samcm/checkpointz](https://hub.docker.com/r/samcm/checkpointz/tags)
 #### Images

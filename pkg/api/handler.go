@@ -23,20 +23,24 @@ import (
 type Handler struct {
 	log logrus.FieldLogger
 
-	eth         *eth.Handler
-	checkpointz *checkpointz.Handler
-	publicURL   string
+	eth           *eth.Handler
+	checkpointz   *checkpointz.Handler
+	publicURL     string
+	brandName     string
+	brandImageURL string
 
 	metrics Metrics
 }
 
-func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, publicURL string) *Handler {
+func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, config *beacon.Config) *Handler {
 	return &Handler{
 		log: log.WithField("module", "api"),
 
-		eth:         eth.NewHandler(log, beac, "checkpointz"),
-		checkpointz: checkpointz.NewHandler(log, beac),
-		publicURL:   publicURL,
+		eth:           eth.NewHandler(log, beac, "checkpointz"),
+		checkpointz:   checkpointz.NewHandler(log, beac),
+		publicURL:     config.Frontend.PublicURL,
+		brandName:     config.Frontend.BrandName,
+		brandImageURL: config.Frontend.BrandImageURL,
 
 		metrics: NewMetrics("http"),
 	}
@@ -218,12 +222,18 @@ func (h *Handler) handleCheckpointzStatus(ctx context.Context, r *http.Request, 
 	}
 
 	status.PublicURL = h.publicURL
+	status.BrandName = h.brandName
+	status.BrandImageURL = h.brandImageURL
 
-	return NewSuccessResponse(ContentTypeResolvers{
+	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeJSON: func() ([]byte, error) {
 			return json.Marshal(status)
 		},
-	}), nil
+	})
+
+	rsp.SetCacheControl("public, s-max-age=30")
+
+	return rsp, nil
 }
 
 func (h *Handler) handleCheckpointzBeaconSlots(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
@@ -236,11 +246,15 @@ func (h *Handler) handleCheckpointzBeaconSlots(ctx context.Context, r *http.Requ
 		return NewInternalServerErrorResponse(nil), err
 	}
 
-	return NewSuccessResponse(ContentTypeResolvers{
+	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeJSON: func() ([]byte, error) {
 			return json.Marshal(slots)
 		},
-	}), nil
+	})
+
+	rsp.SetCacheControl("public, s-max-age=30")
+
+	return rsp, nil
 }
 
 func (h *Handler) handleCheckpointzBeaconSlot(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
@@ -258,11 +272,15 @@ func (h *Handler) handleCheckpointzBeaconSlot(ctx context.Context, r *http.Reque
 		return NewInternalServerErrorResponse(nil), err
 	}
 
-	return NewSuccessResponse(ContentTypeResolvers{
+	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeJSON: func() ([]byte, error) {
 			return json.Marshal(slots)
 		},
-	}), nil
+	})
+
+	rsp.SetCacheControl("public, s-max-age=60")
+
+	return rsp, nil
 }
 
 func (h *Handler) handleEthV1BeaconStatesHeadFinalityCheckpoints(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
