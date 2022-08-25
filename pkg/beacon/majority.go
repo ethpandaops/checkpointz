@@ -48,8 +48,8 @@ func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.
 		currentBundle: &v1.Finality{},
 
 		broker: emission.NewEmitter(),
-		blocks: store.NewBlock(log, time.Hour*3, maxBlockItems, namespace),
-		states: store.NewBeaconState(log, time.Hour*1, maxStateItems, namespace),
+		blocks: store.NewBlock(log, maxBlockItems, namespace),
+		states: store.NewBeaconState(log, maxStateItems, namespace),
 
 		metrics: NewMetrics(namespace + "_beacon"),
 	}
@@ -239,6 +239,11 @@ func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v
 		return err
 	}
 
+	genesis, err := upstream.Beacon.GetGenesis(ctx)
+	if err != nil {
+		return err
+	}
+
 	// Calculate the epoch boundaries we need to fetch
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
 	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
@@ -274,7 +279,9 @@ func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v
 
 		m.log.Infof("Fetched historical block for slot %d with state_root of %#x", slot, stateRoot)
 
-		if err := m.blocks.Add(block); err != nil {
+		expiresAt := CalculateBlockExpiration(slot, sp.SecondsPerSlot, uint64(sp.SlotsPerEpoch), genesis.GenesisTime, 3*24*time.Hour)
+
+		if err := m.blocks.Add(block, expiresAt); err != nil {
 			return err
 		}
 	}
@@ -398,7 +405,12 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 		WithField("state_root", fmt.Sprintf("%#x", stateRoot)).
 		Info("Fetched beacon block")
 
-	err = m.blocks.Add(block)
+	expiresAt := time.Now().Add(time.Hour * 2)
+	if slot == phase0.Slot(0) {
+		expiresAt = time.Now().Add(time.Hour * 999999)
+	}
+
+	err = m.blocks.Add(block, expiresAt)
 	if err != nil {
 		return err
 	}
@@ -411,7 +423,7 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 	m.log.
 		Info("Fetched beacon state")
 
-	if err := m.states.Add(stateRoot, &beaconState); err != nil {
+	if err := m.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
 		return err
 	}
 
