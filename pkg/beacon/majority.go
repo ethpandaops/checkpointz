@@ -29,6 +29,8 @@ type Majority struct {
 	blocks *store.Block
 	states *store.BeaconState
 
+	bundleDownloader *BundleDownloader
+
 	metrics *Metrics
 }
 
@@ -39,17 +41,24 @@ var (
 )
 
 func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, maxBlockItems, maxStateItems int) FinalityProvider {
+	blocks := store.NewBlock(log, maxBlockItems, namespace)
+	states := store.NewBeaconState(log, maxStateItems, namespace)
+	allNodes := NewNodesFromConfig(log, nodes, namespace)
+
 	return &Majority{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/majority"),
-		nodes:       NewNodesFromConfig(log, nodes, namespace),
+		nodes:       allNodes,
 
 		head:          &v1.Finality{},
 		currentBundle: &v1.Finality{},
 
 		broker: emission.NewEmitter(),
-		blocks: store.NewBlock(log, maxBlockItems, namespace),
-		states: store.NewBeaconState(log, maxStateItems, namespace),
+
+		blocks: blocks,
+		states: states,
+
+		bundleDownloader: NewBundleDownloader(log, allNodes, states, blocks),
 
 		metrics: NewMetrics(namespace + "_beacon"),
 	}
@@ -73,13 +82,11 @@ func (m *Majority) Start(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := s.Every("5s").Do(func() {
-		if err := m.checkGenesis(ctx); err != nil {
-			m.log.WithError(err).Error("Failed to check for genesis")
+	go func() {
+		if err := m.startGenesisLoop(ctx); err != nil {
+			m.log.WithError(err).Fatal("Failed to start genesis loop")
 		}
-	}); err != nil {
-		return err
-	}
+	}()
 
 	s.StartAsync()
 
@@ -92,6 +99,19 @@ func (m *Majority) StartAsync(ctx context.Context) {
 			m.log.WithError(err).Error("Failed to start")
 		}
 	}()
+}
+
+func (m *Majority) startGenesisLoop(ctx context.Context) error {
+	select {
+	case <-time.After(time.Second * 5):
+		if err := m.checkGenesis(ctx); err != nil {
+			m.log.WithError(err).Error("Failed to check for genesis")
+		}
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	return nil
 }
 
 func (m *Majority) Healthy(ctx context.Context) (bool, error) {
@@ -140,8 +160,12 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 		m.head = majority
 		m.publishFinalityCheckpointHeadUpdated(ctx, majority)
 		m.log.WithField("epoch", majority.Finalized.Epoch).WithField("root", fmt.Sprintf("%#x", majority.Finalized.Root)).Info("New finalized head checkpoint")
+	}
 
-		m.metrics.ObserveServingEpoch(majority.Finalized.Epoch)
+	if m.currentBundle == nil || m.currentBundle.Finalized == nil || m.currentBundle.Finalized.Root != majority.Finalized.Root {
+		if err := m.updateServingCheckpoint(ctx, majority); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -184,14 +208,19 @@ func (m *Majority) checkGenesis(ctx context.Context) error {
 		return err
 	}
 
+	// If it already exists in the queue, leave it
+	if m.bundleDownloader.ExistsInQueue(genesisBlockRoot) {
+		return nil
+	}
+
 	// Fetch the bundle
-	if err := m.fetchBundle(ctx, genesisBlockRoot); err != nil {
+	if err := m.bundleDownloader.AddToQueue(ctx, genesisBlockRoot); err != nil {
 		return err
 	}
 
 	m.log.WithFields(logrus.Fields{
 		"root": fmt.Sprintf("%#x", genesisBlockRoot),
-	}).Info("Fetched genesis bundle")
+	}).Info("Added genesis bundle to download queue")
 
 	return nil
 }
@@ -208,12 +237,48 @@ func (m *Majority) publishFinalityCheckpointHeadUpdated(ctx context.Context, che
 	m.broker.Emit(topicFinalityHeadUpdated, checkpoint)
 }
 
-func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Finality) error {
-	if err := m.fetchBundle(ctx, checkpoint.Finalized.Root); err != nil {
+func (m *Majority) updateServingCheckpoint(ctx context.Context, checkpoint *v1.Finality) error {
+	// Check if we have the block in our store
+	block, err := m.blocks.GetByRoot(checkpoint.Finalized.Root)
+	if err != nil {
 		return err
 	}
 
+	if block == nil {
+		return errors.New("block not found")
+	}
+
+	stateRoot, err := block.StateRoot()
+	if err != nil {
+		return err
+	}
+
+	// Check if we have the state in our store
+	state, err := m.states.GetByStateRoot(stateRoot)
+	if err != nil {
+		return err
+	}
+
+	if state == nil {
+		return errors.New("state not found")
+	}
+
+	// Validate that everything is ok to serve.
+	// Lighthouse ref: https://lighthouse-book.sigmaprime.io/checkpoint-sync.html#alignment-requirements
+	blockSlot, err := block.Slot()
+	if err != nil {
+		return fmt.Errorf("failed to get slot from block: %w", err)
+	}
+
+	// For simplicity we'll hardcode SLOTS_PER_EPOCH to 32.
+	// TODO(sam.calder-mason): Fetch this from a beacon node and store it in the instance.
+	const slotsPerEpoch = 32
+	if blockSlot%slotsPerEpoch != 0 {
+		return fmt.Errorf("block slot is not aligned from an epoch boundary: %d", blockSlot)
+	}
+
 	m.currentBundle = checkpoint
+	m.metrics.ObserveServingEpoch(m.currentBundle.Finalized.Epoch)
 
 	m.log.WithFields(
 		logrus.Fields{
@@ -223,6 +288,10 @@ func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Fin
 	).Info("Serving a new finalized checkpoint bundle")
 
 	return nil
+}
+
+func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Finality) error {
+	return m.bundleDownloader.AddToQueue(ctx, checkpoint.Finalized.Root)
 }
 
 func (m *Majority) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1.Finality) error {
@@ -358,78 +427,6 @@ func (m *Majority) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (
 	}
 
 	return m.states.GetByStateRoot(stateRoot)
-}
-
-func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
-	m.log.Infof("Fetching a new bundle for root %#x", root)
-
-	// Fetch the bundle from a random data provider node.
-	upstream, err := m.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
-	if err != nil {
-		return err
-	}
-
-	m.log.Infof("Fetching bundle from node %s with root %#x", upstream.Config.Name, root)
-
-	block, err := upstream.Beacon.FetchBlock(ctx, fmt.Sprintf("%#x", root))
-	if err != nil {
-		return err
-	}
-
-	if block == nil {
-		return errors.New("block is nil")
-	}
-
-	stateRoot, err := block.StateRoot()
-	if err != nil {
-		return err
-	}
-
-	blockRoot, err := block.Root()
-	if err != nil {
-		return err
-	}
-
-	if blockRoot != root {
-		return errors.New("block root does not match")
-	}
-
-	slot, err := block.Slot()
-	if err != nil {
-		return err
-	}
-
-	m.log.
-		WithField("slot", slot).
-		WithField("root", fmt.Sprintf("%#x", blockRoot)).
-		WithField("state_root", fmt.Sprintf("%#x", stateRoot)).
-		Info("Fetched beacon block")
-
-	expiresAt := time.Now().Add(time.Hour * 2)
-	if slot == phase0.Slot(0) {
-		expiresAt = time.Now().Add(time.Hour * 999999)
-	}
-
-	err = m.blocks.Add(block, expiresAt)
-	if err != nil {
-		return err
-	}
-
-	beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
-	if err != nil {
-		return err
-	}
-
-	m.log.
-		Info("Fetched beacon state")
-
-	if err := m.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
-		return err
-	}
-
-	m.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
-
-	return nil
 }
 
 func (m *Majority) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error) {
