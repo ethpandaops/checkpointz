@@ -7,14 +7,14 @@ import (
 )
 
 func TestItemAdds(t *testing.T) {
-	instance := NewTTLMap(10, time.Hour, "", "")
+	instance := NewTTLMap(10, "", "")
 
 	key := "key1"
 	value := "value1"
 
-	instance.Add(key, value)
+	instance.Add(key, value, time.Now().Add(time.Hour))
 
-	data, err := instance.Get(key)
+	data, _, err := instance.Get(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,40 +25,40 @@ func TestItemAdds(t *testing.T) {
 }
 
 func TestItemDeletes(t *testing.T) {
-	instance := NewTTLMap(10, time.Hour, "", "")
+	instance := NewTTLMap(10, "", "")
 
 	key := "key2"
 	value := "value2"
 
-	instance.Add(key, value)
+	instance.Add(key, value, time.Now().Add(time.Hour))
 	instance.Delete(key)
 
-	_, err := instance.Get(key)
+	_, _, err := instance.Get(key)
 	if err == nil {
 		t.Fatalf("Expected item to have been deleted")
 	}
 }
 
 func TestItemDoesExpire(t *testing.T) {
-	instance := NewTTLMap(10, time.Second, "", "")
+	instance := NewTTLMap(10, "", "")
 
 	key := "key3"
 	value := "value3"
 
-	instance.Add(key, value)
+	instance.Add(key, value, time.Now().Add(time.Second))
 
 	time.Sleep(time.Second * 3)
 
-	_, err := instance.Get(key)
+	_, _, err := instance.Get(key)
 	if err == nil {
 		t.Fatalf("Expected item to have expired")
 	}
 }
 
 func TestMaxItems(t *testing.T) {
-	instance := NewTTLMap(3, time.Hour, "", "")
+	instance := NewTTLMap(3, "", "")
 	for i := 1; i <= 10; i++ {
-		instance.Add(fmt.Sprintf("key%d", i), "value")
+		instance.Add(fmt.Sprintf("key%d", i), "value", time.Now().Add(time.Hour))
 	}
 
 	if len(instance.m) != 3 {
@@ -67,38 +67,38 @@ func TestMaxItems(t *testing.T) {
 }
 
 func TestMaxItemsEvictsOldest(t *testing.T) {
-	instance := NewTTLMap(3, time.Hour, "", "")
+	instance := NewTTLMap(3, "", "")
 	for i := 1; i <= 10; i++ {
-		instance.Add(fmt.Sprintf("key%d", i), "value")
+		instance.Add(fmt.Sprintf("key%d", i), "value", time.Now().Add(time.Hour).Add(time.Second*time.Duration(i)))
 	}
 
-	if _, err := instance.Get("key1"); err == nil {
+	if _, _, err := instance.Get("key1"); err == nil {
 		t.Fatalf("Expected item to have been evicted")
 	}
 
-	if _, err := instance.Get("key7"); err == nil {
+	if _, _, err := instance.Get("key7"); err == nil {
 		t.Fatalf("Expected item to have been evicted")
 	}
 
-	if _, err := instance.Get("key8"); err != nil {
+	if _, _, err := instance.Get("key8"); err != nil {
 		t.Fatalf("Expected item to not have been evicted")
 	}
 
-	if _, err := instance.Get("key9"); err != nil {
+	if _, _, err := instance.Get("key9"); err != nil {
 		t.Fatalf("Expected item to not have been evicted")
 	}
 
-	if _, err := instance.Get("key10"); err != nil {
+	if _, _, err := instance.Get("key10"); err != nil {
 		t.Fatalf("Expected item to not have been evicted")
 	}
 }
 
 func TestCallbacks(t *testing.T) {
-	instance := NewTTLMap(10, time.Hour, "", "")
+	instance := NewTTLMap(10, "", "")
 
 	evictedCallback := false
 
-	instance.OnItemDeleted(func(key string, value interface{}) {
+	instance.OnItemDeleted(func(key string, value interface{}, expiresAt time.Time) {
 		if key != "key4" {
 			t.Fatalf("Expected key to be key4, got %s", key)
 		}
@@ -112,7 +112,7 @@ func TestCallbacks(t *testing.T) {
 
 	addedCallback := false
 
-	instance.OnItemAdded(func(key string, value interface{}) {
+	instance.OnItemAdded(func(key string, value interface{}, expiresAt time.Time) {
 		if key != "key4" {
 			t.Fatalf("Expected key to be key4, got %s", key)
 		}
@@ -124,7 +124,7 @@ func TestCallbacks(t *testing.T) {
 		addedCallback = true
 	})
 
-	instance.Add("key4", "value4")
+	instance.Add("key4", "value4", time.Now().Add(time.Hour))
 	instance.Delete("key4")
 
 	time.Sleep(time.Second * 1)

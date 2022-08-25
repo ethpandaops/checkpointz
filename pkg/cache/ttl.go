@@ -8,13 +8,13 @@ import (
 )
 
 type item struct {
-	value      interface{}
-	lastAccess time.Time
+	value     interface{}
+	expiresAt time.Time
 }
 
 type sortableItem struct {
-	key        string
-	lastAccess time.Time
+	key       string
+	expiresAt time.Time
 }
 
 type TTLMap struct {
@@ -24,12 +24,12 @@ type TTLMap struct {
 
 	metrics Metrics
 
-	deletedCallbacks []func(string, interface{})
-	addedCallbacks   []func(string, interface{})
+	deletedCallbacks []func(string, interface{}, time.Time)
+	addedCallbacks   []func(string, interface{}, time.Time)
 }
 
 // NewTTLMap returns a new TTLMap.
-func NewTTLMap(maxItems int, ttl time.Duration, name, namespace string) (m *TTLMap) {
+func NewTTLMap(maxItems int, name, namespace string) (m *TTLMap) {
 	m = &TTLMap{
 		m:        make(map[string]*item, maxItems),
 		maxItems: maxItems,
@@ -39,7 +39,7 @@ func NewTTLMap(maxItems int, ttl time.Duration, name, namespace string) (m *TTLM
 	go func() {
 		for now := range time.Tick(time.Second * 1) {
 			for k, v := range m.m {
-				if v.lastAccess.Add(ttl).Before(now) {
+				if v.expiresAt.Before(now) {
 					m.Delete(k)
 				}
 			}
@@ -52,25 +52,25 @@ func NewTTLMap(maxItems int, ttl time.Duration, name, namespace string) (m *TTLM
 func (m *TTLMap) EnableMetrics(namespace string) {
 	m.metrics.Register()
 
-	m.OnItemAdded(func(k string, v interface{}) {
+	m.OnItemAdded(func(k string, v interface{}, e time.Time) {
 		m.metrics.ObserveLen(m.Len())
 	})
 
-	m.OnItemDeleted(func(k string, v interface{}) {
+	m.OnItemDeleted(func(k string, v interface{}, e time.Time) {
 		m.metrics.ObserveLen(m.Len())
 	})
 }
 
-func (m *TTLMap) OnItemDeleted(f func(string, interface{})) {
+func (m *TTLMap) OnItemDeleted(f func(string, interface{}, time.Time)) {
 	m.deletedCallbacks = append(m.deletedCallbacks, f)
 }
 
-func (m *TTLMap) OnItemAdded(f func(string, interface{})) {
+func (m *TTLMap) OnItemAdded(f func(string, interface{}, time.Time)) {
 	m.addedCallbacks = append(m.addedCallbacks, f)
 }
 
 func (m *TTLMap) Delete(k string) {
-	val, err := m.Get(k)
+	val, expiresAt, err := m.Get(k)
 	if err != nil {
 		return
 	}
@@ -82,25 +82,25 @@ func (m *TTLMap) Delete(k string) {
 	m.metrics.ObserveOperations(OperationDEL, 1)
 
 	for _, f := range m.deletedCallbacks {
-		go f(k, val)
+		go f(k, val, expiresAt)
 	}
 
 	m.l.Unlock()
 }
 
-func (m *TTLMap) evictOldestItem() {
+func (m *TTLMap) evictItemToClosestToExpiry() {
 	// This is a very naive implementation.
 	items := []sortableItem{}
 
 	for k, v := range m.m {
 		items = append(items, sortableItem{
-			key:        k,
-			lastAccess: v.lastAccess,
+			key:       k,
+			expiresAt: v.expiresAt,
 		})
 	}
 
 	sort.Slice(items, func(i, j int) bool {
-		return items[i].lastAccess.Before(items[j].lastAccess)
+		return items[i].expiresAt.Before(items[j].expiresAt)
 	})
 
 	if len(items) > 0 {
@@ -113,9 +113,9 @@ func (m *TTLMap) Len() int {
 	return len(m.m)
 }
 
-func (m *TTLMap) Add(k string, v interface{}) {
+func (m *TTLMap) Add(k string, v interface{}, expiresAt time.Time) {
 	if m.Len() >= m.maxItems {
-		m.evictOldestItem()
+		m.evictItemToClosestToExpiry()
 	}
 
 	m.l.Lock()
@@ -124,20 +124,21 @@ func (m *TTLMap) Add(k string, v interface{}) {
 
 	it, ok := m.m[k]
 	if !ok {
-		it = &item{value: v}
+		it = &item{
+			value:     v,
+			expiresAt: expiresAt,
+		}
 		m.m[k] = it
 	}
 
 	m.metrics.ObserveOperations(OperationADD, 1)
 
-	it.lastAccess = time.Now()
-
 	for _, f := range m.addedCallbacks {
-		go f(k, v)
+		go f(k, v, it.expiresAt)
 	}
 }
 
-func (m *TTLMap) Get(k string) (interface{}, error) {
+func (m *TTLMap) Get(k string) (interface{}, time.Time, error) {
 	m.metrics.ObserveOperations(OperationGET, 1)
 
 	m.l.Lock()
@@ -148,12 +149,10 @@ func (m *TTLMap) Get(k string) (interface{}, error) {
 	if !ok {
 		m.metrics.ObserveMiss()
 
-		return nil, errors.New("not found")
+		return nil, time.Now(), errors.New("not found")
 	}
 
 	m.metrics.ObserveHit()
 
-	it.lastAccess = time.Now()
-
-	return it.value, nil
+	return it.value, it.expiresAt, nil
 }

@@ -20,17 +20,17 @@ type Block struct {
 	stateRootToBlockRoot sync.Map
 }
 
-func NewBlock(log logrus.FieldLogger, maxTTL time.Duration, maxItems int, namespace string) *Block {
+func NewBlock(log logrus.FieldLogger, maxItems int, namespace string) *Block {
 	c := &Block{
 		log:   log.WithField("component", "beacon/store/block"),
-		store: cache.NewTTLMap(maxItems, maxTTL, "block", namespace),
+		store: cache.NewTTLMap(maxItems, "block", namespace),
 
 		slotToBlockRoot:      sync.Map{},
 		stateRootToBlockRoot: sync.Map{},
 	}
 
-	c.store.OnItemDeleted(func(key string, value interface{}) {
-		c.log.WithField("block_root", key).Debug("Block was evicted from the cache")
+	c.store.OnItemDeleted(func(key string, value interface{}, expiredAt time.Time) {
+		c.log.WithField("block_root", key).WithField("expired_at", expiredAt.String()).Debug("Block was evicted from the cache")
 
 		block, ok := value.(*spec.VersionedSignedBeaconBlock)
 		if !ok {
@@ -49,7 +49,7 @@ func NewBlock(log logrus.FieldLogger, maxTTL time.Duration, maxItems int, namesp
 	return c
 }
 
-func (c *Block) Add(block *spec.VersionedSignedBeaconBlock) error {
+func (c *Block) Add(block *spec.VersionedSignedBeaconBlock, expiresAt time.Time) error {
 	root, err := block.Root()
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (c *Block) Add(block *spec.VersionedSignedBeaconBlock) error {
 		return err
 	}
 
-	c.store.Add(eth.RootAsString(root), block)
+	c.store.Add(eth.RootAsString(root), block, expiresAt)
 
 	c.slotToBlockRoot.Store(slot, root)
 	c.stateRootToBlockRoot.Store(stateRoot, root)
@@ -99,7 +99,7 @@ func (c *Block) cleanupBlock(block *spec.VersionedSignedBeaconBlock) error {
 }
 
 func (c *Block) GetByRoot(root phase0.Root) (*spec.VersionedSignedBeaconBlock, error) {
-	data, err := c.store.Get(eth.RootAsString(root))
+	data, _, err := c.store.Get(eth.RootAsString(root))
 	if err != nil {
 		return nil, err
 	}
