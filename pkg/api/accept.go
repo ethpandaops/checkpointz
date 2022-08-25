@@ -18,5 +18,11 @@ func NewContentTypeFromRequest(r *http.Request) ContentType {
 		return ContentTypeJSON
 	}
 
-	return DeriveContentType(accept)
+	content := DeriveContentType(accept)
+
+	if content == ContentTypeUnknown {
+		return ContentTypeJSON
+	}
+
+	return content
 }

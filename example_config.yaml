@@ -3,6 +3,10 @@ global:
   logging: "debug" # panic,fatal,warm,info,debug,trace
   metricsAddr: ":9090"
 
+checkpointz:
+  maxBlockCacheSize: 100
+  maxStateCacheSize: 3
+
 beacon:
   upstreams:
   - name: remote

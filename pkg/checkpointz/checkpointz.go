@@ -29,7 +29,13 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 		log.Fatalf("invalid config: %s", err)
 	}
 
-	provider := beacon.NewMajorityProvider(namespace, log, conf.BeaconConfig.BeaconUpstreams)
+	provider := beacon.NewMajorityProvider(
+		namespace,
+		log,
+		conf.BeaconConfig.BeaconUpstreams,
+		conf.CheckpointzConfig.MaxBlockCacheSize,
+		conf.CheckpointzConfig.MaxBlockCacheSize,
+	)
 
 	s := &Server{
 		Cfg: *conf,

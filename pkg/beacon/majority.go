@@ -38,7 +38,7 @@ var (
 	topicFinalityHeadUpdated = "finality_head_updated"
 )
 
-func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.Config) FinalityProvider {
+func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, maxBlockItems, maxStateItems int) FinalityProvider {
 	return &Majority{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/majority"),
@@ -48,8 +48,8 @@ func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.
 		currentBundle: &v1.Finality{},
 
 		broker: emission.NewEmitter(),
-		blocks: store.NewBlock(log, time.Hour*3, 100, namespace),
-		states: store.NewBeaconState(log, time.Hour*1, 10, namespace),
+		blocks: store.NewBlock(log, time.Hour*3, maxBlockItems, namespace),
+		states: store.NewBeaconState(log, time.Hour*1, maxStateItems, namespace),
 
 		metrics: NewMetrics(namespace + "_beacon"),
 	}

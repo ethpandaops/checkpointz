@@ -7,8 +7,9 @@ import (
 )
 
 type Config struct {
-	GlobalConfig `yaml:"global"`
-	BeaconConfig `yaml:"beacon"`
+	GlobalConfig      `yaml:"global"`
+	BeaconConfig      `yaml:"beacon"`
+	CheckpointzConfig `yaml:"checkpointz"`
 }
 
 type GlobalConfig struct {
@@ -19,7 +20,12 @@ type GlobalConfig struct {
 
 type BeaconConfig struct {
 	BeaconUpstreams []node.Config `yaml:"upstreams"`
-	NetworkID       uint64        `yaml:"networkID"`
+}
+
+//nolint:revive // Already defined 'config'
+type CheckpointzConfig struct {
+	MaxBlockCacheSize int `yaml:"maxBlockCacheSize"`
+	MaxStateCacheSize int `yaml:"maxStateCacheSize"`
 }
 
 func (c *Config) Validate() error {
@@ -37,6 +43,18 @@ func (c *Config) Validate() error {
 
 		duplicates[u.Name] = struct{}{}
 		duplicates[u.Address] = struct{}{}
+	}
+
+	if c.CheckpointzConfig.MaxBlockCacheSize < 2 {
+		return fmt.Errorf("maxBlockCacheSize must be at least 2")
+	}
+
+	if c.CheckpointzConfig.MaxStateCacheSize < 2 {
+		return fmt.Errorf("maxStateCacheSize must be at least 2")
+	}
+
+	if c.CheckpointzConfig.MaxStateCacheSize > 20 {
+		return fmt.Errorf("maxStateCacheSize must be at most 20")
 	}
 
 	return nil

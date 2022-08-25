@@ -266,6 +266,8 @@ github.com/samcm/beacon v0.0.0-20220811083848-2ce942fcec00 h1:XnjrRd619k4RnpJyp1
 github.com/samcm/beacon v0.0.0-20220811083848-2ce942fcec00/go.mod h1:PHKxsJH6MOc4f8xUGOkDfGPIe8jqOjMaIN1hST3faWw=
 github.com/samcm/beacon v0.1.0 h1:vbSkj1yPI1b3bdeDOB2dOq3pcWAeEas6WNQlN3+J6OU=
 github.com/samcm/beacon v0.1.0/go.mod h1:PHKxsJH6MOc4f8xUGOkDfGPIe8jqOjMaIN1hST3faWw=
+github.com/samcm/beacon v0.2.0 h1:RXu0FA50HJshEpALr1xUCXxoU7n63UsY85Uskx5cNnw=
+github.com/samcm/beacon v0.2.0/go.mod h1:PHKxsJH6MOc4f8xUGOkDfGPIe8jqOjMaIN1hST3faWw=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
