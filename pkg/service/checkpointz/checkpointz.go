@@ -44,3 +44,17 @@ func (h *Handler) V1Status(ctx context.Context, req *StatusRequest) (*StatusResp
 
 	return response, nil
 }
+
+// Slot returns the beacon slot for checkpointz.
+func (h *Handler) V1BeaconSlot(ctx context.Context, req *BeaconSlotRequest) (*BeaconSlotResponse, error) {
+	response := &BeaconSlotResponse{}
+
+	block, err := h.provider.GetBlockBySlot(ctx, req.slot)
+	if err != nil {
+		return nil, err
+	}
+
+	response.Block = block
+
+	return response, nil
+}

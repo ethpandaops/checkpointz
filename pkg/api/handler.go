@@ -48,6 +48,7 @@ func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error
 	router.GET("/eth/v2/debug/beacon/states/:state_id", h.wrappedHandler(h.handleEthV2DebugBeaconStates))
 
 	router.GET("/checkpointz/v1/status", h.wrappedHandler(h.handleCheckpointzStatus))
+	router.GET("/checkpointz/v1/beacon/slots/:slot", h.wrappedHandler(h.handleCheckpointzBeaconSlot))
 
 	return nil
 }
@@ -216,6 +217,28 @@ func (h *Handler) handleCheckpointzStatus(ctx context.Context, r *http.Request, 
 	return NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeJSON: func() ([]byte, error) {
 			return json.Marshal(status)
+		},
+	}), nil
+}
+
+func (h *Handler) handleCheckpointzBeaconSlot(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	slot, err := eth.NewSlotFromString(p.ByName("slot"))
+	if err != nil {
+		return NewBadRequestResponse(nil), err
+	}
+
+	slots, err := h.checkpointz.V1BeaconSlot(ctx, checkpointz.NewBeaconSlotRequest(slot))
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	return NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(slots)
 		},
 	}), nil
 }
