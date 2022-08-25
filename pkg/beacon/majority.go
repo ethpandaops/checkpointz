@@ -182,8 +182,17 @@ func (m *Majority) checkGenesis(ctx context.Context) error {
 		return err
 	}
 
+	upstream, err := m.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
+	if err != nil {
+		return err
+	}
+
+	if upstream == nil {
+		return errors.New("no upstream nodes")
+	}
+
 	// Fetch the bundle
-	if _, err := m.fetchBundle(ctx, genesisBlockRoot); err != nil {
+	if _, err := m.fetchBundle(ctx, genesisBlockRoot, upstream); err != nil {
 		return err
 	}
 
@@ -207,7 +216,16 @@ func (m *Majority) publishFinalityCheckpointHeadUpdated(ctx context.Context, che
 }
 
 func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Finality) error {
-	block, err := m.fetchBundle(ctx, checkpoint.Finalized.Root)
+	upstream, err := m.nodes.
+		Ready(ctx).
+		DataProviders(ctx).
+		PastFinalizedCheckpoint(ctx, checkpoint). // Ensure we attempt to fetch the bundle from a node that knows about the checkpoint.
+		RandomNode(ctx)
+	if err != nil {
+		return err
+	}
+
+	block, err := m.fetchBundle(ctx, checkpoint.Finalized.Root, upstream)
 	if err != nil {
 		return err
 	}
@@ -374,15 +392,7 @@ func (m *Majority) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (
 	return m.states.GetByStateRoot(stateRoot)
 }
 
-func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) (*spec.VersionedSignedBeaconBlock, error) {
-	m.log.Infof("Fetching a new bundle for root %#x", root)
-
-	// Fetch the bundle from a random data provider node.
-	upstream, err := m.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root, upstream *Node) (*spec.VersionedSignedBeaconBlock, error) {
 	m.log.Infof("Fetching bundle from node %s with root %#x", upstream.Config.Name, root)
 
 	block, err := upstream.Beacon.FetchBlock(ctx, fmt.Sprintf("%#x", root))

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/rand"
 
+	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	sbeacon "github.com/samcm/beacon"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
@@ -119,4 +120,33 @@ func (n Nodes) RandomNode(ctx context.Context) (*Node, error) {
 
 	//nolint:gosec // not critical to worry about/will probably be replaced.
 	return nodes[rand.Intn(len(nodes))], nil
+}
+
+func (n Nodes) Filter(ctx context.Context, f func(*Node) bool) Nodes {
+	nodes := []*Node{}
+
+	for _, node := range n {
+		if !f(node) {
+			continue
+		}
+
+		nodes = append(nodes, node)
+	}
+
+	return nodes
+}
+
+func (n Nodes) PastFinalizedCheckpoint(ctx context.Context, checkpoint *v1.Finality) Nodes {
+	return n.Filter(ctx, func(node *Node) bool {
+		finality, err := node.Beacon.GetFinality(ctx)
+		if err != nil {
+			return false
+		}
+
+		if finality.Finalized.Epoch < checkpoint.Finalized.Epoch {
+			return false
+		}
+
+		return true
+	})
 }
