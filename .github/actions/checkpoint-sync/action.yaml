@@ -39,6 +39,9 @@ runs:
             address: https://${{ inputs.network }}.checkpoint-sync.ethdevops.io
             timeoutSeconds: 30
             dataProvider: true
+        checkpointz:
+          maxBlockCacheSize: 100
+          maxStateCacheSize: 3
         EOF
     - name: Create log directories
       shell: bash
