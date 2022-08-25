@@ -24,7 +24,7 @@ type Majority struct {
 	broker      *emission.Emitter
 
 	head          *v1.Finality
-	currentBundle *v1.Finality
+	servingBundle *v1.Finality
 
 	blocks *store.Block
 	states *store.BeaconState
@@ -45,7 +45,7 @@ func NewMajorityProvider(namespace string, log logrus.FieldLogger, nodes []node.
 		nodes:       NewNodesFromConfig(log, nodes, namespace),
 
 		head:          &v1.Finality{},
-		currentBundle: &v1.Finality{},
+		servingBundle: &v1.Finality{},
 
 		broker: emission.NewEmitter(),
 		blocks: store.NewBlock(log, maxBlockItems, namespace),
@@ -111,7 +111,7 @@ func (m *Majority) Syncing(ctx context.Context) (bool, error) {
 }
 
 func (m *Majority) Finality(ctx context.Context) (*v1.Finality, error) {
-	return m.currentBundle, nil
+	return m.servingBundle, nil
 }
 
 func (m *Majority) checkFinality(ctx context.Context) error {
@@ -140,8 +140,6 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 		m.head = majority
 		m.publishFinalityCheckpointHeadUpdated(ctx, majority)
 		m.log.WithField("epoch", majority.Finalized.Epoch).WithField("root", fmt.Sprintf("%#x", majority.Finalized.Root)).Info("New finalized head checkpoint")
-
-		m.metrics.ObserveServingEpoch(majority.Finalized.Epoch)
 	}
 
 	return nil
@@ -185,7 +183,7 @@ func (m *Majority) checkGenesis(ctx context.Context) error {
 	}
 
 	// Fetch the bundle
-	if err := m.fetchBundle(ctx, genesisBlockRoot); err != nil {
+	if _, err := m.fetchBundle(ctx, genesisBlockRoot); err != nil {
 		return err
 	}
 
@@ -209,11 +207,27 @@ func (m *Majority) publishFinalityCheckpointHeadUpdated(ctx context.Context, che
 }
 
 func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Finality) error {
-	if err := m.fetchBundle(ctx, checkpoint.Finalized.Root); err != nil {
+	block, err := m.fetchBundle(ctx, checkpoint.Finalized.Root)
+	if err != nil {
 		return err
 	}
 
-	m.currentBundle = checkpoint
+	// Validate that everything is ok to serve.
+	// Lighthouse ref: https://lighthouse-book.sigmaprime.io/checkpoint-sync.html#alignment-requirements
+	blockSlot, err := block.Slot()
+	if err != nil {
+		return fmt.Errorf("failed to get slot from block: %w", err)
+	}
+
+	// For simplicity we'll hardcode SLOTS_PER_EPOCH to 32.
+	// TODO(sam.calder-mason): Fetch this from a beacon node and store it in the instance.
+	const slotsPerEpoch = 32
+	if blockSlot%slotsPerEpoch != 0 {
+		return fmt.Errorf("block slot is not aligned from an epoch boundary: %d", blockSlot)
+	}
+
+	m.servingBundle = checkpoint
+	m.metrics.ObserveServingEpoch(checkpoint.Finalized.Epoch)
 
 	m.log.WithFields(
 		logrus.Fields{
@@ -360,43 +374,43 @@ func (m *Majority) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (
 	return m.states.GetByStateRoot(stateRoot)
 }
 
-func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
+func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) (*spec.VersionedSignedBeaconBlock, error) {
 	m.log.Infof("Fetching a new bundle for root %#x", root)
 
 	// Fetch the bundle from a random data provider node.
 	upstream, err := m.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	m.log.Infof("Fetching bundle from node %s with root %#x", upstream.Config.Name, root)
 
 	block, err := upstream.Beacon.FetchBlock(ctx, fmt.Sprintf("%#x", root))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if block == nil {
-		return errors.New("block is nil")
+		return nil, errors.New("block is nil")
 	}
 
 	stateRoot, err := block.StateRoot()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	blockRoot, err := block.Root()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if blockRoot != root {
-		return errors.New("block root does not match")
+		return nil, errors.New("block root does not match")
 	}
 
 	slot, err := block.Slot()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	m.log.
@@ -412,24 +426,24 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root) error {
 
 	err = m.blocks.Add(block, expiresAt)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	m.log.
 		Info("Fetched beacon state")
 
 	if err := m.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
-		return err
+		return nil, err
 	}
 
 	m.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
-	return nil
+	return block, nil
 }
 
 func (m *Majority) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error) {
