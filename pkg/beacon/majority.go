@@ -73,13 +73,11 @@ func (m *Majority) Start(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := s.Every("5s").Do(func() {
-		if err := m.checkGenesis(ctx); err != nil {
-			m.log.WithError(err).Error("Failed to check for genesis")
+	go func() {
+		if err := m.startGenesisLoop(ctx); err != nil {
+			m.log.WithError(err).Fatal("Failed to start genesis loop")
 		}
-	}); err != nil {
-		return err
-	}
+	}()
 
 	s.StartAsync()
 
@@ -92,6 +90,23 @@ func (m *Majority) StartAsync(ctx context.Context) {
 			m.log.WithError(err).Error("Failed to start")
 		}
 	}()
+}
+
+func (m *Majority) startGenesisLoop(ctx context.Context) error {
+	if err := m.checkGenesis(ctx); err != nil {
+		m.log.WithError(err).Error("Failed to check for genesis")
+	}
+
+	select {
+	case <-time.After(time.Second * 15):
+		if err := m.checkGenesis(ctx); err != nil {
+			m.log.WithError(err).Error("Failed to check for genesis")
+		}
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	return nil
 }
 
 func (m *Majority) Healthy(ctx context.Context) (bool, error) {
