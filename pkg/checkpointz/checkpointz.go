@@ -3,6 +3,7 @@ package checkpointz
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -62,16 +63,30 @@ func (s *Server) Start(ctx context.Context) error {
 		return err
 	}
 
-	s.log.Fatal(http.ListenAndServe(s.Cfg.ListenAddr, router))
+	server := &http.Server{
+		Addr:              s.Cfg.ListenAddr,
+		ReadHeaderTimeout: 3 * time.Minute,
+	}
+
+	server.Handler = router
+
+	if err := server.ListenAndServe(); err != nil {
+		s.log.Fatal(err)
+	}
 
 	return nil
 }
 
 func (s *Server) ServeMetrics(ctx context.Context) error {
 	go func() {
-		http.Handle("/metrics", promhttp.Handler())
+		server := &http.Server{
+			Addr:              s.Cfg.GlobalConfig.MetricsAddr,
+			ReadHeaderTimeout: 15 * time.Second,
+		}
 
-		if err := http.ListenAndServe(s.Cfg.GlobalConfig.MetricsAddr, nil); err != nil {
+		server.Handler = promhttp.Handler()
+
+		if err := server.ListenAndServe(); err != nil {
 			s.log.Fatal(err)
 		}
 	}()
