@@ -11,6 +11,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
 	"github.com/go-co-op/gocron"
+	"github.com/samcm/checkpointz/pkg/beacon/checkpoints"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/samcm/checkpointz/pkg/beacon/store"
 	"github.com/sirupsen/logrus"
@@ -185,9 +186,7 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 		aggFinality = append(aggFinality, finality)
 	}
 
-	aggregated := NewCheckpoints(aggFinality)
-
-	majority, err := aggregated.Majority()
+	majority, err := checkpoints.NewMajorityDecider().Decide(aggFinality)
 	if err != nil {
 		return err
 	}
