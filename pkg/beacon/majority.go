@@ -228,17 +228,13 @@ func (m *Majority) checkBeaconStateSpec(ctx context.Context) error {
 		return err
 	}
 
-	if upstream == nil {
-		return errors.New("no upstream nodes")
-	}
-
-	spec, err := upstream.Beacon.GetSpec(ctx)
+	s, err := upstream.Beacon.GetSpec(ctx)
 	if err != nil {
 		return err
 	}
 
 	// store the beacon state spec
-	m.spec = spec
+	m.spec = s
 
 	m.log.Info("Fetched beacon state spec")
 
@@ -253,7 +249,7 @@ func (m *Majority) checkGenesis(ctx context.Context) error {
 	if err == nil && block != nil {
 		stateRoot, errr := block.StateRoot()
 		if errr == nil {
-			if state, er := m.states.GetByStateRoot(stateRoot); er == nil && state != nil {
+			if st, er := m.states.GetByStateRoot(stateRoot); er == nil && st != nil {
 				return nil
 			}
 		}
@@ -610,7 +606,7 @@ func (m *Majority) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error
 
 	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(m.spec.SlotsPerEpoch))
 
-	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(m.spec.SlotsPerEpoch)*50; i > val && i >= 0; i -= uint64(m.spec.SlotsPerEpoch) {
+	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(m.spec.SlotsPerEpoch)*50; i > val; i -= uint64(m.spec.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))
 	}
 
