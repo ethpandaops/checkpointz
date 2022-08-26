@@ -186,9 +186,7 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 		aggFinality = append(aggFinality, finality)
 	}
 
-	aggregated := checkpoints.NewMajorityDecider()
-
-	majority, err := aggregated.Decide(aggFinality)
+	majority, err := checkpoints.NewMajorityDecider().Decide(aggFinality)
 	if err != nil {
 		return err
 	}
