@@ -35,6 +35,8 @@ type Default struct {
 	spec    *state.Spec
 	genesis *v1.Genesis
 
+	historicalSlotFailures map[phase0.Slot]int
+
 	metrics *Metrics
 }
 
@@ -53,6 +55,8 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 
 		head:          &v1.Finality{},
 		servingBundle: &v1.Finality{},
+
+		historicalSlotFailures: make(map[phase0.Slot]int),
 
 		broker: emission.NewEmitter(),
 		blocks: store.NewBlock(log, config.Caches.Blocks, namespace),
