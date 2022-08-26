@@ -454,13 +454,17 @@ func (m *Majority) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (
 func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root, upstream *Node) (*spec.VersionedSignedBeaconBlock, error) {
 	m.log.Infof("Fetching bundle from node %s with root %#x", upstream.Config.Name, root)
 
-	block, err := upstream.Beacon.FetchBlock(ctx, fmt.Sprintf("%#x", root))
-	if err != nil {
-		return nil, err
-	}
+	block, err := m.blocks.GetByRoot(root)
+	if err != nil || block == nil {
+		// Download the block.
+		block, err = upstream.Beacon.FetchBlock(ctx, fmt.Sprintf("%#x", root))
+		if err != nil {
+			return nil, err
+		}
 
-	if block == nil {
-		return nil, errors.New("block is nil")
+		if block == nil {
+			return nil, errors.New("block is nil")
+		}
 	}
 
 	stateRoot, err := block.StateRoot()
@@ -498,13 +502,22 @@ func (m *Majority) fetchBundle(ctx context.Context, root phase0.Root, upstream *
 		return nil, err
 	}
 
+	// If the state already exists, don't bother downloading it again.
+	existingState, err := m.states.GetByStateRoot(stateRoot)
+	if err == nil && existingState != nil {
+		m.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
+
+		return block, nil
+	}
+
 	beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
 	if err != nil {
 		return nil, err
 	}
 
-	m.log.
-		Info("Fetched beacon state")
+	if beaconState == nil {
+		return nil, errors.New("beacon state is nil")
+	}
 
 	if err := m.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
 		return nil, err
