@@ -3,13 +3,14 @@ package checkpointz
 import (
 	"fmt"
 
+	"github.com/samcm/checkpointz/pkg/beacon"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
 )
 
 type Config struct {
-	GlobalConfig      `yaml:"global"`
-	BeaconConfig      `yaml:"beacon"`
-	CheckpointzConfig `yaml:"checkpointz"`
+	GlobalConfig GlobalConfig  `yaml:"global"`
+	BeaconConfig BeaconConfig  `yaml:"beacon"`
+	Checkpointz  beacon.Config `yaml:"checkpointz"`
 }
 
 type GlobalConfig struct {
@@ -20,12 +21,6 @@ type GlobalConfig struct {
 
 type BeaconConfig struct {
 	BeaconUpstreams []node.Config `yaml:"upstreams"`
-}
-
-//nolint:revive // Already defined 'config'
-type CheckpointzConfig struct {
-	MaxBlockCacheSize int `yaml:"maxBlockCacheSize"`
-	MaxStateCacheSize int `yaml:"maxStateCacheSize"`
 }
 
 func (c *Config) Validate() error {
@@ -45,16 +40,8 @@ func (c *Config) Validate() error {
 		duplicates[u.Address] = struct{}{}
 	}
 
-	if c.CheckpointzConfig.MaxBlockCacheSize < 2 {
-		return fmt.Errorf("maxBlockCacheSize must be at least 2")
-	}
-
-	if c.CheckpointzConfig.MaxStateCacheSize < 2 {
-		return fmt.Errorf("maxStateCacheSize must be at least 2")
-	}
-
-	if c.CheckpointzConfig.MaxStateCacheSize > 20 {
-		return fmt.Errorf("maxStateCacheSize must be at most 20")
+	if err := c.Checkpointz.Validate(); err != nil {
+		return fmt.Errorf("invalid checkpointz config: %s", err)
 	}
 
 	return nil

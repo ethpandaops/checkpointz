@@ -34,8 +34,7 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 		namespace,
 		log,
 		conf.BeaconConfig.BeaconUpstreams,
-		conf.CheckpointzConfig.MaxBlockCacheSize,
-		conf.CheckpointzConfig.MaxBlockCacheSize,
+		conf.Checkpointz,
 	)
 
 	s := &Server{
@@ -64,7 +63,7 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	server := &http.Server{
-		Addr:              s.Cfg.ListenAddr,
+		Addr:              s.Cfg.GlobalConfig.ListenAddr,
 		ReadHeaderTimeout: 3 * time.Minute,
 	}
 
