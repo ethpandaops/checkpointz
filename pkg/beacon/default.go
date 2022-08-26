@@ -21,6 +21,7 @@ import (
 type Default struct {
 	log logrus.FieldLogger
 
+	config      Config
 	nodeConfigs []node.Config
 	nodes       Nodes
 	broker      *emission.Emitter
@@ -31,7 +32,8 @@ type Default struct {
 	blocks *store.Block
 	states *store.BeaconState
 
-	spec *state.Spec
+	spec    *state.Spec
+	genesis *v1.Genesis
 
 	metrics *Metrics
 }
@@ -42,18 +44,19 @@ var (
 	topicFinalityHeadUpdated = "finality_head_updated"
 )
 
-func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, maxBlockItems, maxStateItems int) FinalityProvider {
+func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, config Config) FinalityProvider {
 	return &Default{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/default"),
 		nodes:       NewNodesFromConfig(log, nodes, namespace),
+		config:      config,
 
 		head:          &v1.Finality{},
 		servingBundle: &v1.Finality{},
 
 		broker: emission.NewEmitter(),
-		blocks: store.NewBlock(log, maxBlockItems, namespace),
-		states: store.NewBeaconState(log, maxStateItems, namespace),
+		blocks: store.NewBlock(log, config.Caches.Blocks, namespace),
+		states: store.NewBeaconState(log, config.Caches.States, namespace),
 
 		metrics: NewMetrics(namespace + "_beacon"),
 	}
@@ -64,8 +67,29 @@ func (d *Default) Start(ctx context.Context) error {
 		return err
 	}
 
-	d.OnFinalityCheckpointHeadUpdated(ctx, d.fetchHistoricalCheckpoints)
+	go func() {
+		for {
+			// Wait until we have a single healthy node.
+			_, err := d.nodes.Healthy(ctx).NotSyncing(ctx).RandomNode(ctx)
+			if err != nil {
+				d.log.WithError(err).Error("Waiting for a healthy, non-syncing node before beginning..")
+				time.Sleep(time.Second * 5)
 
+				continue
+			}
+
+			if err := d.startCrons(ctx); err != nil {
+				d.log.WithError(err).Fatal("Failed to start crons")
+			}
+
+			break
+		}
+	}()
+
+	return nil
+}
+
+func (d *Default) startCrons(ctx context.Context) error {
 	s := gocron.NewScheduler(time.Local)
 
 	if _, err := s.Every("5s").Do(func() {
@@ -76,9 +100,9 @@ func (d *Default) Start(ctx context.Context) error {
 		return err
 	}
 
-	if _, err := s.Every("60s").Do(func() {
-		if err := d.checkBeaconStateSpec(ctx); err != nil {
-			d.log.WithError(err).Error("Failed to check beacon state spec")
+	if _, err := s.Every("10s").Do(func() {
+		if err := d.checkBeaconSpec(ctx); err != nil {
+			d.log.WithError(err).Error("Failed to check beacon chain spec")
 		}
 	}); err != nil {
 		return err
@@ -93,6 +117,12 @@ func (d *Default) Start(ctx context.Context) error {
 	go func() {
 		if err := d.startServingLoop(ctx); err != nil {
 			d.log.WithError(err).Fatal("Failed to start serving loop")
+		}
+	}()
+
+	go func() {
+		if err := d.startHistoricalLoop(ctx); err != nil {
+			d.log.WithError(err).Fatal("Failed to start historical loop")
 		}
 	}()
 
@@ -111,14 +141,35 @@ func (d *Default) StartAsync(ctx context.Context) {
 
 func (d *Default) startGenesisLoop(ctx context.Context) error {
 	if err := d.checkGenesis(ctx); err != nil {
-		d.log.WithError(err).Error("Failed to check for genesis")
+		d.log.WithError(err).Error("Failed to check for genesis bundle")
 	}
 
 	for {
 		select {
 		case <-time.After(time.Second * 15):
+			if err := d.checkGenesisTime(ctx); err != nil {
+				d.log.WithError(err).Error("Failed to check genesis time")
+			}
+
 			if err := d.checkGenesis(ctx); err != nil {
 				d.log.WithError(err).Error("Failed to check for genesis")
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func (d *Default) startHistoricalLoop(ctx context.Context) error {
+	for {
+		select {
+		case <-time.After(time.Second * 15):
+			if d.head == nil || d.head.Finalized == nil {
+				continue
+			}
+
+			if err := d.fetchHistoricalCheckpoints(ctx, d.head); err != nil {
+				d.log.WithError(err).Error("Failed to fetch historical checkpoints")
 			}
 		case <-ctx.Done():
 			return ctx.Err()
@@ -215,13 +266,13 @@ func (d *Default) checkFinality(ctx context.Context) error {
 	return nil
 }
 
-func (d *Default) checkBeaconStateSpec(ctx context.Context) error {
-	// No-Op if we already have a beacon state spec
+func (d *Default) checkBeaconSpec(ctx context.Context) error {
+	// No-Op if we already have a beacon spec
 	if d.spec != nil {
 		return nil
 	}
 
-	d.log.Debug("Fetching beacon state spec")
+	d.log.Debug("Fetching beacon spec")
 
 	upstream, err := d.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
 	if err != nil {
@@ -236,65 +287,33 @@ func (d *Default) checkBeaconStateSpec(ctx context.Context) error {
 	// store the beacon state spec
 	d.spec = s
 
-	d.log.Info("Fetched beacon state spec")
+	d.log.Info("Fetched beacon spec")
 
 	return nil
 }
 
-func (d *Default) checkGenesis(ctx context.Context) error {
-	// No-Op if we already have the genesis block AND state stored.
-	// Note: this check will constantly touch the genesis block and state in their
-	// respective stores, ensuring that we never purge those items.
-	block, err := d.blocks.GetBySlot(phase0.Slot(0))
-	if err == nil && block != nil {
-		stateRoot, errr := block.StateRoot()
-		if errr == nil {
-			if st, er := d.states.GetByStateRoot(stateRoot); er == nil && st != nil {
-				return nil
-			}
-		}
+func (d *Default) checkGenesisTime(ctx context.Context) error {
+	// No-Op if we already have a genesis time
+	if d.genesis != nil {
+		return nil
 	}
 
-	d.log.Debug("Fetching genesis block and state")
-
-	readyNodes := d.nodes.Ready(ctx)
-	if len(readyNodes) == 0 {
-		return errors.New("no nodes ready")
-	}
-
-	// Grab the genesis root
-	randomNode, err := readyNodes.RandomNode(ctx)
-	if err != nil {
-		return err
-	}
-
-	genesisBlock, err := randomNode.Beacon.FetchBlock(ctx, "genesis")
-	if err != nil {
-		return err
-	}
-
-	genesisBlockRoot, err := genesisBlock.Root()
-	if err != nil {
-		return err
-	}
+	d.log.Debug("Fetching genesis time")
 
 	upstream, err := d.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
 	if err != nil {
 		return err
 	}
 
-	if upstream == nil {
-		return errors.New("no upstream nodes")
-	}
-
-	// Fetch the bundle
-	if _, err := d.fetchBundle(ctx, genesisBlockRoot, upstream); err != nil {
+	g, err := upstream.Beacon.GetGenesis(ctx)
+	if err != nil {
 		return err
 	}
 
-	d.log.WithFields(logrus.Fields{
-		"root": fmt.Sprintf("%#x", genesisBlockRoot),
-	}).Info("Fetched genesis bundle")
+	// store the genesis time
+	d.genesis = g
+
+	d.log.Info("Fetched genesis time")
 
 	return nil
 }
@@ -309,112 +328,6 @@ func (d *Default) OnFinalityCheckpointHeadUpdated(ctx context.Context, cb func(c
 
 func (d *Default) publishFinalityCheckpointHeadUpdated(ctx context.Context, checkpoint *v1.Finality) {
 	d.broker.Emit(topicFinalityHeadUpdated, checkpoint)
-}
-
-func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.Finality) error {
-	upstream, err := d.nodes.
-		Ready(ctx).
-		DataProviders(ctx).
-		PastFinalizedCheckpoint(ctx, checkpoint). // Ensure we attempt to fetch the bundle from a node that knows about the checkpoint.
-		RandomNode(ctx)
-	if err != nil {
-		return err
-	}
-
-	block, err := d.fetchBundle(ctx, checkpoint.Finalized.Root, upstream)
-	if err != nil {
-		return err
-	}
-
-	// Validate that everything is ok to serve.
-	// Lighthouse ref: https://lighthouse-book.sigmaprime.io/checkpoint-sync.html#alignment-requirements
-	blockSlot, err := block.Slot()
-	if err != nil {
-		return fmt.Errorf("failed to get slot from block: %w", err)
-	}
-
-	// For simplicity we'll hardcode SLOTS_PER_EPOCH to 32.
-	// TODO(sam.calder-mason): Fetch this from a beacon node and store it in the instance.
-	const slotsPerEpoch = 32
-	if blockSlot%slotsPerEpoch != 0 {
-		return fmt.Errorf("block slot is not aligned from an epoch boundary: %d", blockSlot)
-	}
-
-	d.servingBundle = checkpoint
-	d.metrics.ObserveServingEpoch(checkpoint.Finalized.Epoch)
-
-	d.log.WithFields(
-		logrus.Fields{
-			"epoch": checkpoint.Finalized.Epoch,
-			"root":  fmt.Sprintf("%#x", checkpoint.Finalized.Root),
-		},
-	).Info("Serving a new finalized checkpoint bundle")
-
-	return nil
-}
-
-func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1.Finality) error {
-	historicalDistance := uint64(10)
-
-	// Download the previous n epochs worth of epoch boundaries if they don't already exist
-	upstream, err := d.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
-	if err != nil {
-		return errors.New("no data provider node available")
-	}
-
-	sp, err := upstream.Beacon.GetSpec(ctx)
-	if err != nil {
-		return err
-	}
-
-	genesis, err := upstream.Beacon.GetGenesis(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Calculate the epoch boundaries we need to fetch
-	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
-	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
-	for i := uint64(1); i < historicalDistance; i++ {
-		if currentSlot-(i*uint64(sp.SlotsPerEpoch)) == 0 {
-			continue
-		}
-
-		slot := phase0.Slot(currentSlot - i*uint64(sp.SlotsPerEpoch))
-
-		// Check if we've already fetched this slot.
-		bl, err := d.blocks.GetBySlot(slot)
-		if err == nil && bl != nil {
-			continue
-		}
-
-		d.log.Infof("Fetching historical block for slot %d", slot)
-
-		// Fetch the block for the slot.
-		block, err := upstream.Beacon.FetchBlock(ctx, fmt.Sprintf("%v", slot))
-		if err != nil {
-			return err
-		}
-
-		if block == nil {
-			continue
-		}
-
-		stateRoot, err := block.StateRoot()
-		if err != nil {
-			return err
-		}
-
-		d.log.Infof("Fetched historical block for slot %d with state_root of %#x", slot, stateRoot)
-
-		expiresAt := CalculateBlockExpiration(slot, sp.SecondsPerSlot, uint64(sp.SlotsPerEpoch), genesis.GenesisTime, 3*24*time.Hour)
-
-		if err := d.blocks.Add(block, expiresAt); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (d *Default) GetBlockBySlot(ctx context.Context, slot phase0.Slot) (*spec.VersionedSignedBeaconBlock, error) {
@@ -488,81 +401,47 @@ func (d *Default) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*
 	return d.states.GetByStateRoot(stateRoot)
 }
 
-func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *Node) (*spec.VersionedSignedBeaconBlock, error) {
-	d.log.Infof("Fetching bundle from node %s with root %#x", upstream.Config.Name, root)
-
-	block, err := d.blocks.GetByRoot(root)
-	if err != nil || block == nil {
-		// Download the block.
-		block, err = upstream.Beacon.FetchBlock(ctx, fmt.Sprintf("%#x", root))
-		if err != nil {
-			return nil, err
-		}
-
-		if block == nil {
-			return nil, errors.New("block is nil")
-		}
+func (d *Default) storeBlock(ctx context.Context, block *spec.VersionedSignedBeaconBlock) error {
+	if d.spec == nil {
+		return errors.New("beacon chain spec is unknown")
 	}
 
-	stateRoot, err := block.StateRoot()
+	if d.genesis == nil {
+		return errors.New("genesis time is unknown")
+	}
+
+	if block == nil {
+		return errors.New("block is nil")
+	}
+
+	root, err := block.Root()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	blockRoot, err := block.Root()
-	if err != nil {
-		return nil, err
-	}
-
-	if blockRoot != root {
-		return nil, errors.New("block root does not match")
+	exists, err := d.blocks.GetByRoot(root)
+	if err == nil && exists != nil {
+		return nil
 	}
 
 	slot, err := block.Slot()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	d.log.
-		WithField("slot", slot).
-		WithField("root", fmt.Sprintf("%#x", blockRoot)).
-		WithField("state_root", fmt.Sprintf("%#x", stateRoot)).
-		Info("Fetched beacon block")
+	expiresAtSlot := CalculateSlotExpiration(slot, d.config.HistoricalEpochCount*int(d.spec.SlotsPerEpoch))
+	expiresAt := GetSlotTime(expiresAtSlot, d.spec.SecondsPerSlot, d.genesis.GenesisTime).
+		Add((time.Duration(d.spec.SlotsPerEpoch) * d.spec.SecondsPerSlot) * 2) // Store it for an extra 2 epochs to simplify the edge case around expiration.
 
-	expiresAt := time.Now().Add(time.Hour * 2)
 	if slot == phase0.Slot(0) {
-		expiresAt = time.Now().Add(time.Hour * 999999)
+		expiresAt = time.Now().Add(999999 * time.Hour)
 	}
 
-	err = d.blocks.Add(block, expiresAt)
-	if err != nil {
-		return nil, err
+	if err := d.blocks.Add(block, expiresAt); err != nil {
+		return err
 	}
 
-	// If the state already exists, don't bother downloading it again.
-	existingState, err := d.states.GetByStateRoot(stateRoot)
-	if err == nil && existingState != nil {
-		d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
-
-		return block, nil
-	}
-
-	beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
-	if err != nil {
-		return nil, err
-	}
-
-	if beaconState == nil {
-		return nil, errors.New("beacon state is nil")
-	}
-
-	if err := d.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
-		return nil, err
-	}
-
-	d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
-
-	return block, nil
+	return nil
 }
 
 func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error) {
@@ -596,7 +475,7 @@ func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStat
 func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error) {
 	slots := []phase0.Slot{}
 	if d.spec == nil {
-		return slots, errors.New("no upstream beacon state spec available")
+		return slots, errors.New("no beacon chain spec available")
 	}
 
 	finality, err := d.Finality(ctx)
@@ -606,7 +485,7 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 
 	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(d.spec.SlotsPerEpoch))
 
-	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(d.spec.SlotsPerEpoch)*50; i > val; i -= uint64(d.spec.SlotsPerEpoch) {
+	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(d.spec.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(d.spec.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))
 	}
 

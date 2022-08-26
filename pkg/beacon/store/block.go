@@ -20,10 +20,10 @@ type Block struct {
 	stateRootToBlockRoot sync.Map
 }
 
-func NewBlock(log logrus.FieldLogger, maxItems int, namespace string) *Block {
+func NewBlock(log logrus.FieldLogger, config Config, namespace string) *Block {
 	c := &Block{
 		log:   log.WithField("component", "beacon/store/block"),
-		store: cache.NewTTLMap(maxItems, "block", namespace),
+		store: cache.NewTTLMap(config.MaxItems, "block", namespace),
 
 		slotToBlockRoot:      sync.Map{},
 		stateRootToBlockRoot: sync.Map{},
@@ -75,6 +75,7 @@ func (c *Block) Add(block *spec.VersionedSignedBeaconBlock, expiresAt time.Time)
 			"block_root": eth.RootAsString(root),
 			"slot":       eth.SlotAsString(slot),
 			"state_root": eth.RootAsString(stateRoot),
+			"expires_at": expiresAt.String(),
 		},
 	).Debug("Added block")
 

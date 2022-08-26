@@ -10,22 +10,38 @@ import (
 
 var (
 	defaultSecondsPerSlot = time.Second * 12
-	defaultSlotsPerEpoch  = uint64(32)
 )
 
-func TestExpireBlockAdd(t *testing.T) {
-	genesis, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
-	daysOfHistory := time.Hour * 24 * 7
+func TestExpiresAtSlot(t *testing.T) {
+	slotsOfHistory := int(50)
 
 	slot := phase0.Slot(1)
-	expiresAt := CalculateBlockExpiration(slot, defaultSecondsPerSlot, defaultSlotsPerEpoch, genesis, daysOfHistory)
+	expiresAtSlot := CalculateSlotExpiration(slot, slotsOfHistory)
 
-	if expiresAt.Before(genesis.Add(time.Hour * 24)) {
-		t.Errorf("Expected block to expire at %v, got %v", genesis.Add(time.Hour*24), expiresAt)
+	if expiresAtSlot != phase0.Slot(51) {
+		t.Errorf("CalculateSlotExpiration() = %v, want %v", expiresAtSlot, phase0.Slot(51))
 	}
+}
 
-	if expiresAt.After(genesis.Add(time.Hour * 24 * 8)) {
-		t.Errorf("Expected block to expire at %v, got %v", genesis.Add(time.Hour*24*7), expiresAt)
+func TestGetSlotTimeGenesis(t *testing.T) {
+	genesis, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
+
+	slot := phase0.Slot(0)
+	slotTime := GetSlotTime(slot, defaultSecondsPerSlot, genesis)
+
+	if slotTime != genesis {
+		t.Errorf("GetSlotTime() = %v, want %v", slotTime, genesis)
+	}
+}
+
+func TestGetSlotTimeNormal(t *testing.T) {
+	genesis, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
+
+	slot := phase0.Slot(2)
+	slotTime := GetSlotTime(slot, defaultSecondsPerSlot, genesis)
+
+	if slotTime != genesis.Add(time.Duration(slot)*defaultSecondsPerSlot) {
+		t.Errorf("GetSlotTime() = %v, want %v", slotTime, genesis)
 	}
 }
 
@@ -33,28 +49,29 @@ func TestExpireMultiple(t *testing.T) {
 	t.Parallel()
 
 	genesis, _ := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
-	daysOfHistory := time.Hour * 24 * 7
+	slotsOfHistory := int(5)
 
 	tests := []struct {
 		slot   phase0.Slot
 		expect string
 	}{
-		{0, "2020-01-08 00:00:00 +0000 UTC"},
-		{1, "2020-01-08 00:00:12 +0000 UTC"},
-		{2, "2020-01-08 00:00:24 +0000 UTC"},
-		{3, "2020-01-08 00:00:36 +0000 UTC"},
-		{4, "2020-01-08 00:00:48 +0000 UTC"},
-		{5, "2020-01-08 00:01:00 +0000 UTC"},
-		{15000, "2020-01-10 02:00:00 +0000 UTC"},
+		{0, "2020-01-01 00:01:00 +0000 UTC"},
+		{1, "2020-01-01 00:01:12 +0000 UTC"},
+		{2, "2020-01-01 00:01:24 +0000 UTC"},
+		{3, "2020-01-01 00:01:36 +0000 UTC"},
+		{4, "2020-01-01 00:01:48 +0000 UTC"},
+		{5, "2020-01-01 00:02:00 +0000 UTC"},
+		{15000, "2020-01-03 02:01:00 +0000 UTC"},
 	}
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%v", test.slot), func(t *testing.T) {
 			t.Parallel()
+			expirySlot := CalculateSlotExpiration(test.slot, slotsOfHistory)
+			expiryTime := GetSlotTime(expirySlot, defaultSecondsPerSlot, genesis)
 
-			expiresAt := CalculateBlockExpiration(test.slot, defaultSecondsPerSlot, defaultSlotsPerEpoch, genesis, daysOfHistory)
-			if expiresAt.String() != test.expect {
-				t.Errorf("Expected %v, got %v", test.expect, expiresAt.String())
+			if expiryTime.String() != test.expect {
+				t.Errorf("Expected %v, got %v", test.expect, expiryTime.String())
 			}
 		})
 	}

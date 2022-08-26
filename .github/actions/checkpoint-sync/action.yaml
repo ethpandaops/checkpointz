@@ -40,8 +40,12 @@ runs:
             timeoutSeconds: 30
             dataProvider: true
         checkpointz:
-          maxBlockCacheSize: 100
-          maxStateCacheSize: 3
+          caches:
+            blocks:
+              max_items: 500
+            states:
+              max_items: 5
+          historical_epoch_count: 5
         EOF
     - name: Create log directories
       shell: bash

@@ -15,10 +15,10 @@ type BeaconState struct {
 	log   logrus.FieldLogger
 }
 
-func NewBeaconState(log logrus.FieldLogger, maxItems int, namespace string) *BeaconState {
+func NewBeaconState(log logrus.FieldLogger, config Config, namespace string) *BeaconState {
 	c := &BeaconState{
 		log:   log.WithField("component", "beacon/store/beacon_state"),
-		store: cache.NewTTLMap(maxItems, "state", namespace),
+		store: cache.NewTTLMap(config.MaxItems, "state", namespace),
 	}
 
 	c.store.OnItemDeleted(func(key string, value interface{}, expiredAt time.Time) {
@@ -35,6 +35,7 @@ func (c *BeaconState) Add(stateRoot phase0.Root, state *[]byte, expiresAt time.T
 	c.log.WithFields(
 		logrus.Fields{
 			"state_root": eth.RootAsString(stateRoot),
+			"expires_at": expiresAt.String(),
 		},
 	).Debug("Added state")
 
