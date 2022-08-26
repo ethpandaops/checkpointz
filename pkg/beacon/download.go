@@ -130,6 +130,8 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 
 	sp := d.spec
 
+	slotsInScope := make(map[phase0.Slot]struct{})
+	historicalFailureLimit := 5
 	// Calculate the epoch boundaries we need to fetch
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
 	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
@@ -139,13 +141,43 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 		}
 
 		slot := phase0.Slot(currentSlot - i*uint64(sp.SlotsPerEpoch))
+		slotsInScope[slot] = struct{}{}
+
+		failureCount, exists := d.historicalSlotFailures[slot]
+		if !exists {
+			d.historicalSlotFailures[slot] = 0
+		}
 
 		if _, err := d.blocks.GetBySlot(slot); err == nil {
 			continue
 		}
 
+		if failureCount >= historicalFailureLimit {
+			continue
+		}
+
 		if _, err := d.downloadBlock(ctx, slot, upstream); err != nil {
-			d.log.WithError(err).WithField("slot", eth.SlotAsString(slot)).Error("Failed to download historical block")
+			failureCount++
+
+			d.log.WithError(err).
+				WithField("slot", eth.SlotAsString(slot)).
+				WithField("failure_count", failureCount).
+				Error("Failed to download historical block")
+		}
+
+		if failureCount == historicalFailureLimit {
+			d.log.WithField("slot", eth.SlotAsString(slot)).
+				WithField("failure_count", failureCount).
+				Error("No longer attempting to download historical block - too many failures")
+		}
+
+		d.historicalSlotFailures[slot] = failureCount
+	}
+
+	// Cleanup any banned slots that we don't care about anymore to prevent leaking memory.
+	for slot := range d.historicalSlotFailures {
+		if _, exists := slotsInScope[slot]; !exists {
+			delete(d.historicalSlotFailures, slot)
 		}
 	}
 

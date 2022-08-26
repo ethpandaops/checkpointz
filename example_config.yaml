@@ -6,7 +6,7 @@ global:
 checkpointz:
   caches:
     blocks:
-      max_items: 500
+      max_items: 200
     states:
       max_items: 5
   historical_epoch_count: 20

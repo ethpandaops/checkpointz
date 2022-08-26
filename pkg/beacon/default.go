@@ -35,6 +35,8 @@ type Default struct {
 	spec    *state.Spec
 	genesis *v1.Genesis
 
+	historicalSlotFailures map[phase0.Slot]int
+
 	metrics *Metrics
 }
 
@@ -53,6 +55,8 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 
 		head:          &v1.Finality{},
 		servingBundle: &v1.Finality{},
+
+		historicalSlotFailures: make(map[phase0.Slot]int),
 
 		broker: emission.NewEmitter(),
 		blocks: store.NewBlock(log, config.Caches.Blocks, namespace),
@@ -431,7 +435,7 @@ func (d *Default) storeBlock(ctx context.Context, block *spec.VersionedSignedBea
 
 	expiresAtSlot := CalculateSlotExpiration(slot, d.config.HistoricalEpochCount*int(d.spec.SlotsPerEpoch))
 	expiresAt := GetSlotTime(expiresAtSlot, d.spec.SecondsPerSlot, d.genesis.GenesisTime).
-		Add((time.Duration(d.spec.SlotsPerEpoch) * d.spec.SecondsPerSlot) * 2) // Store it for an extra 2 epochs to simplify the edge case around expiration.
+		Add(time.Minute * 15) // Store it for an extra 15 minutes to simplify the expiry logic.
 
 	if slot == phase0.Slot(0) {
 		expiresAt = time.Now().Add(999999 * time.Hour)
