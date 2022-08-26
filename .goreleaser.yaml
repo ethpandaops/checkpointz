@@ -1,26 +1,27 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
+project_name: checkpointz
+
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
-    # you may remove this if you don't need go generate
     - go generate ./...
 builds:
   - env:
       - CGO_ENABLED=0
+    binary: app
     goos:
       - linux
       - windows
       - darwin
+
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - 6
+      - 7
     ignore:
       - goarch: 386
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      amd64: x86_64
+    mod_timestamp: "{{ .CommitTimestamp }}"
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -31,3 +32,75 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+
+dockers:
+  - use: buildx
+    goos: linux
+    goarch: amd64
+    dockerfile: goreleaser.Dockerfile
+    image_templates:
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "samcm/{{ .ProjectName }}:latest-amd64"
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: goreleaser.Dockerfile
+    image_templates:
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8"
+      - "samcm/{{ .ProjectName }}:latest-arm64v8"
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: goreleaser.Dockerfile
+    image_templates:
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-arm64v7"
+      - "samcm/{{ .ProjectName }}:latest-arm64v8"
+    build_flag_templates:
+      - "--platform=linux/arm64/v7"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: goreleaser.Dockerfile
+    image_templates:
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-arm64v6"
+      - "samcm/{{ .ProjectName }}:latest-arm64v8"
+    build_flag_templates:
+      - "--platform=linux/arm64/v6"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+docker_manifests:
+  - name_template: samcm/{{ .ProjectName }}:{{ .Version }}
+    image_templates:
+      - samcm/{{ .ProjectName }}:{{ .Version }}-amd64
+      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8
+      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v7
+      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v6
+  - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-arm64
+    image_templates:
+      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8
+      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v7
+      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v6
+  - name_template: samcm/{{ .ProjectName }}:latest
+    image_templates:
+      - samcm/{{ .ProjectName }}:latest-amd64
+      - samcm/{{ .ProjectName }}:latest-arm64v8
+      - samcm/{{ .ProjectName }}:latest-arm64v7
+      - samcm/{{ .ProjectName }}:latest-arm64v6
