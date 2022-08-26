@@ -2,3 +2,4 @@ bin
 .vscode
 config.yaml
 __debug_bin
+dist/
