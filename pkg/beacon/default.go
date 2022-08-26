@@ -228,17 +228,13 @@ func (d *Default) checkBeaconStateSpec(ctx context.Context) error {
 		return err
 	}
 
-	if upstream == nil {
-		return errors.New("no upstream nodes")
-	}
-
-	spec, err := upstream.Beacon.GetSpec(ctx)
+	s, err := upstream.Beacon.GetSpec(ctx)
 	if err != nil {
 		return err
 	}
 
 	// store the beacon state spec
-	d.spec = spec
+	d.spec = s
 
 	d.log.Info("Fetched beacon state spec")
 
@@ -253,7 +249,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 	if err == nil && block != nil {
 		stateRoot, errr := block.StateRoot()
 		if errr == nil {
-			if state, er := d.states.GetByStateRoot(stateRoot); er == nil && state != nil {
+			if st, er := d.states.GetByStateRoot(stateRoot); er == nil && st != nil {
 				return nil
 			}
 		}
