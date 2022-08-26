@@ -45,7 +45,7 @@ var (
 func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, maxBlockItems, maxStateItems int) FinalityProvider {
 	return &Default{
 		nodeConfigs: nodes,
-		log:         log.WithField("module", "beacon/Default"),
+		log:         log.WithField("module", "beacon/default"),
 		nodes:       NewNodesFromConfig(log, nodes, namespace),
 
 		head:          &v1.Finality{},
@@ -606,7 +606,7 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 
 	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(d.spec.SlotsPerEpoch))
 
-	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(d.spec.SlotsPerEpoch)*50; i > val && i >= 0; i -= uint64(d.spec.SlotsPerEpoch) {
+	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(d.spec.SlotsPerEpoch)*50; i > val; i -= uint64(d.spec.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))
 	}
 
