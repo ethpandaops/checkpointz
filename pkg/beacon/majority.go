@@ -60,7 +60,6 @@ func (m *Majority) Start(ctx context.Context) error {
 		return err
 	}
 
-	m.OnFinalityCheckpointHeadUpdated(ctx, m.handleFinalityUpdated)
 	m.OnFinalityCheckpointHeadUpdated(ctx, m.fetchHistoricalCheckpoints)
 
 	s := gocron.NewScheduler(time.Local)
@@ -76,6 +75,12 @@ func (m *Majority) Start(ctx context.Context) error {
 	go func() {
 		if err := m.startGenesisLoop(ctx); err != nil {
 			m.log.WithError(err).Fatal("Failed to start genesis loop")
+		}
+	}()
+
+	go func() {
+		if err := m.startServingLoop(ctx); err != nil {
+			m.log.WithError(err).Fatal("Failed to start serving loop")
 		}
 	}()
 
@@ -97,18 +102,54 @@ func (m *Majority) startGenesisLoop(ctx context.Context) error {
 		m.log.WithError(err).Error("Failed to check for genesis")
 	}
 
-	select {
-	case <-time.After(time.Second * 15):
-		if err := m.checkGenesis(ctx); err != nil {
-			m.log.WithError(err).Error("Failed to check for genesis")
+	for {
+		select {
+		case <-time.After(time.Second * 15):
+			if err := m.checkGenesis(ctx); err != nil {
+				m.log.WithError(err).Error("Failed to check for genesis")
+			}
+		case <-ctx.Done():
+			return ctx.Err()
 		}
-	case <-ctx.Done():
-		return ctx.Err()
+	}
+}
+
+func (m *Majority) startServingLoop(ctx context.Context) error {
+	for {
+		select {
+		case <-time.After(time.Second * 1):
+			if err := m.checkForNewServingCheckpoint(ctx); err != nil {
+				m.log.WithError(err).Error("Failed to check for new serving checkpoint")
+
+				time.Sleep(time.Second * 30)
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+func (m *Majority) checkForNewServingCheckpoint(ctx context.Context) error {
+	// Don't bother checking if we don't know the head yet.
+	if m.head == nil {
+		return nil
+	}
+
+	if m.head.Finalized == nil {
+		return nil
+	}
+
+	// If head == serving, we're done.
+	if m.servingBundle != nil && m.servingBundle.Finalized != nil && m.servingBundle.Finalized.Epoch == m.head.Finalized.Epoch {
+		return nil
+	}
+
+	if err := m.downloadServingCheckpoint(ctx, m.head); err != nil {
+		return err
 	}
 
 	return nil
 }
-
 func (m *Majority) Healthy(ctx context.Context) (bool, error) {
 	if len(m.nodes.Healthy(ctx)) == 0 {
 		return false, nil
@@ -153,8 +194,12 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 
 	if m.head == nil || m.head.Finalized == nil || m.head.Finalized.Root != majority.Finalized.Root {
 		m.head = majority
+
 		m.publishFinalityCheckpointHeadUpdated(ctx, majority)
+
 		m.log.WithField("epoch", majority.Finalized.Epoch).WithField("root", fmt.Sprintf("%#x", majority.Finalized.Root)).Info("New finalized head checkpoint")
+
+		m.metrics.ObserveHeadEpoch(majority.Finalized.Epoch)
 	}
 
 	return nil
@@ -230,7 +275,7 @@ func (m *Majority) publishFinalityCheckpointHeadUpdated(ctx context.Context, che
 	m.broker.Emit(topicFinalityHeadUpdated, checkpoint)
 }
 
-func (m *Majority) handleFinalityUpdated(ctx context.Context, checkpoint *v1.Finality) error {
+func (m *Majority) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.Finality) error {
 	upstream, err := m.nodes.
 		Ready(ctx).
 		DataProviders(ctx).
