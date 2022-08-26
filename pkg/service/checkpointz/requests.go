@@ -13,6 +13,17 @@ func NewStatusRequest() *StatusRequest {
 	return &StatusRequest{}
 }
 
+type BeaconSlotsRequest struct {
+}
+
+func (r *BeaconSlotsRequest) Validate() error {
+	return nil
+}
+
+func NewBeaconSlotsRequest() *BeaconSlotsRequest {
+	return &BeaconSlotsRequest{}
+}
+
 type BeaconSlotRequest struct {
 	slot phase0.Slot
 }

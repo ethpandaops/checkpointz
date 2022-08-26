@@ -11,6 +11,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
 	"github.com/go-co-op/gocron"
+	"github.com/samcm/beacon/state"
 	"github.com/samcm/checkpointz/pkg/beacon/checkpoints"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/samcm/checkpointz/pkg/beacon/store"
@@ -29,6 +30,8 @@ type Majority struct {
 
 	blocks *store.Block
 	states *store.BeaconState
+
+	spec *state.Spec
 
 	metrics *Metrics
 }
@@ -68,6 +71,14 @@ func (m *Majority) Start(ctx context.Context) error {
 	if _, err := s.Every("5s").Do(func() {
 		if err := m.checkFinality(ctx); err != nil {
 			m.log.WithError(err).Error("Failed to check finality")
+		}
+	}); err != nil {
+		return err
+	}
+
+	if _, err := s.Every("60s").Do(func() {
+		if err := m.checkBeaconStateSpec(ctx); err != nil {
+			m.log.WithError(err).Error("Failed to check beacon state spec")
 		}
 	}); err != nil {
 		return err
@@ -200,6 +211,36 @@ func (m *Majority) checkFinality(ctx context.Context) error {
 
 		m.metrics.ObserveHeadEpoch(majority.Finalized.Epoch)
 	}
+
+	return nil
+}
+
+func (m *Majority) checkBeaconStateSpec(ctx context.Context) error {
+	// No-Op if we already have a beacon state spec
+	if m.spec != nil {
+		return nil
+	}
+
+	m.log.Debug("Fetching beacon state spec")
+
+	upstream, err := m.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
+	if err != nil {
+		return err
+	}
+
+	if upstream == nil {
+		return errors.New("no upstream nodes")
+	}
+
+	spec, err := upstream.Beacon.GetSpec(ctx)
+	if err != nil {
+		return err
+	}
+
+	// store the beacon state spec
+	m.spec = spec
+
+	m.log.Info("Fetched beacon state spec")
 
 	return nil
 }
@@ -541,4 +582,24 @@ func (m *Majority) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamSta
 	}
 
 	return rsp, nil
+}
+
+func (m *Majority) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error) {
+	slots := []phase0.Slot{}
+	if m.spec == nil {
+		return slots, errors.New("no upstream beacon state spec available")
+	}
+
+	finality, err := m.Finality(ctx)
+	if err != nil {
+		return slots, err
+	}
+
+	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(m.spec.SlotsPerEpoch))
+
+	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(m.spec.SlotsPerEpoch)*50; i > val && i >= 0; i -= uint64(m.spec.SlotsPerEpoch) {
+		slots = append(slots, phase0.Slot(i))
+	}
+
+	return slots, nil
 }
