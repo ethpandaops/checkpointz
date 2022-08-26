@@ -170,6 +170,7 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 				WithField("failure_count", failureCount).
 				Error("No longer attempting to download historical block - too many failures")
 		}
+
 		d.historicalSlotFailures[slot] = failureCount
 	}
 
