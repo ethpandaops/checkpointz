@@ -7,7 +7,7 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-    binary: app
+    binary: checkpointz-{{.Version}}
     goos:
       - linux
       - windows
@@ -34,10 +34,11 @@ changelog:
       - '^test:'
 
 dockers:
+  ## Scratch
   - use: buildx
     goos: linux
     goarch: amd64
-    dockerfile: goreleaser.Dockerfile
+    dockerfile: goreleaser-scratch.Dockerfile
     image_templates:
       - "samcm/{{ .ProjectName }}:{{ .Version }}-amd64"
       - "samcm/{{ .ProjectName }}:latest-amd64"
@@ -50,7 +51,7 @@ dockers:
   - use: buildx
     goos: linux
     goarch: arm64
-    dockerfile: goreleaser.Dockerfile
+    dockerfile: goreleaser-scratch.Dockerfile
     image_templates:
       - "samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8"
       - "samcm/{{ .ProjectName }}:latest-arm64v8"
@@ -60,15 +61,16 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
+  ## Debian
   - use: buildx
     goos: linux
-    goarch: arm64
-    dockerfile: goreleaser.Dockerfile
+    goarch: amd64
+    dockerfile: goreleaser-debian.Dockerfile
     image_templates:
-      - "samcm/{{ .ProjectName }}:{{ .Version }}-arm64v7"
-      - "samcm/{{ .ProjectName }}:latest-arm64v8"
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-debian-amd64"
+      - "samcm/{{ .ProjectName }}:debian-latest-amd64"
     build_flag_templates:
-      - "--platform=linux/arm64/v7"
+      - "--platform=linux/amd64"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
@@ -76,31 +78,39 @@ dockers:
   - use: buildx
     goos: linux
     goarch: arm64
-    dockerfile: goreleaser.Dockerfile
+    dockerfile: goreleaser-debian.Dockerfile
     image_templates:
-      - "samcm/{{ .ProjectName }}:{{ .Version }}-arm64v6"
-      - "samcm/{{ .ProjectName }}:latest-arm64v8"
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8"
+      - "samcm/{{ .ProjectName }}:debian-latest-arm64v8"
     build_flag_templates:
-      - "--platform=linux/arm64/v6"
+      - "--platform=linux/arm64/v8"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
 docker_manifests:
+  ## Scratch
   - name_template: samcm/{{ .ProjectName }}:{{ .Version }}
     image_templates:
       - samcm/{{ .ProjectName }}:{{ .Version }}-amd64
       - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8
-      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v7
-      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v6
   - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-arm64
     image_templates:
       - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8
-      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v7
-      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v6
   - name_template: samcm/{{ .ProjectName }}:latest
     image_templates:
       - samcm/{{ .ProjectName }}:latest-amd64
       - samcm/{{ .ProjectName }}:latest-arm64v8
-      - samcm/{{ .ProjectName }}:latest-arm64v7
-      - samcm/{{ .ProjectName }}:latest-arm64v6
+
+  ## Debian
+  - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-debian
+    image_templates:
+      - samcm/{{ .ProjectName }}:{{ .Version }}-debian-amd64
+      - samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8
+  - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64
+    image_templates:
+      - samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8
+  - name_template: samcm/{{ .ProjectName }}:debian-latest
+    image_templates:
+      - samcm/{{ .ProjectName }}:debian-latest-amd64
+      - samcm/{{ .ProjectName }}:debian-latest-arm64v8
