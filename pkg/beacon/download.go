@@ -175,7 +175,7 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	}
 
 	// Cleanup any banned slots that we don't care about anymore to prevent leaking memory.
-	for slot, _ := range d.historicalSlotFailures {
+	for slot := range d.historicalSlotFailures {
 		if _, exists := slotsInScope[slot]; !exists {
 			delete(d.historicalSlotFailures, slot)
 		}
