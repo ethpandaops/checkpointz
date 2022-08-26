@@ -54,19 +54,24 @@ func (h *Handler) V1BeaconSlots(ctx context.Context, req *BeaconSlotsRequest) (*
 	if err != nil {
 		return nil, err
 	}
+
 	response.Slots = []BeaconSlot{}
+
 	for _, s := range slots {
 		slot := BeaconSlot{
 			Slot: s,
 		}
+
 		if block, err := h.provider.GetBlockBySlot(ctx, slot.Slot); err == nil {
 			if blockRoot, err := block.Root(); err == nil {
 				slot.BlockRoot = eth.RootAsString(blockRoot)
 			}
+
 			if stateRoot, err := block.StateRoot(); err == nil {
 				slot.StateRoot = eth.RootAsString(stateRoot)
 			}
 		}
+
 		response.Slots = append(response.Slots, slot)
 	}
 
