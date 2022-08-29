@@ -487,6 +487,10 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 		return slots, err
 	}
 
+	if finality.Finalized == nil {
+		return slots, errors.New("no finalized checkpoint available")
+	}
+
 	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(d.spec.SlotsPerEpoch))
 
 	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(d.spec.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(d.spec.SlotsPerEpoch) {
