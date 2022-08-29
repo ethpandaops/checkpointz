@@ -72,6 +72,10 @@ func (h *Handler) V1BeaconSlots(ctx context.Context, req *BeaconSlotsRequest) (*
 			}
 		}
 
+		if epoch, err := h.provider.GetEpochBySlot(ctx, slot.Slot); err == nil {
+			slot.Epoch = epoch
+		}
+
 		response.Slots = append(response.Slots, slot)
 	}
 
@@ -88,6 +92,10 @@ func (h *Handler) V1BeaconSlot(ctx context.Context, req *BeaconSlotRequest) (*Be
 	}
 
 	response.Block = block
+
+	if epoch, err := h.provider.GetEpochBySlot(ctx, req.slot); err == nil {
+		response.Epoch = epoch
+	}
 
 	return response, nil
 }

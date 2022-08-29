@@ -36,4 +36,6 @@ type FinalityProvider interface {
 	GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
 	// ListFinalizedSlots returns a slice of finalized slots.
 	ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
+	// GetEpochBySlot returns the epoch for the given slot.
+	GetEpochBySlot(ctx context.Context, slot phase0.Slot) (phase0.Epoch, error)
 }

@@ -495,3 +495,11 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 
 	return slots, nil
 }
+
+func (d *Default) GetEpochBySlot(ctx context.Context, slot phase0.Slot) (phase0.Epoch, error) {
+	if d.spec == nil {
+		return phase0.Epoch(0), errors.New("no upstream beacon state spec available")
+	}
+
+	return phase0.Epoch(uint64(slot) / uint64(d.spec.SlotsPerEpoch)), nil
+}
