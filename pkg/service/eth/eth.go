@@ -45,6 +45,8 @@ func (h *Handler) BeaconBlock(ctx context.Context, blockID BlockIdentifier) (*sp
 	}()
 
 	switch blockID.Type() {
+	case BlockIDGenesis:
+		return h.provider.GetBlockBySlot(ctx, phase0.Slot(0))
 	case BlockIDSlot:
 		slot, err := NewSlotFromString(blockID.Value())
 		if err != nil {
