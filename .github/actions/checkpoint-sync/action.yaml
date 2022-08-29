@@ -36,7 +36,7 @@ runs:
         beacon:
           upstreams:
           - name: state-provider
-            address: https://${{ inputs.network }}.checkpoint-sync.ethdevops.io
+            address: https://${{ inputs.network }}-debug.checkpoint-sync.ethdevops.io
             timeoutSeconds: 30
             dataProvider: true
         checkpointz:
