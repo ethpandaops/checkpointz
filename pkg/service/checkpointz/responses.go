@@ -13,9 +13,10 @@ type StatusResponse struct {
 }
 
 type BeaconSlot struct {
-	Slot      phase0.Slot `json:"slot"`
-	BlockRoot string      `json:"block_root,omitempty"`
-	StateRoot string      `json:"state_root,omitempty"`
+	Slot      phase0.Slot  `json:"slot"`
+	BlockRoot string       `json:"block_root,omitempty"`
+	StateRoot string       `json:"state_root,omitempty"`
+	Epoch     phase0.Epoch `json:"epoch"`
 }
 
 type BeaconSlotsResponse struct {
@@ -24,4 +25,5 @@ type BeaconSlotsResponse struct {
 
 type BeaconSlotResponse struct {
 	Block *spec.VersionedSignedBeaconBlock `json:"block"`
+	Epoch phase0.Epoch                     `json:"epoch"`
 }
