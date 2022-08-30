@@ -10,6 +10,7 @@ import (
 type StatusResponse struct {
 	Upstreams map[string]*beacon.UpstreamStatus `json:"upstreams"`
 	Finality  *v1.Finality                      `json:"finality"`
+	PublicURL string                            `json:"public_url,omitempty"`
 }
 
 type BeaconSlot struct {

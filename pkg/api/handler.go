@@ -25,16 +25,18 @@ type Handler struct {
 
 	eth         *eth.Handler
 	checkpointz *checkpointz.Handler
+	publicURL   string
 
 	metrics Metrics
 }
 
-func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider) *Handler {
+func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, publicURL string) *Handler {
 	return &Handler{
 		log: log.WithField("module", "api"),
 
 		eth:         eth.NewHandler(log, beac, "checkpointz"),
 		checkpointz: checkpointz.NewHandler(log, beac),
+		publicURL:   publicURL,
 
 		metrics: NewMetrics("http"),
 	}
@@ -214,6 +216,8 @@ func (h *Handler) handleCheckpointzStatus(ctx context.Context, r *http.Request, 
 	if err != nil {
 		return NewInternalServerErrorResponse(nil), err
 	}
+
+	status.PublicURL = h.publicURL
 
 	return NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeJSON: func() ([]byte, error) {

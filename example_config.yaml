@@ -10,7 +10,9 @@ checkpointz:
     states:
       max_items: 5
   historical_epoch_count: 20
-  
+  # set public url where checkpointz will be served from
+  # public_url: https://www.domain.com
+
 beacon:
   upstreams:
   - name: remote

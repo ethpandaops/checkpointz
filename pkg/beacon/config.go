@@ -14,6 +14,9 @@ type Config struct {
 
 	// HistoricalEpochCount determines how many historical epochs the provider will cache.
 	HistoricalEpochCount int `yaml:"historical_epoch_count"`
+
+	// PublicURL is the public URL where checkpointz will be served from
+	PublicURL string `yaml:"public_url"`
 }
 
 // Cache configuration holds configuration for the caches.

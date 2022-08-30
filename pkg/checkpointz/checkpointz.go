@@ -41,7 +41,7 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 		Cfg: *conf,
 		log: log,
 
-		http: api.NewHandler(log, provider),
+		http: api.NewHandler(log, provider, conf.Checkpointz.PublicURL),
 
 		provider: provider,
 	}
