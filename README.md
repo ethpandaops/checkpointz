@@ -40,12 +40,32 @@ Flags:
 ```
 ## Getting Started
 
+### Download a release
+Download the latest release from the [Releases page](https://github.com/samcm/checkpointz/releases). Extract and run with:
+```
+./checkpointz --config your-config.yaml
+```
+
 ### Docker
-Available as a docker image at `samcm/checkpointz`
+Available as a docker image at [samcm/checkpointz](https://hub.docker.com/r/samcm/checkpointz/tags)
+#### Images
+- `latest` - distroless, multiarch
+- `latest-debian` - debian, multiarch
+- `$version` - distroless, multiarch, pinned to a release (i.e. `0.4.0`)
+- `$version-debian` - debian, multiarch, pinned to a release (i.e. `0.4.0-debian`)
 
 **Quick start**
 ```
-docker run -d -it --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/exporter/config.yaml -p 9090:9090 -p 5555:5555 -it samcm/checkpointz --config /opt/exporter/config.yaml
+docker run -d -it --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/exporter/config.yaml -p 9090:9090 -p 5555:5555 -it samcm/checkpointz:latest --config /opt/exporter/config.yaml
+```
+
+
+### Kubernetes via Helm
+[Read more](https://github.com/skylenet/ethereum-helm-charts/tree/master/charts/checkpointz)
+```
+helm repo add ethereum-helm-charts https://skylenet.github.io/ethereum-helm-charts
+
+helm install checkpointz ethereum-helm-charts/checkpointz -f your_values.yaml
 ```
 
 
