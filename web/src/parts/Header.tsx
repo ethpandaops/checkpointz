@@ -1,16 +1,13 @@
-import { InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useQuery } from '@tanstack/react-query';
 import { Fragment, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
 
-import { APIStatus } from '../types';
-import Container from './Container';
+import { Dialog, Transition } from '@headlessui/react';
+import { InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+
+import Container from '@components/Container';
+import useStatus from '@hooks/status';
 
 export default function Header() {
-  const { data } = useQuery<APIStatus, Error>(['status'], async () => {
-		const res = await fetch('/checkpointz/v1/status');
-		return res.json();
-  });
+  const { data } = useStatus();
   const [open, setOpen] = useState(false);
   const onClick = () => {
     setOpen(true);
@@ -21,12 +18,22 @@ export default function Header() {
         <Container className="relative z-50 flex justify-between py-2">
           <div className="relative z-10 flex items-center gap-16">
             <a href="/" aria-label="Home" className="flex items-center">
-              {data?.data?.brand_image_url && (<img src={data.data.brand_image_url} alt="logo" className="h-12 w-auto" />)}
-              <span className="font-bold text-2xl pl-2 text-gray-600">{data?.data?.brand_name}</span>
+              {data?.data?.brand_image_url && (
+                <img src={data.data.brand_image_url} alt="logo" className="h-12 w-auto" />
+              )}
+              <span className="font-bold text-2xl pl-2 text-gray-600">
+                {data?.data?.brand_name}
+              </span>
             </a>
           </div>
           <div className="flex items-center gap-6">
-            <span className="cursor-pointer text-gray-600 font-bold hover:text-gray-700 flex items-center" onClick={onClick}>About <InformationCircleIcon className="w-8 text-fuchsia-500 hover:text-fuchsia-600" /></span>
+            <span
+              className="cursor-pointer text-gray-600 font-bold hover:text-gray-700 flex items-center"
+              onClick={onClick}
+            >
+              About{' '}
+              <InformationCircleIcon className="w-8 text-fuchsia-500 hover:text-fuchsia-600" />
+            </span>
           </div>
         </Container>
       </nav>
@@ -87,10 +94,21 @@ export default function Header() {
                               </h1>
                               <div className="mt-6 space-y-6 font-display text-xl sm:text-2xl tracking-tight text-gray-600">
                                 <p>
-                                  <span className="font-semibold">Checkpointz</span> exists to reduce the operational burden of running a checkpoint sync endpoint.
+                                  <span className="font-semibold">Checkpointz</span> exists to
+                                  reduce the operational burden of running a checkpoint sync
+                                  endpoint.
                                 </p>
                                 <p>
-                                  If you'd like to run your own instance of <span className="font-semibold">Checkpointz</span>, checkout out the <a className="underline text-fuchsia-500 hover:text-fuchsia-600" href="https://github.com/samcm/checkpointz">Github repository</a> for instructions.
+                                  If you&apos;d like to run your own instance of{' '}
+                                  <span className="font-semibold">Checkpointz</span>, checkout out
+                                  the{' '}
+                                  <a
+                                    className="underline text-fuchsia-500 hover:text-fuchsia-600"
+                                    href="https://github.com/samcm/checkpointz"
+                                  >
+                                    Github repository
+                                  </a>{' '}
+                                  for instructions.
                                 </p>
                               </div>
                             </div>
@@ -106,5 +124,5 @@ export default function Header() {
         </Dialog>
       </Transition.Root>
     </header>
-  )
+  );
 }

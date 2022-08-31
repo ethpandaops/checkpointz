@@ -1,5 +1,6 @@
-import Tippy, { TippyProps } from '@tippyjs/react/headless';
 import { useState } from 'react';
+
+import Tippy, { TippyProps } from '@tippyjs/react/headless';
 import clsx from 'clsx';
 
 export default function Tooltip(props: TippyProps & { children?: JSX.Element }) {
@@ -16,7 +17,10 @@ export default function Tooltip(props: TippyProps & { children?: JSX.Element }) 
           )}
           {...attrs}
         >
-          <span className="font-mono font-bold">{content}{props.content}</span>
+          <span className="font-mono font-bold">
+            {content}
+            {props.content}
+          </span>
         </div>
       )}
       sticky={false}
@@ -30,5 +34,5 @@ export default function Tooltip(props: TippyProps & { children?: JSX.Element }) 
     >
       {children}
     </Tippy>
-  )
+  );
 }
