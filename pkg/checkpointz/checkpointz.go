@@ -80,6 +80,8 @@ func (s *Server) Start(ctx context.Context) error {
 
 	server.Handler = router
 
+	s.log.Infof("Serving http at %s", s.Cfg.GlobalConfig.ListenAddr)
+
 	if err := server.ListenAndServe(); err != nil {
 		s.log.Fatal(err)
 	}
@@ -95,6 +97,8 @@ func (s *Server) ServeMetrics(ctx context.Context) error {
 		}
 
 		server.Handler = promhttp.Handler()
+
+		s.log.Infof("Serving metrics at %s", s.Cfg.GlobalConfig.MetricsAddr)
 
 		if err := server.ListenAndServe(); err != nil {
 			s.log.Fatal(err)
