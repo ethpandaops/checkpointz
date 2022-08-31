@@ -43,9 +43,12 @@ Flags:
 Checkpointz relies entirely on a single config file. 
 ```
 global:
-  listenAddr: ":5555" # listenAddr is the address the main http server will listen on
-  logging: "debug" # Log level (panic, fatal, warn, info, debug, trace)
-  metricsAddr: ":9090" # metricsAddr is the address the metrics server will listen on
+  # The address the main http server will listen on
+  listenAddr: ":5555"
+  # Log level (panic, fatal, warn, info, debug, trace)
+  logging: "debug"
+  # The address the metrics server will listen on
+  metricsAddr: ":9090"
 
 checkpointz:
   caches:
@@ -72,9 +75,12 @@ checkpointz:
 beacon:
   # Upstreams configures the upstream beacon nodes to use.
   upstreams:
-  - name: remote # Shown in the frontend
-    address: http://localhost:5052 # The address of your beacon node. Note: NOT shown in the frontend
-    dataProvider: true # If true, Checkpointz will use this instance to fetch beacon blocks/state. If false, will only be used for finality checkpoints.
+    # Shown in the frontend
+  - name: remote
+    # The address of your beacon node. Note: NOT shown in the frontend
+    address: http://localhost:5052
+    # If true, Checkpointz will use this instance to fetch beacon blocks/state. If false, will only be used for finality checkpoints.
+    dataProvider: true
 ```
 
 ## Getting Started
@@ -107,7 +113,8 @@ Available as a docker image at [samcm/checkpointz](https://hub.docker.com/r/samc
 
 **Quick start**
 ```
-docker run -d -it --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/exporter/config.yaml -p 9090:9090 -p 5555:5555 -it samcm/checkpointz:latest --config /opt/exporter/config.yaml
+docker run -d  --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/checkpointz/config.yaml -p 9090:9090 -p 5555:5555 -it samcm/checkpointz:latest --config /opt/checkpointz/config.yaml;
+docker logs -f checkpointz;
 ```
 
 
