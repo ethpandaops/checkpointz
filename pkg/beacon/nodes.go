@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"time"
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	sbeacon "github.com/samcm/beacon"
@@ -27,7 +28,12 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace
 			Addr: config.Address,
 		}
 
-		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, *sbeacon.DefaultOptions())
+		opts := *sbeacon.DefaultOptions()
+
+		opts.HealthCheck.Interval.Duration = time.Second * 2
+		opts.HealthCheck.SuccessfulResponses = 2
+
+		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, opts)
 
 		// TODO(sam.calder-mason): Can we re-enable this if we're expecting to use a full beacon node for v1?
 		snode.Options().BeaconSubscription.Enabled = false
