@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/samcm/checkpointz/pkg/api"
 	"github.com/samcm/checkpointz/pkg/beacon"
+	"github.com/samcm/checkpointz/pkg/version"
 	static "github.com/samcm/checkpointz/web"
 	"github.com/sirupsen/logrus"
 )
@@ -52,6 +53,8 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 }
 
 func (s *Server) Start(ctx context.Context) error {
+	s.log.Infof("Starting Checkpointz server (%s)", version.Short())
+
 	s.provider.StartAsync(ctx)
 
 	router := httprouter.New()
