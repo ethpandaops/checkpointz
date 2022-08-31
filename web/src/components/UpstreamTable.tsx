@@ -67,13 +67,13 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                       scope="col"
                       className="whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
                     >
-                      Checkpoint Epoch
+                      Finalized Epoch
                     </th>
                     <th
                       scope="col"
                       className="hidden sm:table-cell whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
                     >
-                      Checkpoint Block Root
+                      Finalized Block Root
                     </th>
                     <th
                       scope="col"
