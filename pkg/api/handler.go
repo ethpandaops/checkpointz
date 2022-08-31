@@ -56,6 +56,7 @@ func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error
 	router.GET("/checkpointz/v1/status", h.wrappedHandler(h.handleCheckpointzStatus))
 	router.GET("/checkpointz/v1/beacon/slots", h.wrappedHandler(h.handleCheckpointzBeaconSlots))
 	router.GET("/checkpointz/v1/beacon/slots/:slot", h.wrappedHandler(h.handleCheckpointzBeaconSlot))
+	router.GET("/checkpointz/v1/ready", h.wrappedHandler(h.handleCheckpointzReady))
 
 	return nil
 }
@@ -232,6 +233,29 @@ func (h *Handler) handleCheckpointzStatus(ctx context.Context, r *http.Request, 
 	})
 
 	rsp.SetCacheControl("public, s-max-age=30")
+
+	return rsp, nil
+}
+
+func (h *Handler) handleCheckpointzReady(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	status, err := h.checkpointz.V1Status(ctx, checkpointz.NewStatusRequest())
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	if status.Finality == nil || status.Finality.Finalized == nil {
+		return NewInternalServerErrorResponse(nil), errors.New("no finalized checkpoint")
+	}
+
+	rsp := NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(`true`)
+		},
+	})
 
 	return rsp, nil
 }
