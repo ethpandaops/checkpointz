@@ -22,6 +22,8 @@ builds:
       - 7
     ignore:
       - goarch: 386
+    ldflags:
+      - -s -w -X github.com/samcm/checkpointz/pkg/version.Release={{.Tag}} -X github.com/samcm/checkpointz/pkg/version.GitCommit={{.ShortCommit}}
     mod_timestamp: "{{ .CommitTimestamp }}"
 checksum:
   name_template: 'checksums.txt'

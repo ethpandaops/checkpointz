@@ -5,6 +5,7 @@ import (
 
 	"github.com/samcm/checkpointz/pkg/beacon"
 	"github.com/samcm/checkpointz/pkg/eth"
+	"github.com/samcm/checkpointz/pkg/version"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,7 +26,14 @@ func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider) *Handler {
 
 // Status returns the status for checkpointz.
 func (h *Handler) V1Status(ctx context.Context, req *StatusRequest) (*StatusResponse, error) {
-	response := &StatusResponse{}
+	response := &StatusResponse{
+		Version: Version{
+			Full:      version.FullVWithGOOS(),
+			Short:     version.Short(),
+			GitCommit: version.GitCommit,
+			Release:   version.Release,
+		},
+	}
 
 	upstreams, err := h.provider.UpstreamsStatus(ctx)
 	if err != nil {
