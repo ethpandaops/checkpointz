@@ -28,7 +28,7 @@ export default function CheckpointsTable(props: { latestEpoch?: number; slots: A
       <div className="mt-4 sm:flex sm:justify-end">
         <div className="hidden sm:flex flex-auto mr-4 p-2 rounded-md">
           <p className="mt-2 text-lg text-gray-100 font-semibold self-end">
-            A list of historical checkpoints served by this Checkpointz instance. The checkpoint currently being served has the <img src={FlagImage} alt="flag" className="w-5 inline bg-white/20 rounded p-1" /> icon.
+            A list of historical finalized epoch boundaries. The checkpoint currently being served has the <img src={FlagImage} alt="flag" className="w-5 inline bg-white/20 rounded p-1" /> icon.
           </p>
         </div>
         <div className="bg-white/20 p-2 rounded-md">

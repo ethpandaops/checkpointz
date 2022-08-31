@@ -79,7 +79,7 @@ export default function Status() {
               </dd>
               <dd className="order-1 text-xl tracking-tight font-bold text-fuchsia-500">
                 Latest Justified
-                <Tooltip content="The latest justified block known by this Checkpointz instance">
+                <Tooltip content="The latest justified checkpoint known by this Checkpointz instance">
                   <InformationCircleIcon className="w-5 inline pl-0.5 align-text-top cursor-pointer text-fuchsia-500 hover:text-fuchsia-600" />
                 </Tooltip>
               </dd>

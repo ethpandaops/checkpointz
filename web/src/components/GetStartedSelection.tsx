@@ -60,7 +60,7 @@ const clients: ConsensusClient[] = [
     ),
   },
   {
-    name: 'Ligthouse',
+    name: 'Lighthouse',
     image: LighthouseImage,
     imageClassName: 'bg-[#6563ff] p-1',
     description: 'Lighthouse is an open-source Ethereum consensus client, written in Rust and maintained by Sigma Prime.',
