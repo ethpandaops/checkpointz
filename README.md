@@ -50,18 +50,22 @@ global:
 checkpointz:
   caches:
     blocks:
-      max_items: 200 # Controls the amount of "block" items that can be stored by Checkpointz (minimum 3)
+      # Controls the amount of "block" items that can be stored by Checkpointz (minimum 3)
+      max_items: 200 
     states:
-      max_items: 5  # Controls the amount of "state" items that can be stored by Checkpointz (minimum 3)
+      # Controls the amount of "state" items that can be stored by Checkpointz (minimum 3)
+      # These starts a very large and this value will directly relate to memory usage. Anything higher than 
+      # 10 is not recommended.
+      max_items: 5
   historical_epoch_count: 20 # Controls the amount of historical epoch boundaries that Checkpointz will fetch and serve.
   frontend:
     # if the frontend should be enabled
     enabled: true
-    # brand logo to display on the frontend (optional)
+    # The brand logo to display on the frontend (optional)
     # brand_image_url: https://www.cdn.com/logo.png
-    # brand to display on the frontend (optional)
+    # The name of the brand to display on the frontend (optional)
     # brand_name: Brandname
-    # public url where frontend will be served from (optional)
+    # The public URL of where the frontend will be served from (optional)
     # public_url: https://www.domain.com
 
 
