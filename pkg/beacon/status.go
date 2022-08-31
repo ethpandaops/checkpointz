@@ -5,7 +5,8 @@ import (
 )
 
 type UpstreamStatus struct {
-	Name     string       `json:"name"`
-	Healthy  bool         `json:"healthy"`
-	Finality *v1.Finality `json:"finality"`
+	Name        string       `json:"name"`
+	Healthy     bool         `json:"healthy"`
+	Finality    *v1.Finality `json:"finality"`
+	NetworkName string       `json:"network_name,omitempty"`
 }

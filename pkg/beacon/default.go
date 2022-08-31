@@ -461,16 +461,23 @@ func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStat
 			continue
 		}
 
+		rsp[node.Config.Name].Healthy = node.Beacon.GetStatus(ctx).Healthy()
+
+		//nolint:gocritic // invalid
+		if spec, err := node.Beacon.GetSpec(ctx); err == nil {
+			rsp[node.Config.Name].NetworkName = spec.ConfigName
+		}
+
 		finality, err := node.Beacon.GetFinality(ctx)
 		if err != nil {
 			continue
 		}
 
-		rsp[node.Config.Name].Healthy = node.Beacon.GetStatus(ctx).Healthy()
-
-		if finality != nil {
-			rsp[node.Config.Name].Finality = finality
+		if finality == nil {
+			continue
 		}
+
+		rsp[node.Config.Name].Finality = finality
 	}
 
 	return rsp, nil
