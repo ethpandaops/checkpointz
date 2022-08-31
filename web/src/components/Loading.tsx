@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import LogoImage from '../images/logo.png';
+import LogoImage from '@images/logo.png';
 
 export default function Loading({ className, ...props }: { className?: string }) {
   return (
@@ -10,5 +10,5 @@ export default function Loading({ className, ...props }: { className?: string })
       {...props}
       src={LogoImage}
     />
-  )
+  );
 }

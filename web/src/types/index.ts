@@ -67,7 +67,7 @@ export interface APIBeaconBlock {
 
 export interface APIBeaconSlotBlock {
   data: {
-    block?: APIBeaconBlock
+    block?: APIBeaconBlock;
     epoch?: number;
-  }
+  };
 }

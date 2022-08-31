@@ -1,5 +1,5 @@
-
 import { Fragment, useState } from 'react';
+
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -48,7 +48,7 @@ export default function GetStartedSlideout() {
                     <div className="flex h-full flex-col overflow-y-scroll bg-white py-6 shadow-xl">
                       <div className="px-4 sm:px-6">
                         <div className="flex items-start justify-between">
-                          <Dialog.Title ></Dialog.Title>
+                          <Dialog.Title></Dialog.Title>
                           <div className="ml-3 flex h-7 items-center">
                             <button
                               type="button"
@@ -73,5 +73,5 @@ export default function GetStartedSlideout() {
         </Dialog>
       </Transition.Root>
     </>
-  )
+  );
 }
