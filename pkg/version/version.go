@@ -11,7 +11,7 @@ var (
 )
 
 func Full() string {
-	return fmt.Sprintf("Checkpointz/%s/%s", Release, GitCommit)
+	return fmt.Sprintf("Checkpointz/%s", Short())
 }
 
 func Short() string {
