@@ -148,6 +148,10 @@ func (d *Default) startGenesisLoop(ctx context.Context) error {
 		d.log.WithError(err).Error("Failed to check for genesis bundle")
 	}
 
+	if err := d.checkGenesisTime(ctx); err != nil {
+		d.log.WithError(err).Error("Failed to check genesis time")
+	}
+
 	for {
 		select {
 		case <-time.After(time.Second * 15):
