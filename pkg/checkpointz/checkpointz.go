@@ -2,6 +2,7 @@ package checkpointz
 
 import (
 	"context"
+	"io/fs"
 	"net/http"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/samcm/checkpointz/pkg/api"
 	"github.com/samcm/checkpointz/pkg/beacon"
+	static "github.com/samcm/checkpointz/web"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,14 +36,14 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 		namespace,
 		log,
 		conf.BeaconConfig.BeaconUpstreams,
-		conf.Checkpointz,
+		&conf.Checkpointz,
 	)
 
 	s := &Server{
 		Cfg: *conf,
 		log: log,
 
-		http: api.NewHandler(log, provider, conf.Checkpointz.PublicURL),
+		http: api.NewHandler(log, provider, &conf.Checkpointz),
 
 		provider: provider,
 	}
@@ -56,6 +58,15 @@ func (s *Server) Start(ctx context.Context) error {
 
 	if err := s.http.Register(ctx, router); err != nil {
 		return err
+	}
+
+	if s.Cfg.Checkpointz.Frontend.Enabled {
+		frontend, err := fs.Sub(static.FS, "build/frontend")
+		if err != nil {
+			return err
+		}
+
+		router.NotFound = http.FileServer(http.FS(frontend))
 	}
 
 	if err := s.ServeMetrics(ctx); err != nil {

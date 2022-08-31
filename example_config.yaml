@@ -10,8 +10,16 @@ checkpointz:
     states:
       max_items: 5
   historical_epoch_count: 20
-  # set public url where checkpointz will be served from
-  # public_url: https://www.domain.com
+  frontend:
+    # if the frontend should served
+    enabled: false
+    # brand logo to display on the frontend (optional)
+    brand_image_url: https://www.cdn.com/logo.png
+    # brand to display on the frontend (optional)
+    brand_name: Brandname
+    # public url where frontend will be served from (optional)
+    public_url: https://www.domain.com
+
 
 beacon:
   upstreams:

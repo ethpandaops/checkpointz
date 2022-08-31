@@ -21,7 +21,7 @@ import (
 type Default struct {
 	log logrus.FieldLogger
 
-	config      Config
+	config      *Config
 	nodeConfigs []node.Config
 	nodes       Nodes
 	broker      *emission.Emitter
@@ -46,7 +46,7 @@ var (
 	topicFinalityHeadUpdated = "finality_head_updated"
 )
 
-func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, config Config) FinalityProvider {
+func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, config *Config) FinalityProvider {
 	return &Default{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/default"),
