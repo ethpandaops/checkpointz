@@ -51,7 +51,7 @@ checkpointz:
   caches:
     blocks:
       # Controls the amount of "block" items that can be stored by Checkpointz (minimum 3)
-      max_items: 200 
+      max_items: 200
     states:
       # Controls the amount of "state" items that can be stored by Checkpointz (minimum 3)
       # These starts a very large and this value will directly relate to memory usage. Anything higher than 
