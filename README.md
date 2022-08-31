@@ -38,6 +38,41 @@ Flags:
       --config string   config file (default is config.yaml) (default "config.yaml")
   -h, --help            help for checkpointz
 ```
+
+## Configuration
+Checkpointz relies entirely on a single config file. 
+```
+global:
+  listenAddr: ":5555" # listenAddr is the address the main http server will listen on
+  logging: "debug" # Log level (panic, fatal, warn, info, debug, trace)
+  metricsAddr: ":9090" # metricsAddr is the address the metrics server will listen on
+
+checkpointz:
+  caches:
+    blocks:
+      max_items: 200 # Controls the amount of "block" items that can be stored by Checkpointz (minimum 3)
+    states:
+      max_items: 5  # Controls the amount of "state" items that can be stored by Checkpointz (minimum 3)
+  historical_epoch_count: 20 # Controls the amount of historical epoch boundaries that Checkpointz will fetch and serve.
+  frontend:
+    # if the frontend should be enabled
+    enabled: true
+    # brand logo to display on the frontend (optional)
+    # brand_image_url: https://www.cdn.com/logo.png
+    # brand to display on the frontend (optional)
+    # brand_name: Brandname
+    # public url where frontend will be served from (optional)
+    # public_url: https://www.domain.com
+
+
+beacon:
+  # Upstreams configures the upstream beacon nodes to use.
+  upstreams:
+  - name: remote # Shown in the frontend
+    address: http://localhost:5052 # The address of your beacon node. Note: NOT shown in the frontend
+    dataProvider: true # If true, Checkpointz will use this instance to fetch beacon blocks/state. If false, will only be used for finality checkpoints.
+```
+
 ## Getting Started
 
 ### Download a release
