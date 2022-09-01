@@ -15,6 +15,7 @@ import (
 	"github.com/samcm/checkpointz/pkg/beacon/checkpoints"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/samcm/checkpointz/pkg/beacon/store"
+	"github.com/samcm/checkpointz/pkg/eth"
 	"github.com/sirupsen/logrus"
 )
 
@@ -517,4 +518,18 @@ func (d *Default) GetEpochBySlot(ctx context.Context, slot phase0.Slot) (phase0.
 	}
 
 	return phase0.Epoch(uint64(slot) / uint64(d.spec.SlotsPerEpoch)), nil
+}
+
+func (d *Default) GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTime, error) {
+	SlotTime := eth.SlotTime{}
+
+	if d.spec == nil {
+		return SlotTime, errors.New("no upstream beacon state spec available")
+	}
+
+	if d.genesis == nil {
+		return SlotTime, errors.New("genesis time is unknown")
+	}
+
+	return eth.CalculateSlotTime(slot, d.genesis.GenesisTime, d.spec.SecondsPerSlot), nil
 }
