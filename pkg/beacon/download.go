@@ -150,7 +150,7 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 		slotsInScope[slot] = struct{}{}
 	}
 
-	for slot, _ := range slotsInScope {
+	for slot := range slotsInScope {
 		failureCount, exists := d.historicalSlotFailures[slot]
 		if !exists {
 			d.historicalSlotFailures[slot] = 0
