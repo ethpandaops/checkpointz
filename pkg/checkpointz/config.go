@@ -14,9 +14,9 @@ type Config struct {
 }
 
 type GlobalConfig struct {
-	ListenAddr   string `yaml:"listenAddr"`
-	LoggingLevel string `yaml:"logging"`
-	MetricsAddr  string `yaml:"metricsAddr"`
+	ListenAddr   string `yaml:"listenAddr" default:":5555"`
+	LoggingLevel string `yaml:"logging" default:"warn"`
+	MetricsAddr  string `yaml:"metricsAddr" default:":9090"`
 }
 
 type BeaconConfig struct {
