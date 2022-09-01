@@ -61,10 +61,12 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 	// respective stores, ensuring that we never purge those items.
 	block, err := d.blocks.GetBySlot(phase0.Slot(0))
 	if err == nil && block != nil {
-		stateRoot, errr := block.StateRoot()
-		if errr == nil {
-			if st, er := d.states.GetByStateRoot(stateRoot); er == nil && st != nil {
-				return nil
+		if d.shouldDownloadStates() {
+			stateRoot, errr := block.StateRoot()
+			if errr == nil {
+				if st, er := d.states.GetByStateRoot(stateRoot); er == nil && st != nil {
+					return nil
+				}
 			}
 		}
 	}
@@ -283,30 +285,32 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		return nil, err
 	}
 
-	// If the state already exists, don't bother downloading it again.
-	existingState, err := d.states.GetByStateRoot(stateRoot)
-	if err == nil && existingState != nil {
-		d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
+	if d.shouldDownloadStates() {
+		// If the state already exists, don't bother downloading it again.
+		existingState, err := d.states.GetByStateRoot(stateRoot)
+		if err == nil && existingState != nil {
+			d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
-		return block, nil
-	}
+			return block, nil
+		}
 
-	beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
-	if err != nil {
-		return nil, err
-	}
+		beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
+		if err != nil {
+			return nil, err
+		}
 
-	if beaconState == nil {
-		return nil, errors.New("beacon state is nil")
-	}
+		if beaconState == nil {
+			return nil, errors.New("beacon state is nil")
+		}
 
-	expiresAt := time.Now().Add(3 * time.Hour)
-	if slot == phase0.Slot(0) {
-		expiresAt = time.Now().Add(999999 * time.Hour)
-	}
+		expiresAt := time.Now().Add(3 * time.Hour)
+		if slot == phase0.Slot(0) {
+			expiresAt = time.Now().Add(999999 * time.Hour)
+		}
 
-	if err := d.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
-		return nil, err
+		if err := d.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
+			return nil, err
+		}
 	}
 
 	d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
