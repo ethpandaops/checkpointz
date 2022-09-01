@@ -7,6 +7,12 @@ Checkpointz exists to reduce the operational burden of running a checkpoint sync
 > :warning: **Checkpointz is still in heavy development** - use with caution
 
 ## Features
+- Operating mode:
+  - `light` - The default mode of operation. Provides enough data for users to use your instance to verify the state they got from somewhere else.
+  - `full` - Provides all the functionality of `light` mode, with the additional ability to serve state requests for beacon nodes to checkpoint sync from.
+- Web UI
+  - Public-facing: shows information about the state of the provider, along with all state roots that the instance is aware of for cross-checking against instances.
+  - Internal: shows information about the internal instance, health checks, etc.
 - Resource reduction
   - Adds HTTP cache-control headers depending on the content
 - DOS protection
@@ -16,24 +22,18 @@ Checkpointz exists to reduce the operational burden of running a checkpoint sync
   - Only serves a new finalized epoch once 50%+ of upstream beacon nodes agree
 - Extensive Prometheus metrics
 
-## Future features
-- Web UI
-  - Public-facing: shows information about the state of the provider, along with all state roots that the instance is aware of for cross-checking against instances.
-  - Internal: shows information about the internal instance, health checks, etc.
-
 ## What is checkpoint sync?
 Checkpoint sync is an operation that lets fresh beacon nodes jump to the head of the chain by fetching the state from a trusted & synced beacon node. 
 
 More info: https://notes.ethereum.org/sWeLohipS9GdgMugYn9VkQ
 
 ## Supported Beacon clients
-- Lighthouse
-- Prysm
-- Lodestar
-- Nimbus
-- Teku (with `--data-storage-mode archive`)
+|   |  Prysm |  Lighthouse | Nimbus |  Lodestar  | Teku |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+|  Full mode |  ✅ | ✅  | ✅ | ✅  |  with `--data-storage-mode archive` |
+|  Light mode | ✅  | ✅  |  ✅ | ✅  | ✅ |
 
-Note: Teku will require a resync from genesis if you enable this flag.
+Note: Teku will require a resync from genesis if you enable `--data-storage-mode archive`.
 ## Usage
 Checkpointz requires a config file. An example file can be found [here](https://github.com/samcm/checkpointz/blob/master/example_config.yaml).
 
@@ -81,6 +81,19 @@ beacon:
     dataProvider: true
 ```
 
+### Full mode
+
+```
+checkpointz:
+  mode: full
+
+beacon:
+  upstreams:
+  - name: remote
+    address: http://localhost:5052
+    dataProvider: true
+```
+
 ### Disabled frontend
 
 ```
@@ -107,6 +120,7 @@ global:
   metricsAddr: ":9090"
 
 checkpointz:
+  mode: light
   caches:
     blocks:
       # Controls the amount of "block" items that can be stored by Checkpointz (minimum 3)
@@ -180,7 +194,8 @@ helm repo add ethereum-helm-charts https://skylenet.github.io/ethereum-helm-char
 
 helm install checkpointz ethereum-helm-charts/checkpointz -f your_values.yaml
 ```
-
+### Grafana
+[Download the Checkpointz dashboard here](https://grafana.com/grafana/dashboards/16814-checkpointz)
 
 **Building yourself (requires Go)**
 
