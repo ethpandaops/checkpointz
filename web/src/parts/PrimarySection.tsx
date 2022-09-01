@@ -60,7 +60,7 @@ export default function Section() {
                     <h3>
                       <Tab
                         className={clsx(
-                          'font-display text-md sm:text-lg focus:outline-none font-semibold',
+                          'font-display text-base sm:text-lg focus:outline-none font-semibold',
                           selectedIndex === featureIndex
                             ? 'text-fuchsia-500'
                             : 'text-fuchsia-100 hover:text-white',

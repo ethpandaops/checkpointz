@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 
 import {
-  ExclaimationTriangleIcon,
+  ExclamationTriangleIcon,
   ChevronDoubleRightIcon,
   InformationCircleIcon,
   CheckCircleIcon,
+  XCircleIcon,
 } from '@heroicons/react/24/outline';
 
 import CopyToClipboard from '@components/CopyToClipboard';
@@ -21,7 +22,31 @@ export default function GetStarted() {
     }`;
     return `${data?.data?.public_url ?? defaultPublicURL}${client?.endpointPathSuffix ?? ''}`;
   }, [data, client]);
-
+  const lightModeWarning = useMemo(() => {
+    if (data?.data?.operating_mode !== 'light') return;
+    return (
+      <div className="rounded-md bg-red-50 p-4 mt-5 shadow">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <XCircleIcon className="h-5 w-5 text-red-500" aria-hidden="true" />
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-semibold text-red-800">
+              This Checkpointz instance is running in <span className="font-bold">light mode</span>
+            </h3>
+            <div className="mt-2 text-sm text-red-700">
+              <p>
+                A light mode Checkpointz instance can only be used for verifying! It can{' '}
+                <span className="font-semibold">not</span> be used for beacon node checkpoint
+                syncing. Please use a Checkpointz instance operating in full mode for checkpoint
+                sync. This step is left visible for informational purposes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }, [data]);
   return (
     <>
       <GetStartedSelection onChange={setClient} />
@@ -35,7 +60,7 @@ export default function GetStarted() {
           <div className="rounded-md bg-yellow-50 p-4 shadow">
             <div className="flex">
               <div className="flex-shrink-0">
-                <ExclaimationTriangleIcon className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+                <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" aria-hidden="true" />
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-semibold text-yellow-800">Remember</h3>
@@ -98,10 +123,21 @@ export default function GetStarted() {
               <span className="bg-white pr-3 text-2xl font-bold text-gray-900">Step 1</span>
             </div>
           </div>
+          {lightModeWarning}
           <div className="py-5">
             Note down the beacon endpoint you&apos;re planning to checkpoint sync from. This can be
             another beacon node you run, a beacon node that a friend runs, the endpoint of this
             Checkpointz instance, or any beacon node you trust.
+          </div>
+          <div className="pb-5">
+            There is a maintained list of public hosted Checkpointz endpoints in this{' '}
+            <a
+              className="underline text-fuchsia-500 hover:text-fuchsia-600"
+              href="https://github.com/eth-clients/checkpoint-sync-endpoints"
+            >
+              repository
+            </a>
+            .
           </div>
           <div className="rounded-md bg-blue-50 p-4 shadow">
             <div className="flex">
@@ -115,34 +151,36 @@ export default function GetStarted() {
               </div>
             </div>
           </div>
-          <div className="mt-5">
-            <div className="rounded-md bg-green-50 p-4 shadow">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-green-800">
-                    The current Checkpointz instance endpoint will now be used for the rest of this
-                    guide.
-                  </p>
+          {!lightModeWarning && (
+            <div className="mt-5">
+              <div className="rounded-md bg-green-50 p-4 shadow">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-green-800">
+                      The current Checkpointz instance endpoint will now be used for the rest of
+                      this guide.
+                    </p>
+                  </div>
                 </div>
               </div>
+              <div className="flex rounded-md mt-5">
+                <input
+                  type="text"
+                  value={publicURL}
+                  name="endpoint"
+                  id="endpoint"
+                  disabled
+                  className="p-2 w-full rounded-none rounded-l-lg border-gray-300 bg-gray-200 font-bold text-xl shadow-inner text-gray-800"
+                />
+                <span className="rounded-r-lg border min-w-max border-l-0 border-gray-300 bg-fuchsia-500 p-3 text-gray-100 text-xl">
+                  <CopyToClipboard text={publicURL} inverted />
+                </span>
+              </div>
             </div>
-            <div className="flex rounded-md mt-5">
-              <input
-                type="text"
-                value={publicURL}
-                name="endpoint"
-                id="endpoint"
-                disabled
-                className="p-2 w-full rounded-none rounded-l-lg border-gray-300 bg-gray-200 font-bold text-xl shadow-inner text-gray-800"
-              />
-              <span className="rounded-r-lg border min-w-max border-l-0 border-gray-300 bg-fuchsia-500 p-3 text-gray-100 text-xl">
-                <CopyToClipboard text={publicURL} inverted />
-              </span>
-            </div>
-          </div>
+          )}
           <div className="relative mt-10">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
               <div className="w-full border-t border-gray-300" />
@@ -151,6 +189,7 @@ export default function GetStarted() {
               <span className="bg-white pr-3 text-2xl font-bold text-gray-900">Step 2</span>
             </div>
           </div>
+          {lightModeWarning}
           <div className="mt-5">
             Add the checkpoint sync argument to your client.
             <div className="mt-5">{client.commandLine?.(publicURL)}</div>
@@ -163,6 +202,7 @@ export default function GetStarted() {
               <span className="bg-white pr-3 text-2xl font-bold text-gray-900">Step 3</span>
             </div>
           </div>
+          {lightModeWarning}
           <div className="mt-5">
             Start your client. Once started, check your logs for details surrounding the checkpoint
             process.
@@ -220,8 +260,8 @@ export default function GetStarted() {
               </li>
               <li className="ml-10">
                 In a new terminal window run:
-                <div className="bg-gray-100 p-5 rounded-lg grid">
-                  <pre className="overflow-x-auto">
+                <div className="bg-gray-100 rounded-lg grid">
+                  <pre className="overflow-x-auto p-5">
                     curl -s http://YOUR_NODE_IP:YOUR_NODE_PORT/eth/v1/beacon/headers/finalized | jq
                     .&apos;data.header.message&apos;
                   </pre>
@@ -266,13 +306,21 @@ export default function GetStarted() {
             </ol>
           </div>
           <div className="mt-2 font-semibold">
-            Option A
+            Option B
             <ol className="list-decimal font-normal">
               <li className="ml-10">
                 Open another Checkpointz instance website.{' '}
                 <span className="font-semibold">
                   This must be different to this Checkpointz instance!
                 </span>
+                . There is a maintained list of public hosted Checkpointz endpoints in this{' '}
+                <a
+                  className="underline text-fuchsia-500 hover:text-fuchsia-600"
+                  href="https://github.com/eth-clients/checkpoint-sync-endpoints"
+                >
+                  repository
+                </a>
+                , but it is recommended to use a friend or trusted source first to verify.
               </li>
               <li className="ml-10">
                 Check the historical checkpoints table and search for the row that contains your{' '}

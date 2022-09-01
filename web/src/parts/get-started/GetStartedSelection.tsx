@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { RadioGroup } from '@headlessui/react';
-import { ExclaimationTriangleIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 import LighthouseImage from '@images/lighthouse.svg';
@@ -29,7 +29,7 @@ const clients: ConsensusClient[] = [
       <div className="rounded-md bg-yellow-50 p-4 shadow">
         <div className="flex">
           <div className="flex-shrink-0">
-            <ExclaimationTriangleIcon className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+            <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" aria-hidden="true" />
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-semibold text-yellow-800">No Consensus client set</h3>
@@ -47,7 +47,7 @@ const clients: ConsensusClient[] = [
       <div className="rounded-md bg-yellow-50 p-4 shadow">
         <div className="flex">
           <div className="flex-shrink-0">
-            <ExclaimationTriangleIcon className="h-5 w-5 text-yellow-500" aria-hidden="true" />
+            <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" aria-hidden="true" />
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-semibold text-yellow-800">No Consensus client set</h3>
@@ -70,13 +70,13 @@ const clients: ConsensusClient[] = [
       'Lighthouse is an open-source Ethereum consensus client, written in Rust and maintained by Sigma Prime.',
     defaultPort: 5052,
     commandLine: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">--checkpoint-sync-url={publicURL}</pre>
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">--checkpoint-sync-url={publicURL}</pre>
       </div>
     ),
     logCheck: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">
           {`INFO Starting checkpoint sync                remote_url: ${publicURL}, service: beacon
 INFO Loaded checkpoint block and state       state_root: 0xb6e8c25393411f252775f82b4907298572003ac37acf9422dd2500b5c368a08d, block_root: 0xefe19ea0d99bf45d50d4302f6bbc3feb2c1ec46f8d6e112594ec86b9581596ae, slot: 3480832, service: beacon
 `}
@@ -91,16 +91,13 @@ INFO Loaded checkpoint block and state       state_root: 0xb6e8c25393411f252775f
       'Lodestar is a TypeScript implementation of the Ethereum Consensus specification developed by ChainSafe Systems.',
     defaultPort: 9596,
     commandLine: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">
-          {`--weakSubjectivitySyncLatest=true
---weakSubjectivityServerUrl=${publicURL}`}
-        </pre>
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">--checkpointSyncUrl={publicURL}</pre>
       </div>
     ),
     logCheck: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">
           {`info: Fetching weak subjectivity state weakSubjectivityServerUrl=${publicURL}
 info: Download completed`}
         </pre>
@@ -124,8 +121,8 @@ info: Download completed`}
       </div>
     ),
     logCheck: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">
           {`Starting trusted node sync                 databaseDir=/data/consensus/db restUrl=${publicURL} blockId=finalized backfill=false reindex=false
 Downloading checkpoint block               restUrl=${publicURL} blockId=finalized
 Downloading checkpoint state               restUrl=${publicURL} checkpointSlot=370528
@@ -144,16 +141,16 @@ Database initialized, historical blocks will be backfilled when starting the nod
       'Prysm is an Ethereum proof-of-stake client written in Go developed by Prysmatic Labs.',
     defaultPort: 3500,
     commandLine: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">
           {`--checkpoint-sync-url=${publicURL}
 --genesis-beacon-api-url=${publicURL}`}
         </pre>
       </div>
     ),
     logCheck: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">
           {`level=info msg="requesting ${publicURL}/eth/v2/debug/beacon/states/genesis"
 level=info msg="requesting ${publicURL}/eth/v2/debug/beacon/states/finalized"`}
         </pre>
@@ -168,13 +165,13 @@ level=info msg="requesting ${publicURL}/eth/v2/debug/beacon/states/finalized"`}
     endpointPathSuffix: '/eth/v2/debug/beacon/states/finalized',
     defaultPort: 5051,
     commandLine: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">--initial-state={publicURL}</pre>
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">--initial-state={publicURL}</pre>
       </div>
     ),
     logCheck: (publicURL: string) => (
-      <div className="bg-gray-100 p-5 rounded-lg grid">
-        <pre className="overflow-x-auto">
+      <div className="bg-gray-100 rounded-lg grid">
+        <pre className="overflow-x-auto p-5">
           {`INFO  - Loading initial state from ${publicURL}
 INFO  - Loaded initial state at epoch 11348 (state root = 0x08dab651bd667b166a0c99b7a21ee455f4f9fadfce0e37dbcee490f5ec841477, block root = 0xa5bd8b3eaadd81f892f120219f3bcee6565a37d045bf0cee4c4023a51def430c, block slot = 363136).  Please ensure that the supplied initial state corresponds to the latest finalized block as of the start of epoch 11348 (slot 363136)."`}
         </pre>
@@ -227,7 +224,7 @@ export default function GetStartedSelection(props: {
         Which Ethereum consensus client are you using?
       </h1>
       <RadioGroup value={selected} onChange={setSelected}>
-        <RadioGroup.Label className="sr-only"> Server size </RadioGroup.Label>
+        <RadioGroup.Label className="sr-only">Consensus client</RadioGroup.Label>
         <div className="space-y-4">
           {clients.map((client) => (
             <RadioGroup.Option

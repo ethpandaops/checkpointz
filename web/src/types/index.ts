@@ -5,7 +5,19 @@ export interface APIStatus {
     public_url?: string;
     brand_name?: string;
     brand_image_url?: string;
+    operating_mode?: 'light' | 'full';
+    version?: {
+      full?: string;
+      git_commit?: string;
+      release?: string;
+      short?: string;
+    };
   };
+}
+
+export interface APISlotTime {
+  start_time: string;
+  end_time: string;
 }
 
 export interface APICheckpoints {
@@ -22,6 +34,7 @@ export interface APICheckpoint {
 export interface APIUpstream {
   name: string;
   healthy: boolean;
+  network_name?: string;
   finality?: APICheckpoints;
 }
 
@@ -30,6 +43,7 @@ export interface APIBeaconSlot {
   block_root?: string;
   state_root?: string;
   epoch?: number;
+  time?: APISlotTime;
 }
 
 export interface APIBeaconSlots {
@@ -69,5 +83,6 @@ export interface APIBeaconSlotBlock {
   data: {
     block?: APIBeaconBlock;
     epoch?: number;
+    time?: APISlotTime;
   };
 }

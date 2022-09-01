@@ -1,13 +1,17 @@
 import { useState, useMemo } from 'react';
 
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
 import CopyToClipboard from '@components/CopyToClipboard';
 import Tooltip from '@components/Tooltip';
 import { APIUpstream } from '@types';
-import { truncateHash } from '@utils';
+import { truncateHash, stringToHexColour, getMajorityNetworkName } from '@utils';
 
 export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
+  const majorityNetwork = useMemo(() => {
+    return getMajorityNetworkName(props.upstreams) ?? 'unknown';
+  }, [props.upstreams]);
   const [search, setSearch] = useState('');
   const filteredUpstreams = useMemo(() => {
     if (!search) return props.upstreams;
@@ -56,37 +60,43 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                   <tr>
                     <th
                       scope="col"
-                      className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-md font-bold text-gray-100 sm:pl-6"
+                      className="whitespace-nowrap pl-2 sm:pl-6 py-3.5 text-left font-bold text-gray-100 sm:pl-6"
                     >
                       Name
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
+                      className="whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
                     >
                       Status
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
+                      className="hidden sm:table-cell whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
+                    >
+                      Network
+                    </th>
+                    <th
+                      scope="col"
+                      className="whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
                     >
                       Finalized Epoch
                     </th>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
+                      className="hidden sm:table-cell whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
                     >
                       Finalized Block Root
                     </th>
                     <th
                       scope="col"
-                      className="hidden lg:table-cell whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
+                      className="hidden lg:table-cell whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
                     >
                       Justified Epoch
                     </th>
                     <th
                       scope="col"
-                      className="hidden lg:table-cell whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
+                      className="hidden lg:table-cell whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
                     >
                       Justified Block Root
                     </th>
@@ -95,10 +105,10 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                 <tbody className="divide-y divide-gray-200 bg-white/10">
                   {filteredUpstreams.map((upstream) => (
                     <tr key={upstream.name}>
-                      <td className="whitespace-nowrap py-2 pl-4 pr-3 font-semibold text-md text-gray-100 sm:pl-6">
+                      <td className="whitespace-nowrap pl-2 sm:pl-6 py-2 font-semibold text-sm sm:text-base text-gray-100 sm:pl-6">
                         {upstream.name}
                       </td>
-                      <td className="whitespace-nowrap px-2 py-2 text-md font-semibold text-gray-100">
+                      <td className="whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
                         <span
                           className={clsx(
                             upstream.healthy
@@ -110,12 +120,26 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                           {upstream.healthy ? 'Healthy' : 'Unhealthy'}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-2 py-2 text-md font-semibold text-gray-100">
+                      <td className="hidden sm:table-cell capitalize whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                        {upstream.network_name ?? 'unknown'}
+                        {upstream.network_name !== majorityNetwork && (
+                          <ExclamationTriangleIcon className="h-4 w-4 text-yellow-400 inline ml-1" />
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
                         {upstream.finality?.finalized?.epoch ?? ''}
                       </td>
-                      <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 text-md font-semibold text-gray-100 font-mono">
+                      <td className="hidden sm:table-cell whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100 font-mono">
                         {upstream.finality?.finalized?.root ? (
-                          <>
+                          <span className="flex items-center">
+                            <span
+                              className="w-4 h-4 inline-block rounded mr-1 mt-1 border border-fuchsia-300"
+                              style={{
+                                backgroundColor: stringToHexColour(
+                                  upstream.finality.finalized.root,
+                                ),
+                              }}
+                            ></span>
                             <span className="font-mono cursor-pointer flex">
                               <Tooltip content={upstream.finality.finalized.root}>
                                 <span className="relative top-1 group transition duration-300">
@@ -125,17 +149,25 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                               </Tooltip>
                               <CopyToClipboard text={upstream.finality.finalized.root} inverted />
                             </span>
-                          </>
+                          </span>
                         ) : (
                           ''
                         )}
                       </td>
-                      <td className="hidden lg:table-cell whitespace-nowrap px-2 py-2 text-md font-semibold text-gray-100">
+                      <td className="hidden lg:table-cell whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
                         {upstream.finality?.current_justified?.epoch ?? ''}
                       </td>
-                      <td className="hidden lg:table-cell whitespace-nowrap px-2 py-2 text-md font-semibold text-gray-100 font-mono">
+                      <td className="hidden lg:table-cell whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100 font-mono">
                         {upstream.finality?.current_justified?.root ? (
-                          <>
+                          <span className="flex items-center">
+                            <span
+                              className="w-4 h-4 inline-block rounded mr-1 mt-1 border border-fuchsia-300"
+                              style={{
+                                backgroundColor: stringToHexColour(
+                                  upstream.finality.current_justified.root,
+                                ),
+                              }}
+                            ></span>
                             <span className="font-mono cursor-pointer flex">
                               <Tooltip content={upstream.finality.current_justified.root}>
                                 <span className="relative top-1 group transition duration-300">
@@ -148,7 +180,7 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                                 inverted
                               />
                             </span>
-                          </>
+                          </span>
                         ) : (
                           ''
                         )}

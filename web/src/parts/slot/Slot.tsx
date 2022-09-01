@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 
-import { ExclaimationTriangleIcon } from '@heroicons/react/20/solid';
+import { ExclamationTriangleIcon } from '@heroicons/react/20/solid';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
+import { format } from 'date-fns';
+import ReactTimeAgo from 'react-time-ago';
 
 import CopyToClipboard from '@components/CopyToClipboard';
 import Loading from '@components/Loading';
@@ -32,6 +34,10 @@ export default function Slot(props: { slot: number }) {
         return data?.data?.block?.Phase0;
     }
   }, [data]);
+  const time = useMemo<string | undefined>(() => {
+    if (!data?.data?.time?.start_time) return;
+    return format(new Date(data?.data?.time?.start_time), 'PPP pp');
+  }, [data]);
   if (isLoading)
     return (
       <div className="flex justify-center pt-10">
@@ -41,7 +47,7 @@ export default function Slot(props: { slot: number }) {
   if (!block?.message)
     return (
       <div className="flex justify-center font-bold">
-        <ExclaimationTriangleIcon className="h-10 w-10 text-yellow-400 pr-1 " aria-hidden="true" />
+        <ExclamationTriangleIcon className="h-10 w-10 text-yellow-400 pr-1 " aria-hidden="true" />
         <span className="text-2xl pt-1">Something went wrong</span>
       </div>
     );
@@ -59,6 +65,17 @@ export default function Slot(props: { slot: number }) {
             <dt className="text-sm font-medium text-gray-500">Slot</dt>
             <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-4">
               {block.message.slot}
+            </dd>
+          </div>
+          <div className="py-4 sm:py-5 sm:grid sm:grid-cols-5 sm:gap-4 sm:px-6">
+            <dt className="text-sm font-medium text-gray-500">Time</dt>
+            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-4">
+              {data?.data?.time?.start_time && time && (
+                <>
+                  <ReactTimeAgo date={new Date(data.data.time.start_time)} />
+                  <span className="pl-1">({time})</span>
+                </>
+              )}
             </dd>
           </div>
           <div className="py-4 sm:py-5 sm:grid sm:grid-cols-5 sm:gap-4 sm:px-6">
@@ -162,7 +179,7 @@ export default function Slot(props: { slot: number }) {
                     showFullHash
                       ? 'bg-fuchsia-400 text-fuchsia-100 hover:bg-fuchsia-500'
                       : 'shadow-inner bg-fuchsia-100 text-fuchsia-600 hover:bg-fuchsia-200',
-                    'inline-flex items-center rounded-l-lg border border-transparent px-2.5 py-1.5 text-md font-semibold',
+                    'inline-flex items-center rounded-l-lg border border-transparent px-2.5 py-1.5 text-base font-semibold',
                   )}
                   onClick={() => setShowFullHash(false)}
                 >
@@ -174,7 +191,7 @@ export default function Slot(props: { slot: number }) {
                     !showFullHash
                       ? 'bg-fuchsia-400 text-fuchsia-100 hover:bg-fuchsia-500'
                       : 'shadow-inner bg-fuchsia-100 text-fuchsia-600 hover:bg-fuchsia-200',
-                    'inline-flex items-center rounded-r-lg border border-transparent px-2.5 py-1.5 text-md font-semibold',
+                    'inline-flex items-center rounded-r-lg border border-transparent px-2.5 py-1.5 text-base font-semibold',
                   )}
                   onClick={() => setShowFullHash(true)}
                 >

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 
 import { MagnifyingGlassCircleIcon } from '@heroicons/react/24/outline';
+import ReactTimeAgo from 'react-time-ago';
 
 import CopyToClipboard from '@components/CopyToClipboard';
 import Tooltip from '@components/Tooltip';
@@ -64,29 +65,35 @@ export default function CheckpointsTable(props: {
                   <tr>
                     <th
                       scope="col"
-                      className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-md font-bold text-gray-100 sm:pl-6"
+                      className="hidden sm:table-cell whitespace-nowrap sm:pl-6 py-3.5 text-left text-base font-bold text-gray-100"
                     >
                       Epoch
                     </th>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-md font-bold text-gray-100 sm:pl-6"
+                      className="whitespace-nowrap pl-2 sm:pl-0 py-3.5 text-left text-base font-bold text-gray-100"
                     >
                       Slot
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
+                      className="whitespace-nowrap py-3.5 text-left text-base font-bold text-gray-100"
                     >
-                      Block Root
+                      Time
                     </th>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell whitespace-nowrap px-2 py-3.5 text-left text-md font-bold text-gray-100"
+                      className="whitespace-nowrap py-3.5 text-left text-base font-bold text-gray-100"
                     >
                       State Root
                     </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <th
+                      scope="col"
+                      className="hidden sm:table-cell whitespace-nowrap py-3.5 text-left text-base font-bold text-gray-100"
+                    >
+                      Block Root
+                    </th>
+                    <th scope="col" className="">
                       <span className="sr-only">View</span>
                     </th>
                   </tr>
@@ -94,44 +101,45 @@ export default function CheckpointsTable(props: {
                 <tbody className="divide-y divide-gray-200 bg-white/10">
                   {filteredSlots.map((slot) => (
                     <tr key={slot.slot}>
-                      <td className="whitespace-nowrap py-2 pl-4 pr-3 font-semibold text-md text-gray-100 sm:pl-6">
+                      <td className="hidden sm:table-cell sm:pl-6 whitespace-nowrap py-2 font-semibold text-sm sm:text-base text-gray-100">
                         {slot.epoch}
                         {props.latestEpoch && slot.epoch && slot.epoch === props.latestEpoch && (
                           <img
-                            className="w-5 inline pl-2 -mt-1"
+                            className="hidden sm:inline-block w-5 pl-2 -mt-1"
                             src={FlagImage}
                             alt="Latest checkpoint"
                           />
                         )}
                       </td>
-                      <td className="hidden sm:table-cell whitespace-nowrap py-2 pl-4 pr-3 font-semibold text-md text-gray-100 sm:pl-6">
+                      <td className="whitespace-nowrap pl-2 sm:pl-0 py-2 font-semibold text-sm sm:text-base text-gray-100">
                         {slot.slot}
-                      </td>
-                      <td className="whitespace-nowrap px-2 py-2 text-md font-semibold text-gray-100">
-                        {slot.block_root ? (
-                          <>
-                            <span className="xl:hidden font-mono cursor-pointer flex">
-                              <Tooltip content={slot.block_root}>
-                                <span className="relative top-1 group transition duration-300">
-                                  {truncateHash(slot.block_root)}
-                                  <span className="relative -top-0.5 block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-gray-100"></span>
-                                </span>
-                              </Tooltip>
-                              <CopyToClipboard text={slot.block_root} inverted />
-                            </span>
-                            <span className="hidden xl:table-cell font-mono">
-                              <span className="relative top-0.5">{slot.block_root}</span>
-                              <CopyToClipboard text={slot.block_root} inverted />
-                            </span>
-                          </>
-                        ) : (
-                          ''
+                        {props.latestEpoch && slot.epoch && slot.epoch === props.latestEpoch && (
+                          <img
+                            className="sm:hidden w-5 inline-block pl-2 -mt-1"
+                            src={FlagImage}
+                            alt="Latest checkpoint"
+                          />
                         )}
                       </td>
-                      <td className="hidden sm:table-cell whitespace-nowrap px-2 py-2 text-md font-semibold text-gray-100">
+                      <td className="whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                        {slot.time?.start_time && (
+                          <>
+                            <ReactTimeAgo
+                              className="hidden lg:block"
+                              date={new Date(slot.time.start_time)}
+                            />
+                            <ReactTimeAgo
+                              className="lg:hidden"
+                              date={new Date(slot.time.start_time)}
+                              timeStyle="twitter"
+                            />
+                          </>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
                         {slot.state_root ? (
                           <>
-                            <span className="2xl:hidden font-mono cursor-pointer flex">
+                            <span className="xl:hidden font-mono cursor-pointer flex">
                               <Tooltip content={slot.state_root}>
                                 <span className="relative top-1 group transition duration-300">
                                   {truncateHash(slot.state_root)}
@@ -140,7 +148,7 @@ export default function CheckpointsTable(props: {
                               </Tooltip>
                               <CopyToClipboard text={slot.state_root} inverted />
                             </span>
-                            <span className="hidden 2xl:table-cell font-mono">
+                            <span className="hidden xl:table-cell font-mono">
                               <span className="relative top-0.5">{slot.state_root}</span>
                               <CopyToClipboard text={slot.state_root} inverted />
                             </span>
@@ -149,7 +157,28 @@ export default function CheckpointsTable(props: {
                           ''
                         )}
                       </td>
-                      <td className="relative whitespace-nowrap text-right text-md font-semibold sm:pr-6 pr-3">
+                      <td className="hidden sm:table-cell whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                        {slot.block_root ? (
+                          <>
+                            <span className="2xl:hidden font-mono cursor-pointer flex">
+                              <Tooltip content={slot.block_root}>
+                                <span className="relative top-1 group transition duration-300">
+                                  {truncateHash(slot.block_root)}
+                                  <span className="relative -top-0.5 block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-gray-100"></span>
+                                </span>
+                              </Tooltip>
+                              <CopyToClipboard text={slot.block_root} inverted />
+                            </span>
+                            <span className="hidden 2xl:table-cell font-mono">
+                              <span className="relative top-0.5">{slot.block_root}</span>
+                              <CopyToClipboard text={slot.block_root} inverted />
+                            </span>
+                          </>
+                        ) : (
+                          ''
+                        )}
+                      </td>
+                      <td className="relative whitespace-nowrap text-right text-sm sm:text-base pr-2 sm:pr-6 font-semibold">
                         {slot.block_root && (
                           <button className="align-top" onClick={() => onClick(slot)}>
                             <MagnifyingGlassCircleIcon className="h-7 w-7 stroke-gray-50 hover:stroke-gray-100" />

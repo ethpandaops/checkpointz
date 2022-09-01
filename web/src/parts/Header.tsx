@@ -1,14 +1,19 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 
 import { Dialog, Transition } from '@headlessui/react';
 import { InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import Container from '@components/Container';
 import useStatus from '@hooks/status';
+import LogoImage from '@images/logo.png';
+import { getMajorityNetworkName } from '@utils';
 
 export default function Header() {
   const { data } = useStatus();
   const [open, setOpen] = useState(false);
+  const majorityNetwork = useMemo(() => {
+    return getMajorityNetworkName(Object.values(data?.data?.upstreams ?? {})) ?? 'unknown';
+  }, [data]);
   const onClick = () => {
     setOpen(true);
   };
@@ -18,20 +23,51 @@ export default function Header() {
         <Container className="relative z-50 flex justify-between py-2">
           <div className="relative z-10 flex items-center gap-16">
             <a href="/" aria-label="Home" className="flex items-center">
-              {data?.data?.brand_image_url && (
-                <img src={data.data.brand_image_url} alt="logo" className="h-12 w-auto" />
+              {!data?.data?.brand_image_url && !data?.data?.brand_name ? (
+                <>
+                  <span className="bg-clip-text font-extrabold text-2xl text-transparent tracking-tighest bg-gradient-to-r from-rose-400 via-fuchsia-500 to-red-500">
+                    Checkpoint
+                  </span>
+                  <img className="w-6 pl-1 pt-3" src={LogoImage} alt="checkpointz logo" />
+                </>
+              ) : (
+                <>
+                  {data?.data?.brand_image_url && (
+                    <img src={data.data.brand_image_url} alt="logo" className="h-12 w-auto" />
+                  )}
+                  <span className="font-bold text-2xl pl-2 text-gray-600">
+                    {data?.data?.brand_name}
+                  </span>
+                </>
               )}
-              <span className="font-bold text-2xl pl-2 text-gray-600">
-                {data?.data?.brand_name}
-              </span>
             </a>
+          </div>
+          <div className="hidden sm:flex md:space-x-10">
+            <div className="flex flex-col items-center">
+              <div className="flex items-center">
+                <dt className="truncate text-sm font-bold tracking-tighter text-gray-500">
+                  Network:
+                </dt>
+                <dd className="pl-1 capitalize text-sm font-semibold tracking-tighter text-fuchsia-600">
+                  {majorityNetwork}
+                </dd>
+              </div>
+              <div className="flex items-center">
+                <dt className="truncate text-sm font-bold tracking-tighter text-gray-500">
+                  Operation Mode:
+                </dt>
+                <dd className="pl-1 capitalize text-sm font-semibold tracking-tighter text-fuchsia-600">
+                  {data?.data?.operating_mode ?? 'unknown'}
+                </dd>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-6">
             <span
               className="cursor-pointer text-gray-600 font-bold hover:text-gray-700 flex items-center"
               onClick={onClick}
             >
-              About{' '}
+              <span className="pr-1">About</span>
               <InformationCircleIcon className="w-8 text-fuchsia-500 hover:text-fuchsia-600" />
             </span>
           </div>

@@ -37,7 +37,7 @@ type FrontendConfig struct {
 	PublicURL string `yaml:"public_url"`
 
 	// BrandName is the name of the brand to display in the frontend
-	BrandName string `yaml:"brand_name" default:"Checkpointz"`
+	BrandName string `yaml:"brand_name"`
 
 	// BrandImageURL is the URL of the brand image to be displayed on the frontend
 	BrandImageURL string `yaml:"brand_image_url"`
