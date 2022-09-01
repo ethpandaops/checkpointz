@@ -56,16 +56,14 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 }
 
 func (d *Default) checkGenesis(ctx context.Context) error {
-	// No-Op if we already have the genesis block AND state stored.
-	// Note: this check will constantly touch the genesis block and state in their
-	// respective stores, ensuring that we never purge those items.
+	// Don't bother checking for genesis state if we don't care about states.
+	if !d.shouldDownloadStates() {
+		return nil
+	}
+
+	// No-Op if we already have the genesis state stored.
 	block, err := d.blocks.GetBySlot(phase0.Slot(0))
 	if err == nil && block != nil {
-		// Don't bother checking for genesis state if we don't care about states.
-		if !d.shouldDownloadStates() {
-			return nil
-		}
-
 		stateRoot, errr := block.StateRoot()
 		if errr == nil {
 			if st, er := d.states.GetByStateRoot(stateRoot); er == nil && st != nil {
@@ -74,7 +72,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 		}
 	}
 
-	d.log.Debug("Fetching genesis block and state")
+	d.log.Debug("Fetching genesis state")
 
 	readyNodes := d.nodes.Ready(ctx)
 	if len(readyNodes) == 0 {
@@ -136,28 +134,33 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	sp := d.spec
 
 	slotsInScope := make(map[phase0.Slot]struct{})
+
+	// We always care about the genesis slot.
+	slotsInScope[0] = struct{}{}
+
+	// historicalFailureLimit is the amount of times we'll try to download a block
+	// before we permanently give up.
 	historicalFailureLimit := 5
+
 	// Calculate the epoch boundaries we need to fetch
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
 	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
 	for i := uint64(1); i < uint64(d.config.HistoricalEpochCount); i++ {
-		if currentSlot-(i*uint64(sp.SlotsPerEpoch)) == 0 {
-			continue
-		}
-
 		slot := phase0.Slot(currentSlot - i*uint64(sp.SlotsPerEpoch))
 		slotsInScope[slot] = struct{}{}
+	}
 
+	for slot, _ := range slotsInScope {
 		failureCount, exists := d.historicalSlotFailures[slot]
 		if !exists {
 			d.historicalSlotFailures[slot] = 0
 		}
 
-		if _, err := d.blocks.GetBySlot(slot); err == nil {
+		if failureCount >= historicalFailureLimit {
 			continue
 		}
 
-		if failureCount >= historicalFailureLimit {
+		if _, err := d.blocks.GetBySlot(slot); err == nil {
 			continue
 		}
 
