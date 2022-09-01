@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/creasty/defaults"
 	"github.com/samcm/checkpointz/pkg/checkpointz"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -48,12 +49,19 @@ func loadConfigFromFile(file string) (*checkpointz.Config, error) {
 
 	config := &checkpointz.Config{}
 
+	if err := defaults.Set(config); err != nil {
+		return nil, err
+	}
+
 	yamlFile, err := os.ReadFile(file)
+
 	if err != nil {
 		return nil, err
 	}
 
-	if err := yaml.Unmarshal(yamlFile, &config); err != nil {
+	type plain checkpointz.Config
+
+	if err := yaml.Unmarshal(yamlFile, (*plain)(config)); err != nil {
 		return nil, err
 	}
 
