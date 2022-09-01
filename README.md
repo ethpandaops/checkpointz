@@ -63,7 +63,7 @@ Checkpointz relies entirely on a single `yaml` config file.
 | checkpointz.historical_epoch_count | `20` | Controls the amount of historical epoch boundaries that Checkpointz will fetch and serve. |
 | checkpointz.frontend.enabled | `true` | if the frontend should be enabled |
 | checkpointz.frontend.brand_image_url |  | The brand logo to display on the frontend |
-| checkpointz.frontend.brand_name | `Checkpointz` | The name of the brand to display on the frontend |
+| checkpointz.frontend.brand_name | | The name of the brand to display on the frontend |
 | checkpointz.frontend.public_url |  | The public URL of where the frontend will be served from |
 | beacon.upstreams[].name |  | Shown in the frontend |
 | beacon.upstreams[].address |  | The address of your beacon node. Note: NOT shown in the frontend |

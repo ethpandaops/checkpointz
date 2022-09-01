@@ -12,7 +12,7 @@ export default function GetStartedSlideout() {
     <>
       <button
         type="button"
-        className="z-50 inline-flex items-center rounded-md border border-transparent bg-fuchsia-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-offset-2"
+        className="z-50 inline-flex items-center rounded-md border border-transparent bg-fuchsia-500 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-offset-2"
         onClick={() => setOpen(true)}
       >
         <span className="font-bold text-lg">Get started!</span>
