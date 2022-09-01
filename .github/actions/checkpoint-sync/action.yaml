@@ -109,7 +109,7 @@ runs:
       if:  ${{ inputs.consensus == 'lodestar' }}
       run: |
         echo "Starting lodestar...";
-        docker run --name beacon -d --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --checkpointSyncUrl=http://checkpointz:5555  --rest --rest.address 0.0.0.0  --rest.port=5052
+        docker run --name beacon -d --network eth -p 5052:5052 chainsafe/lodestar beacon --dataDir /data --network ${{ inputs.network }} --checkpointSyncUrl=http://checkpointz:5555  --rest --rest.address 0.0.0.0  --rest.port=5052
         echo "Lodestar is running.";
     - name: Wait for consensus client to have checkpoint synced
       shell: bash
