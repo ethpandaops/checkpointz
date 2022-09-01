@@ -6,6 +6,7 @@ import (
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/samcm/checkpointz/pkg/eth"
 )
 
 // FinalityProvider is a provider of finality information.
@@ -40,4 +41,6 @@ type FinalityProvider interface {
 	GetEpochBySlot(ctx context.Context, slot phase0.Slot) (phase0.Epoch, error)
 	// OperatingMode returns the mode of operation for the instance.
 	OperatingMode() OperatingMode
+	// GetSlotTime returns the wall clock for the given slot.
+	GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTime, error)
 }

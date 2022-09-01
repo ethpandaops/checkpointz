@@ -5,6 +5,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/samcm/checkpointz/pkg/beacon"
+	"github.com/samcm/checkpointz/pkg/eth"
 )
 
 type StatusResponse struct {
@@ -29,6 +30,7 @@ type BeaconSlot struct {
 	BlockRoot string       `json:"block_root,omitempty"`
 	StateRoot string       `json:"state_root,omitempty"`
 	Epoch     phase0.Epoch `json:"epoch"`
+	SlotTime  eth.SlotTime `json:"time"`
 }
 
 type BeaconSlotsResponse struct {
@@ -36,6 +38,7 @@ type BeaconSlotsResponse struct {
 }
 
 type BeaconSlotResponse struct {
-	Block *spec.VersionedSignedBeaconBlock `json:"block"`
-	Epoch phase0.Epoch                     `json:"epoch"`
+	Block    *spec.VersionedSignedBeaconBlock `json:"block"`
+	Epoch    phase0.Epoch                     `json:"epoch"`
+	SlotTime eth.SlotTime                     `json:"time"`
 }
