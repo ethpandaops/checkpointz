@@ -25,6 +25,15 @@ Checkpointz exists to reduce the operational burden of running a checkpoint sync
 Checkpoint sync is an operation that lets fresh beacon nodes jump to the head of the chain by fetching the state from a trusted & synced beacon node. 
 
 More info: https://notes.ethereum.org/sWeLohipS9GdgMugYn9VkQ
+
+## Supported Beacon clients
+- Lighthouse
+- Prysm
+- Lodestar
+- Nimbus
+- Teku (with `--data-storage-mode archive`)
+
+Note: Teku will require a resync from genesis if you enable this flag.
 ## Usage
 Checkpointz requires a config file. An example file can be found [here](https://github.com/samcm/checkpointz/blob/master/example_config.yaml).
 
