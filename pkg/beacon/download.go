@@ -92,6 +92,10 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 		return err
 	}
 
+	if genesisBlock == nil {
+		return errors.New("invalid genesis block")
+	}
+
 	genesisBlockRoot, err := genesisBlock.Root()
 	if err != nil {
 		return err

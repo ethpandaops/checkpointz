@@ -482,7 +482,13 @@ func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStat
 
 		//nolint:gocritic // invalid
 		if spec, err := node.Beacon.GetSpec(ctx); err == nil {
-			rsp[node.Config.Name].NetworkName = spec.ConfigName
+			network := spec.ConfigName
+			if network == "" {
+				// Fall back to our static map.
+				network = eth.GetNetworkName(spec.DepositChainID)
+			}
+
+			rsp[node.Config.Name].NetworkName = network
 		}
 
 		finality, err := node.Beacon.GetFinality(ctx)
