@@ -1,18 +1,44 @@
 # Checkpointz
 
-A beacon chain aware Checkpoint Sync provider.
+Checkpointz simplifies the process of running an Ethereum Beacon Chain checkpoint sync endpoint.
 
-Checkpointz exists to reduce the operational burden of running a checkpoint sync endpoint. Checkpointz only serves a subset of the [beacon APIs](https://ethereum.github.io/beacon-APIs/#/) that are required for all consensus clients to checkpoint sync.
 
 > :warning: **Checkpointz is still in heavy development** - use with caution
+
+----------
+## Contents
+* [Contents](#contents)
+* [Features](#features)
+* [What is checkpoint sync?](#what-is-checkpoint-sync-)
+* [Supported Beacon clients](#supported-beacon-clients)
+- [Usage](#usage)
+  * [Configuration](#configuration)
+    + [Simple example](#simple-example)
+    + [Full mode](#full-mode)
+    + [Disabled frontend](#disabled-frontend)
+    + [Full example](#full-example)
+  * [Getting Started](#getting-started)
+    + [Download a release](#download-a-release)
+    + [Docker](#docker)
+      - [Images](#images)
+    + [Kubernetes via Helm](#kubernetes-via-helm)
+    + [Grafana](#grafana)
+* [Contributing](#contributing)
+  + [Running locally](#running-locally)
+    - [Backend](#backend)
+    - [Frontend](#frontend)
+* [Contact](#contact)
+
+----------
 
 ## Features
 - Operating mode:
   - `light` - The default mode of operation. Provides enough data for users to use your instance to verify the state they got from somewhere else.
   - `full` - Provides all the functionality of `light` mode, with the additional ability to serve state requests for beacon nodes to checkpoint sync from.
 - Web UI
-  - Public-facing: shows information about the state of the provider, along with all state roots that the instance is aware of for cross-checking against instances.
-  - Internal: shows information about the internal instance, health checks, etc.
+  - Shows a table of historical epoch boundaries and their corresponding state/block roots for cross referencing.
+  - Provides an in-built guide for users to get started with checkpoint sync with client-specific information.
+  - Displays information about the configured upstreams.
 - Resource reduction
   - Adds HTTP cache-control headers depending on the content
 - DOS protection
@@ -34,7 +60,7 @@ More info: https://notes.ethereum.org/sWeLohipS9GdgMugYn9VkQ
 |  Light mode | ✅  | ✅  |  ✅ | ✅  | ✅ |
 
 Note: Teku will require a resync from genesis if you enable `--data-storage-mode archive`.
-## Usage
+# Usage
 Checkpointz requires a config file. An example file can be found [here](https://github.com/samcm/checkpointz/blob/master/example_config.yaml).
 
 ```
@@ -160,18 +186,6 @@ Download the latest release from the [Releases page](https://github.com/samcm/ch
 ./checkpointz --config your-config.yaml
 ```
 
-### Frontend
-
-A basic frontend is provided in this project in [`./web`](https://github.com/samcm/checkpointz/blob/master/example_config.yaml) directory which needs to be built before it can be served by the server, eg. `http://localhost:5555`.
-
-The frontend can be built with the following command;
-```bash
-# install node modules and build
-make build-web
-```
-
-Building frontend requires `npm` and `NodeJS` to be installed.
-
 ### Docker
 Available as a docker image at [samcm/checkpointz](https://hub.docker.com/r/samcm/checkpointz/tags)
 #### Images
@@ -229,6 +243,27 @@ Contributions are greatly appreciated! Pull requests will be reviewed and merged
     -`git push origin feat/new-metric-profit`
 5. Open a pull request
 
+### Running locally
+#### Backend
+```
+go run main.go --config your_config.yaml
+```
+
+#### Frontend
+
+A basic frontend is provided in this project in [`./web`](https://github.com/samcm/checkpointz/blob/master/example_config.yaml) directory which needs to be built before it can be served by the server, eg. `http://localhost:5555`.
+
+The frontend can be built with the following command;
+```bash
+# install node modules and build
+make build-web
+```
+
+Building frontend requires `npm` and `NodeJS` to be installed.
+
+
 ## Contact
 
 Sam - [@samcmau](https://twitter.com/samcmau)
+
+Andrew - [@savid](https://twitter.com/Savid)
