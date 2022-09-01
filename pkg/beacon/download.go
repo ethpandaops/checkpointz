@@ -72,7 +72,6 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 				return nil
 			}
 		}
-
 	}
 
 	d.log.Debug("Fetching genesis block and state")
