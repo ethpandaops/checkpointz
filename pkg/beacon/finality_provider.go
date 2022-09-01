@@ -6,6 +6,7 @@ import (
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/samcm/checkpointz/pkg/eth"
 )
 
 // FinalityProvider is a provider of finality information.
@@ -34,4 +35,12 @@ type FinalityProvider interface {
 	GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
 	// GetBeaconStateByRoot returns the beacon sate with the given root.
 	GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
+	// ListFinalizedSlots returns a slice of finalized slots.
+	ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
+	// GetEpochBySlot returns the epoch for the given slot.
+	GetEpochBySlot(ctx context.Context, slot phase0.Slot) (phase0.Epoch, error)
+	// OperatingMode returns the mode of operation for the instance.
+	OperatingMode() OperatingMode
+	// GetSlotTime returns the wall clock for the given slot.
+	GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTime, error)
 }

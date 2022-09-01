@@ -2,12 +2,16 @@ package checkpointz
 
 import (
 	"context"
+	"io/fs"
 	"net/http"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/samcm/checkpointz/pkg/api"
 	"github.com/samcm/checkpointz/pkg/beacon"
+	"github.com/samcm/checkpointz/pkg/version"
+	static "github.com/samcm/checkpointz/web"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,13 +33,18 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 		log.Fatalf("invalid config: %s", err)
 	}
 
-	provider := beacon.NewMajorityProvider(namespace, log, conf.BeaconConfig.BeaconUpstreams)
+	provider := beacon.NewDefaultProvider(
+		namespace,
+		log,
+		conf.BeaconConfig.BeaconUpstreams,
+		&conf.Checkpointz,
+	)
 
 	s := &Server{
 		Cfg: *conf,
 		log: log,
 
-		http: api.NewHandler(log, provider),
+		http: api.NewHandler(log, provider, &conf.Checkpointz),
 
 		provider: provider,
 	}
@@ -44,6 +53,8 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 }
 
 func (s *Server) Start(ctx context.Context) error {
+	s.log.Infof("Starting Checkpointz server (%s)", version.Short())
+
 	s.provider.StartAsync(ctx)
 
 	router := httprouter.New()
@@ -52,20 +63,47 @@ func (s *Server) Start(ctx context.Context) error {
 		return err
 	}
 
+	if s.Cfg.Checkpointz.Frontend.Enabled {
+		frontend, err := fs.Sub(static.FS, "build/frontend")
+		if err != nil {
+			return err
+		}
+
+		router.NotFound = http.FileServer(http.FS(frontend))
+	}
+
 	if err := s.ServeMetrics(ctx); err != nil {
 		return err
 	}
 
-	s.log.Fatal(http.ListenAndServe(s.Cfg.ListenAddr, router))
+	server := &http.Server{
+		Addr:              s.Cfg.GlobalConfig.ListenAddr,
+		ReadHeaderTimeout: 3 * time.Minute,
+	}
+
+	server.Handler = router
+
+	s.log.Infof("Serving http at %s", s.Cfg.GlobalConfig.ListenAddr)
+
+	if err := server.ListenAndServe(); err != nil {
+		s.log.Fatal(err)
+	}
 
 	return nil
 }
 
 func (s *Server) ServeMetrics(ctx context.Context) error {
 	go func() {
-		http.Handle("/metrics", promhttp.Handler())
+		server := &http.Server{
+			Addr:              s.Cfg.GlobalConfig.MetricsAddr,
+			ReadHeaderTimeout: 15 * time.Second,
+		}
 
-		if err := http.ListenAndServe(s.Cfg.GlobalConfig.MetricsAddr, nil); err != nil {
+		server.Handler = promhttp.Handler()
+
+		s.log.Infof("Serving metrics at %s", s.Cfg.GlobalConfig.MetricsAddr)
+
+		if err := server.ListenAndServe(); err != nil {
 			s.log.Fatal(err)
 		}
 	}()

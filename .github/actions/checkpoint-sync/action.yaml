@@ -36,9 +36,17 @@ runs:
         beacon:
           upstreams:
           - name: state-provider
-            address: https://${{ inputs.network }}.checkpoint-sync.ethdevops.io
+            address: https://${{ inputs.network }}-debug.checkpoint-sync.ethdevops.io
             timeoutSeconds: 30
             dataProvider: true
+        checkpointz:
+          mode: full
+          caches:
+            blocks:
+              max_items: 500
+            states:
+              max_items: 5
+          historical_epoch_count: 5
         EOF
     - name: Create log directories
       shell: bash

@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"time"
 
+	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	sbeacon "github.com/samcm/beacon"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
@@ -26,7 +28,12 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace
 			Addr: config.Address,
 		}
 
-		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, *sbeacon.DefaultOptions())
+		opts := *sbeacon.DefaultOptions()
+
+		opts.HealthCheck.Interval.Duration = time.Second * 2
+		opts.HealthCheck.SuccessfulResponses = 2
+
+		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, opts)
 
 		// TODO(sam.calder-mason): Can we re-enable this if we're expecting to use a full beacon node for v1?
 		snode.Options().BeaconSubscription.Enabled = false
@@ -119,4 +126,33 @@ func (n Nodes) RandomNode(ctx context.Context) (*Node, error) {
 
 	//nolint:gosec // not critical to worry about/will probably be replaced.
 	return nodes[rand.Intn(len(nodes))], nil
+}
+
+func (n Nodes) Filter(ctx context.Context, f func(*Node) bool) Nodes {
+	nodes := []*Node{}
+
+	for _, node := range n {
+		if !f(node) {
+			continue
+		}
+
+		nodes = append(nodes, node)
+	}
+
+	return nodes
+}
+
+func (n Nodes) PastFinalizedCheckpoint(ctx context.Context, checkpoint *v1.Finality) Nodes {
+	return n.Filter(ctx, func(node *Node) bool {
+		finality, err := node.Beacon.GetFinality(ctx)
+		if err != nil {
+			return false
+		}
+
+		if finality.Finalized.Epoch < checkpoint.Finalized.Epoch {
+			return false
+		}
+
+		return true
+	})
 }

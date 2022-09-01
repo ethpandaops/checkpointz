@@ -25,6 +25,15 @@ Checkpointz exists to reduce the operational burden of running a checkpoint sync
 Checkpoint sync is an operation that lets fresh beacon nodes jump to the head of the chain by fetching the state from a trusted & synced beacon node. 
 
 More info: https://notes.ethereum.org/sWeLohipS9GdgMugYn9VkQ
+
+## Supported Beacon clients
+- Lighthouse
+- Prysm
+- Lodestar
+- Nimbus
+- Teku (with `--data-storage-mode archive`)
+
+Note: Teku will require a resync from genesis if you enable this flag.
 ## Usage
 Checkpointz requires a config file. An example file can be found [here](https://github.com/samcm/checkpointz/blob/master/example_config.yaml).
 
@@ -38,14 +47,138 @@ Flags:
       --config string   config file (default is config.yaml) (default "config.yaml")
   -h, --help            help for checkpointz
 ```
+
+## Configuration
+
+Checkpointz relies entirely on a single `yaml` config file.
+
+| Name | Default | Description |
+| --- | --- | --- |
+| global.listenAddr | `:5555` | The address the main http server will listen on |
+| global.logging | `warn` | Log level (`panic`, `fatal`, `warn`, `info`, `debug`, `trace`) |
+| global.metricsAddr | `:9090` | The address the metrics server will listen on |
+| checkpointz.caches.blocks.max_items | `200` | Controls the amount of "block" items that can be stored by Checkpointz (minimum 3) |
+| checkpointz.caches.states.max_items | `5` | Controls the amount of "state" items that can be stored by Checkpointz (minimum 3). These states are very large and this value will directly relate to memory usage. Anything higher than 10 is not recommended |
+| checkpointz.mode | `light` | Controls the mode to run checkpointz in. `light` mode will only serve `blocks`, allowing users to use your Checkpointz as a cross reference. `full` will server `blocks` and `state`, allowing users to additonal use your Checkpointz as their state provider.  |
+| checkpointz.historical_epoch_count | `20` | Controls the amount of historical epoch boundaries that Checkpointz will fetch and serve. |
+| checkpointz.frontend.enabled | `true` | if the frontend should be enabled |
+| checkpointz.frontend.brand_image_url |  | The brand logo to display on the frontend |
+| checkpointz.frontend.brand_name | `Checkpointz` | The name of the brand to display on the frontend |
+| checkpointz.frontend.public_url |  | The public URL of where the frontend will be served from |
+| beacon.upstreams[].name |  | Shown in the frontend |
+| beacon.upstreams[].address |  | The address of your beacon node. Note: NOT shown in the frontend |
+| beacon.upstreams[].dataProvider |  | If true, Checkpointz will use this instance to fetch beacon blocks/state. If false, will only be used for finality checkpoints |
+
+### Simple example
+
+```
+# use defaults and add a single beacon upstream node
+
+beacon:
+  upstreams:
+  - name: remote
+    address: http://localhost:5052
+    dataProvider: true
+```
+
+### Disabled frontend
+
+```
+checkpointz:
+  frontend:
+    enabled: false
+
+beacon:
+  upstreams:
+  - name: remote
+    address: http://localhost:5052
+    dataProvider: true
+```
+
+### Full example
+
+```
+global:
+  # The address the main http server will listen on
+  listenAddr: ":5555"
+  # Log level (panic, fatal, warn, info, debug, trace)
+  logging: "debug"
+  # The address the metrics server will listen on
+  metricsAddr: ":9090"
+
+checkpointz:
+  caches:
+    blocks:
+      # Controls the amount of "block" items that can be stored by Checkpointz (minimum 3)
+      max_items: 200
+    states:
+      # Controls the amount of "state" items that can be stored by Checkpointz (minimum 3)
+      # These starts a very large and this value will directly relate to memory usage. Anything higher than 
+      # 10 is not recommended.
+      max_items: 5
+  historical_epoch_count: 20 # Controls the amount of historical epoch boundaries that Checkpointz will fetch and serve.
+  frontend:
+    # if the frontend should be enabled
+    enabled: true
+    # The brand logo to display on the frontend (optional)
+    # brand_image_url: https://www.cdn.com/logo.png
+    # The name of the brand to display on the frontend (optional)
+    # brand_name: Brandname
+    # The public URL of where the frontend will be served from (optional)
+    # public_url: https://www.domain.com
+
+beacon:
+  # Upstreams configures the upstream beacon nodes to use.
+  upstreams:
+    # Shown in the frontend
+  - name: remote
+    # The address of your beacon node. Note: NOT shown in the frontend
+    address: http://localhost:5052
+    # If true, Checkpointz will use this instance to fetch beacon blocks/state. If false, will only be used for finality checkpoints.
+    dataProvider: true
+```
+
 ## Getting Started
 
+### Download a release
+Download the latest release from the [Releases page](https://github.com/samcm/checkpointz/releases). Extract and run with:
+```
+./checkpointz --config your-config.yaml
+```
+
+### Frontend
+
+A basic frontend is provided in this project in [`./web`](https://github.com/samcm/checkpointz/blob/master/example_config.yaml) directory which needs to be built before it can be served by the server, eg. `http://localhost:5555`.
+
+The frontend can be built with the following command;
+```bash
+# install node modules and build
+make build-web
+```
+
+Building frontend requires `npm` and `NodeJS` to be installed.
+
 ### Docker
-Available as a docker image at `samcm/checkpointz`
+Available as a docker image at [samcm/checkpointz](https://hub.docker.com/r/samcm/checkpointz/tags)
+#### Images
+- `latest` - distroless, multiarch
+- `latest-debian` - debian, multiarch
+- `$version` - distroless, multiarch, pinned to a release (i.e. `0.4.0`)
+- `$version-debian` - debian, multiarch, pinned to a release (i.e. `0.4.0-debian`)
 
 **Quick start**
 ```
-docker run -d -it --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/exporter/config.yaml -p 9090:9090 -p 5555:5555 -it samcm/checkpointz --config /opt/exporter/config.yaml
+docker run -d  --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/checkpointz/config.yaml -p 9090:9090 -p 5555:5555 -it samcm/checkpointz:latest --config /opt/checkpointz/config.yaml;
+docker logs -f checkpointz;
+```
+
+
+### Kubernetes via Helm
+[Read more](https://github.com/skylenet/ethereum-helm-charts/tree/master/charts/checkpointz)
+```
+helm repo add ethereum-helm-charts https://skylenet.github.io/ethereum-helm-charts
+
+helm install checkpointz ethereum-helm-charts/checkpointz -f your_values.yaml
 ```
 
 

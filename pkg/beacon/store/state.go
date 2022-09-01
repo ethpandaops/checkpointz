@@ -15,14 +15,14 @@ type BeaconState struct {
 	log   logrus.FieldLogger
 }
 
-func NewBeaconState(log logrus.FieldLogger, maxTTL time.Duration, maxItems int, namespace string) *BeaconState {
+func NewBeaconState(log logrus.FieldLogger, config Config, namespace string) *BeaconState {
 	c := &BeaconState{
 		log:   log.WithField("component", "beacon/store/beacon_state"),
-		store: cache.NewTTLMap(maxItems, maxTTL, "state", namespace),
+		store: cache.NewTTLMap(config.MaxItems, "state", namespace),
 	}
 
-	c.store.OnItemDeleted(func(key string, value interface{}) {
-		c.log.WithField("state_root", key).Debug("State was deleted from the cache")
+	c.store.OnItemDeleted(func(key string, value interface{}, expiredAt time.Time) {
+		c.log.WithField("state_root", key).WithField("expired_at", expiredAt.String()).Debug("State was deleted from the cache")
 	})
 
 	c.store.EnableMetrics(namespace)
@@ -30,11 +30,12 @@ func NewBeaconState(log logrus.FieldLogger, maxTTL time.Duration, maxItems int, 
 	return c
 }
 
-func (c *BeaconState) Add(stateRoot phase0.Root, state *[]byte) error {
-	c.store.Add(eth.RootAsString(stateRoot), state)
+func (c *BeaconState) Add(stateRoot phase0.Root, state *[]byte, expiresAt time.Time) error {
+	c.store.Add(eth.RootAsString(stateRoot), state, expiresAt)
 	c.log.WithFields(
 		logrus.Fields{
 			"state_root": eth.RootAsString(stateRoot),
+			"expires_at": expiresAt.String(),
 		},
 	).Debug("Added state")
 
@@ -42,7 +43,7 @@ func (c *BeaconState) Add(stateRoot phase0.Root, state *[]byte) error {
 }
 
 func (c *BeaconState) GetByStateRoot(stateRoot phase0.Root) (*[]byte, error) {
-	data, err := c.store.Get(eth.RootAsString(stateRoot))
+	data, _, err := c.store.Get(eth.RootAsString(stateRoot))
 	if err != nil {
 		return nil, err
 	}

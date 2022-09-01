@@ -3,23 +3,24 @@ package checkpointz
 import (
 	"fmt"
 
+	"github.com/samcm/checkpointz/pkg/beacon"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
 )
 
 type Config struct {
-	GlobalConfig `yaml:"global"`
-	BeaconConfig `yaml:"beacon"`
+	GlobalConfig GlobalConfig  `yaml:"global"`
+	BeaconConfig BeaconConfig  `yaml:"beacon"`
+	Checkpointz  beacon.Config `yaml:"checkpointz"`
 }
 
 type GlobalConfig struct {
-	ListenAddr   string `yaml:"listenAddr"`
-	LoggingLevel string `yaml:"logging"`
-	MetricsAddr  string `yaml:"metricsAddr"`
+	ListenAddr   string `yaml:"listenAddr" default:":5555"`
+	LoggingLevel string `yaml:"logging" default:"warn"`
+	MetricsAddr  string `yaml:"metricsAddr" default:":9090"`
 }
 
 type BeaconConfig struct {
 	BeaconUpstreams []node.Config `yaml:"upstreams"`
-	NetworkID       uint64        `yaml:"networkID"`
 }
 
 func (c *Config) Validate() error {
@@ -37,6 +38,10 @@ func (c *Config) Validate() error {
 
 		duplicates[u.Name] = struct{}{}
 		duplicates[u.Address] = struct{}{}
+	}
+
+	if err := c.Checkpointz.Validate(); err != nil {
+		return fmt.Errorf("invalid checkpointz config: %s", err)
 	}
 
 	return nil

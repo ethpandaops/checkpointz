@@ -1,0 +1,67 @@
+{
+  "name": "checkpointz",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@craco/craco": "7.0.0-alpha.7",
+    "@headlessui/react": "1.6.6",
+    "@heroicons/react": "2.0.1",
+    "@tanstack/react-query": "4.2.1",
+    "@testing-library/jest-dom": "5.16.5",
+    "@testing-library/react": "13.3.0",
+    "@testing-library/user-event": "13.5.0",
+    "@tippyjs/react": "4.2.6",
+    "@types/jest": "27.5.2",
+    "@types/node": "16.11.55",
+    "@types/react": "18.0.17",
+    "@types/react-dom": "18.0.6",
+    "clsx": "1.2.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-scripts": "5.0.1",
+    "typescript": "4.7.4"
+  },
+  "scripts": {
+    "start": "EXTEND_ESLINT=true craco start",
+    "build": "BUILD_PATH=./build/frontend craco build",
+    "test": "craco test",
+    "lint": "eslint .",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "proxy": "http://localhost:5555",
+  "devDependencies": {
+    "@tailwindcss/typography": "0.5.4",
+    "@types/react-copy-to-clipboard": "5.0.4",
+    "@typescript-eslint/eslint-plugin": "5.36.1",
+    "@typescript-eslint/parser": "5.36.1",
+    "autoprefixer": "10.4.8",
+    "eslint-config-prettier": "8.5.0",
+    "eslint-config-react-app": "7.0.1",
+    "eslint-import-resolver-typescript": "3.5.0",
+    "eslint-plugin-import": "2.26.0",
+    "eslint-plugin-prettier": "4.2.1",
+    "eslint-plugin-react": "7.31.1",
+    "eslint-plugin-react-hooks": "4.6.0",
+    "postcss": "8.4.16",
+    "prettier": "2.7.1",
+    "tailwindcss": "3.1.8"
+  }
+}

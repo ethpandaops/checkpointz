@@ -11,7 +11,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.0
-	github.com/samcm/beacon v0.1.0
+	github.com/samcm/beacon v0.3.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -20,6 +20,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/creasty/defaults v1.6.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/ferranbt/fastssz v0.1.1 // indirect
 	github.com/goccy/go-yaml v1.9.5 // indirect
