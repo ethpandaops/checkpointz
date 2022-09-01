@@ -6,7 +6,7 @@ func DefaultNetworkIDMap() map[uint64]string {
 		3:        "ropsten",
 		4:        "rinkeby",
 		5:        "goerli",
-		1337802:  "kovan",
+		1337802:  "kiln",
 		11155111: "sepolia",
 	}
 }
