@@ -82,8 +82,6 @@ runs:
       run: |
         echo "Starting Teku...";
         docker run -p 5052:5052 -d --name beacon --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --rest-api-port=5052 --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
-        docker logs teku -f &> logs/consensus.log &
-        docker logs teku -f &
         echo "Teku is running.";
     - name: Run lighthouse client
       shell: bash
@@ -91,8 +89,6 @@ runs:
       run: |
         echo "Starting Lighthouse...";
         docker run -p 5052:5052 --network eth -d --name beacon sigp/lighthouse:latest lighthouse bn --network=${{ inputs.network }} --datadir=/data --checkpoint-sync-url=http://checkpointz:5555 --http --http-address=0.0.0.0 
-        docker logs lighthouse -f &> logs/consensus.log &
-        docker logs lighthouse -f &
         echo "Lighthouse is running.";
     - name: Run prysm
       shell: bash
@@ -100,8 +96,6 @@ runs:
       run: |
         echo "Starting prysm...";
         docker run -d --name beacon --network eth -p 5052:5052 gcr.io/prysmaticlabs/prysm/beacon-chain:latest --datadir=/data --accept-terms-of-use --${{ inputs.network }} --clear-db --grpc-gateway-port=5052 --grpc-gateway-host=0.0.0.0 --http-web3provider=http://localhost:8545 --force-clear-db --checkpoint-sync-url=http://checkpointz:5555 --genesis-beacon-api-url=http://checkpointz:5555 --grpc-gateway-port=5052
-        docker logs prysm -f &> logs/consensus.log &
-        docker logs prysm -f &
         echo "Prysm is running.";
     - name: Run nimbus
       shell: bash
@@ -109,8 +103,6 @@ runs:
       run: |
         echo "Starting nimbus...";
         docker run --name beacon --network eth statusim/nimbus-eth2:amd64-latest trustedNodeSync --network=${{ inputs.network }} --trusted-node-url=http://checkpointz:5555 --backfill=false
-        docker logs nimbus -f &> logs/consensus.log &
-        docker logs nimbus -f &
         echo "Nimbus is running.";
     - name: Run lodestar
       shell: bash
@@ -118,13 +110,12 @@ runs:
       run: |
         echo "Starting lodestar...";
         docker run --name beacon -d --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --checkpointSyncUrl=http://checkpointz:5555  --rest --rest.address 0.0.0.0  --rest.port=5052
-        docker logs lodestar -f &> logs/consensus.log &
-        docker logs lodestar -f &
         echo "Lodestar is running.";
     - name: Wait for consensus client to have checkpoint synced
       shell: bash
       if:  ${{ inputs.consensus != 'nimbus' }}
       run: |
+        docker logs beacon -f &> logs/consensus.log &
         docker logs beacon -f &
         while true; do
           if [[ $(curl -s localhost:5052/eth/v1/node/syncing | jq '.data.head_slot|tonumber') -gt 1000 ]]; then 
