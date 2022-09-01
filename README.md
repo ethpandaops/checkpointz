@@ -58,7 +58,8 @@ Checkpointz relies entirely on a single `yaml` config file.
 | global.logging | `warn` | Log level (`panic`, `fatal`, `warn`, `info`, `debug`, `trace`) |
 | global.metricsAddr | `:9090` | The address the metrics server will listen on |
 | checkpointz.caches.blocks.max_items | `200` | Controls the amount of "block" items that can be stored by Checkpointz (minimum 3) |
-| checkpointz.caches.states.max_items | `5` | Controls the amount of "state" items that can be stored by Checkpointz (minimum 3). These starts a very large and this value will directly relate to memory usage. Anything higher than 10 is not recommended |
+| checkpointz.caches.states.max_items | `5` | Controls the amount of "state" items that can be stored by Checkpointz (minimum 3). These states are very large and this value will directly relate to memory usage. Anything higher than 10 is not recommended |
+| checkpointz.mode | `light` | Controls the mode to run checkpointz in. `light` mode will only serve `blocks`, allowing users to use your Checkpointz as a cross reference. `full` will server `blocks` and `state`, allowing users to additonal use your Checkpointz as their state provider.  |
 | checkpointz.historical_epoch_count | `20` | Controls the amount of historical epoch boundaries that Checkpointz will fetch and serve. |
 | checkpointz.frontend.enabled | `true` | if the frontend should be enabled |
 | checkpointz.frontend.brand_image_url |  | The brand logo to display on the frontend |

@@ -33,6 +33,7 @@ func (h *Handler) V1Status(ctx context.Context, req *StatusRequest) (*StatusResp
 			GitCommit: version.GitCommit,
 			Release:   version.Release,
 		},
+		OperatingMode: h.provider.OperatingMode(),
 	}
 
 	upstreams, err := h.provider.UpstreamsStatus(ctx)

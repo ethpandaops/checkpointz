@@ -15,6 +15,7 @@ type StatusResponse struct {
 	BrandName     string                            `json:"brand_name,omitempty"`
 	BrandImageURL string                            `json:"brand_image_url,omitempty"`
 	Version       Version                           `json:"version"`
+	OperatingMode beacon.OperatingMode              `json:"operating_mode"`
 }
 
 type Version struct {

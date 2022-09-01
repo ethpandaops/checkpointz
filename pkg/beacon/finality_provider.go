@@ -39,6 +39,8 @@ type FinalityProvider interface {
 	ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 	// GetEpochBySlot returns the epoch for the given slot.
 	GetEpochBySlot(ctx context.Context, slot phase0.Slot) (phase0.Epoch, error)
+	// OperatingMode returns the mode of operation for the instance.
+	OperatingMode() OperatingMode
 	// GetSlotTime returns the wall clock for the given slot.
 	GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTime, error)
 }

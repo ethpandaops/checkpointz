@@ -9,6 +9,8 @@ import (
 
 // Config holds configuration for running a FinalityProvider config
 type Config struct {
+	// Mode sets the operational mode of the provider.
+	Mode OperatingMode `yaml:"mode" default:"light"`
 	// Cache holds configuration for the caches.
 	Caches CacheConfig `yaml:"caches"`
 

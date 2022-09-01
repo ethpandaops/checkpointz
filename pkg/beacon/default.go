@@ -68,6 +68,8 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 }
 
 func (d *Default) Start(ctx context.Context) error {
+	d.log.Infof("Starting Finality provider in %s mode", d.OperatingMode())
+
 	if err := d.nodes.StartAll(ctx); err != nil {
 		return err
 	}
@@ -240,6 +242,14 @@ func (d *Default) Syncing(ctx context.Context) (bool, error) {
 
 func (d *Default) Finality(ctx context.Context) (*v1.Finality, error) {
 	return d.servingBundle, nil
+}
+
+func (d *Default) OperatingMode() OperatingMode {
+	return d.config.Mode
+}
+
+func (d *Default) shouldDownloadStates() bool {
+	return d.OperatingMode() == OperatingModeFull
 }
 
 func (d *Default) checkFinality(ctx context.Context) error {
