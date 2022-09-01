@@ -70,6 +70,8 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 func (d *Default) Start(ctx context.Context) error {
 	d.log.Infof("Starting Finality provider in %s mode", d.OperatingMode())
 
+	d.metrics.ObserveOperatingMode(d.OperatingMode())
+
 	if err := d.nodes.StartAll(ctx); err != nil {
 		return err
 	}
