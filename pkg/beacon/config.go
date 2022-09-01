@@ -52,6 +52,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid caches config: %s", err)
 	}
 
+	if c.HistoricalEpochCount >= c.Caches.Blocks.MaxItems {
+		return fmt.Errorf("historical_epoch_count (%d) must be less than caches.blocks.max_items (%d)", c.HistoricalEpochCount, c.Caches.Blocks.MaxItems)
+	}
+
 	return nil
 }
 
