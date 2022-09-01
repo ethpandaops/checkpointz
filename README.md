@@ -42,7 +42,6 @@ Checkpointz simplifies the process of running an Ethereum Beacon Chain checkpoin
   - Adds HTTP cache-control headers depending on the content
 - DOS protection
   - Never routes an incoming request directly to an upstream beacon node
-  - Caches all requests
 - Support for multiple upstream beacon nodes
   - Only serves a new finalized epoch once 50%+ of upstream beacon nodes agree
 - Extensive Prometheus metrics
