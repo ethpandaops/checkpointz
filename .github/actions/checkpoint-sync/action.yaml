@@ -117,7 +117,7 @@ runs:
       if:  ${{ inputs.consensus == 'lodestar' }}
       run: |
         echo "Starting lodestar...";
-        docker run --name lodestar -d --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --weakSubjectivitySyncLatest=true --weakSubjectivityServerUrl=http://checkpointz:5555  --api.rest.enabled --api.rest.host 0.0.0.0  --api.rest.port=5052
+        docker run --name lodestar -d --network eth -p 5052:5052 chainsafe/lodestar beacon --rootDir /data --network ${{ inputs.network }} --checkpointSyncUrl=http://checkpointz:5555  --rest --rest.address 0.0.0.0  --rest.port=5052
         docker logs lodestar -f &> logs/consensus.log &
         docker logs lodestar -f &
         echo "Lodestar is running.";
