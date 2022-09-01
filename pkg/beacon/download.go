@@ -61,14 +61,18 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 	// respective stores, ensuring that we never purge those items.
 	block, err := d.blocks.GetBySlot(phase0.Slot(0))
 	if err == nil && block != nil {
-		if d.shouldDownloadStates() {
-			stateRoot, errr := block.StateRoot()
-			if errr == nil {
-				if st, er := d.states.GetByStateRoot(stateRoot); er == nil && st != nil {
-					return nil
-				}
+		// Don't bother checking for genesis state if we don't care about states.
+		if !d.shouldDownloadStates() {
+			return nil
+		}
+
+		stateRoot, errr := block.StateRoot()
+		if errr == nil {
+			if st, er := d.states.GetByStateRoot(stateRoot); er == nil && st != nil {
+				return nil
 			}
 		}
+
 	}
 
 	d.log.Debug("Fetching genesis block and state")
