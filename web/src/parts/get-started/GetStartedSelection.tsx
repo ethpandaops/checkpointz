@@ -277,7 +277,7 @@ export default function GetStartedSelection(props: {
       <div className="flex justify-end mt-5">
         <button
           type="button"
-          className="inline-flex items-center rounded-md border border-transparent bg-fuchsia-600 px-10 py-3 text-base font-medium text-white shadow-sm hover:bg-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-offset-2"
+          className="inline-flex items-center rounded-md border border-transparent bg-fuchsia-500 px-10 py-3 text-base font-medium text-white shadow-sm hover:bg-fuchsia-600 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-offset-2"
           onClick={() => onSelect(selected)}
         >
           <span className="font-bold text-lg">Continue</span>
