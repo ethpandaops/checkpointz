@@ -22,7 +22,7 @@ export default function Footer() {
                 <img className="w-5 pl-1 pt-3" src={LogoImage} alt="checkpointz logo" />
               </a>
             </div>
-            <div className="font-bold text-xs text-end text-gray-400">
+            <div className="font-bold text-xs text-center sm:text-end text-gray-400">
               {data?.data?.version?.full}
             </div>
           </div>

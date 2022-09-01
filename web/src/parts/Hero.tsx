@@ -112,10 +112,10 @@ export default function Status() {
           <GetStartedSlideout />
         </div>
       </div>
-      <div className="absolute top-1/2 top-40 sm:top-40 left-20 -translate-y-1/2 left-1/2 -translate-x-1/2 opacity-30 lg:opacity-50">
+      <div className="absolute top-1/2 sm:top-40 -translate-y-1/2 left-1/2 -translate-x-1/2 opacity-30 lg:opacity-50">
         <CircleBackground color="#d946ef" width={200} height={200} className="animate-spin-slow" />
       </div>
-      <div className="absolute top-1/2 top-40 sm:top-40 left-20 -translate-y-1/2 left-1/2 -translate-x-1/2 opacity-30 lg:opacity-50">
+      <div className="absolute top-1/2 sm:top-40 -translate-y-1/2 left-1/2 -translate-x-1/2 opacity-30 lg:opacity-50">
         <CircleBackground
           color="#d946ef"
           width={250}
@@ -123,7 +123,7 @@ export default function Status() {
           className="animate-spin-slower"
         />
       </div>
-      <div className="z-10 absolute top-1/2 top-40 sm:top-40 left-20 -translate-y-1/2 left-1/2 -translate-x-1/2 opacity-5 lg:opacity-20">
+      <div className="z-10 absolute top-1/2 sm:top-40 -translate-y-1/2 left-1/2 -translate-x-1/2 opacity-5 lg:opacity-20">
         <img src={FlagImage} alt="flag" width={75} height={75} />
       </div>
       <div className="-z-50 relative">

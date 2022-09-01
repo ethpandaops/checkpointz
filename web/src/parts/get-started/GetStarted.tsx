@@ -230,9 +230,7 @@ export default function GetStarted() {
               </span>
             )}
           </div>
-          <div className="mt-5 text-xl font-semibold">
-            Obtaining finalized checkpoint and state root
-          </div>
+          <div className="mt-5 text-xl font-semibold">Obtaining slot and state root</div>
           <div className="mt-2 font-semibold">
             Option A
             <ol className="list-decimal font-normal">
@@ -269,8 +267,8 @@ export default function GetStarted() {
               </li>
             </ol>
           </div>
-          <div className="mt-5 text-xl font-semibold">Validate against a known source</div>
-          <div className="rounded-md bg-blue-50 p-4 shadow mt-2">
+          <div className="mt-5 text-xl font-semibold">Validate against a known trusted source</div>
+          <div className="rounded-md bg-blue-50 p-4 shadow my-5">
             <div className="flex">
               <div className="flex-shrink-0">
                 <InformationCircleIcon className="h-5 w-5 text-blue-400" aria-hidden="true" />
@@ -279,55 +277,45 @@ export default function GetStarted() {
                 <p className="text-sm text-blue-700">
                   The following references to{' '}
                   <span className="font-mono bg-blue-100 p-1">slot</span> and{' '}
-                  <span className="font-mono bg-blue-100 p-1">state root</span> values are the
-                  values retrieved in the above{' '}
-                  <span className="font-mono bg-blue-100 p-1">
-                    Obtaining finalized checkpoint and state root
-                  </span>{' '}
-                  step.
+                  <span className="font-mono bg-blue-100 p-1">state root</span> are the values from
+                  the above{' '}
+                  <span className="font-mono bg-blue-100 p-1">Obtaining slot and state root</span>{' '}
+                  section.
                 </p>
               </div>
             </div>
           </div>
-          <div className="mt-2 font-semibold">
-            Option A
-            <ol className="list-decimal font-normal">
-              <li className="ml-10">
-                In a new browser tab/window, open{' '}
-                <span className="font-mono bg-gray-100 p-1">https://beaconcha.in/block/SLOT</span>,
-                replacing <span className="font-mono bg-gray-100 p-1">SLOT</span> with your{' '}
-                <span className="font-mono bg-gray-100 p-1">slot</span> value.
-              </li>
-              <li className="ml-10">
-                Check that the <span className="font-mono bg-gray-100 p-1">State Root</span> field
-                displayed matches your <span className="font-mono bg-gray-100 p-1">state root</span>{' '}
-                value.
-              </li>
-            </ol>
+          <div className="mt-2">
+            You must verify the <span className="font-mono bg-gray-100 p-1">slot</span> and{' '}
+            <span className="font-mono bg-gray-100 p-1">state root</span> against a known trusted
+            source. This can be a friend, someone from the community that you know or any other
+            source that you trust. There is a maintained list of public hosted checkpoint sync
+            endpoints in this{' '}
+            <a
+              className="underline text-fuchsia-500 hover:text-fuchsia-600"
+              href="https://github.com/eth-clients/checkpoint-sync-endpoints"
+            >
+              repository
+            </a>
+            , but it is recommended to use your own trusted source first.
           </div>
-          <div className="mt-2 font-semibold">
-            Option B
+          <div className="mt-5">
+            To verify your <span className="font-mono bg-gray-100 p-1">slot</span> and{' '}
+            <span className="font-mono bg-gray-100 p-1">state root</span> against a Checkpointz
+            instance;
             <ol className="list-decimal font-normal">
               <li className="ml-10">
                 Open another Checkpointz instance website.{' '}
                 <span className="font-semibold">
                   This must be different to this Checkpointz instance!
                 </span>
-                . There is a maintained list of public hosted Checkpointz endpoints in this{' '}
-                <a
-                  className="underline text-fuchsia-500 hover:text-fuchsia-600"
-                  href="https://github.com/eth-clients/checkpoint-sync-endpoints"
-                >
-                  repository
-                </a>
-                , but it is recommended to use a friend or trusted source first to verify.
               </li>
               <li className="ml-10">
-                Check the historical checkpoints table and search for the row that contains your{' '}
-                <span className="font-mono bg-gray-100 p-1">slot</span> value.
+                Check the historical finalized epoch boundaries table and search for the row that
+                contains your <span className="font-mono bg-gray-100 p-1">slot</span> value.
               </li>
               <li className="ml-10">
-                Make sure your <span className="font-mono bg-gray-100 p-1">state root</span> value
+                Make sure your <span className="font-mono bg-gray-100 p-1">state root</span>{' '}
                 matches.
               </li>
             </ol>

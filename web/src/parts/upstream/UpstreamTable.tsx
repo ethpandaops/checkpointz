@@ -32,12 +32,15 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="mt-4 sm:flex sm:justify-end">
         <div className="hidden sm:flex flex-auto mr-4 p-2 rounded-md">
-          <p className="mt-2 text-lg text-gray-100 font-semibold self-end">
+          <p className="mt-2 text-lg text-gray-100 drop-shadow-lg font-semibold self-end">
             Upstream beacon nodes of this Checkpointz server.
           </p>
         </div>
         <div className="bg-white/20 p-2 rounded-md">
-          <label htmlFor="email" className="block text-lg font-semibold text-gray-100">
+          <label
+            htmlFor="email"
+            className="block text-lg drop-shadow-lg font-semibold text-gray-100"
+          >
             Search
           </label>
           <div className="mt-1">
@@ -45,7 +48,7 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
               type="email"
               name="email"
               id="email"
-              className="shadow-sm block w-full sm:text-lg border-gray-300 rounded-md p-1"
+              className="shadow-lg block w-full sm:text-lg border-gray-300 rounded-md p-1"
               onChange={onSearchChange}
             />
           </div>
@@ -60,43 +63,43 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                   <tr>
                     <th
                       scope="col"
-                      className="whitespace-nowrap pl-2 sm:pl-6 py-3.5 text-left font-bold text-gray-100 sm:pl-6"
+                      className="whitespace-nowrap drop-shadow-lg pl-2 py-3.5 text-sm sm:text-base text-left font-bold text-gray-100 sm:pl-6"
                     >
                       Name
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
+                      className="whitespace-nowrap drop-shadow-lg py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Status
                     </th>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
+                      className="drop-shadow-lg whitespace-nowrap py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Network
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
+                      className="whitespace-nowrap drop-shadow-lg py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Finalized Epoch
                     </th>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
+                      className="hidden sm:table-cell drop-shadow-lg whitespace-nowrap py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Finalized Block Root
                     </th>
                     <th
                       scope="col"
-                      className="hidden lg:table-cell whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
+                      className="hidden lg:table-cell drop-shadow-lg whitespace-nowrap py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Justified Epoch
                     </th>
                     <th
                       scope="col"
-                      className="hidden lg:table-cell whitespace-nowrap py-3.5 text-left font-bold text-gray-100"
+                      className="hidden lg:table-cell drop-shadow-lg whitespace-nowrap py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Justified Block Root
                     </th>
@@ -105,10 +108,10 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                 <tbody className="divide-y divide-gray-200 bg-white/10">
                   {filteredUpstreams.map((upstream) => (
                     <tr key={upstream.name}>
-                      <td className="whitespace-nowrap pl-2 sm:pl-6 py-2 font-semibold text-sm sm:text-base text-gray-100 sm:pl-6">
+                      <td className="whitespace-nowrap drop-shadow-lg pl-2 py-2 font-semibold text-sm sm:text-base text-gray-100 sm:pl-6">
                         {upstream.name}
                       </td>
-                      <td className="whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="whitespace-nowrap drop-shadow-lg py-2 text-sm sm:text-base font-semibold text-gray-100">
                         <span
                           className={clsx(
                             upstream.healthy
@@ -120,13 +123,13 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                           {upstream.healthy ? 'Healthy' : 'Unhealthy'}
                         </span>
                       </td>
-                      <td className="hidden sm:table-cell capitalize whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="drop-shadow-lg capitalize whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
                         {upstream.network_name ?? 'unknown'}
                         {upstream.network_name !== majorityNetwork && (
                           <ExclamationTriangleIcon className="h-4 w-4 text-yellow-400 inline ml-1" />
                         )}
                       </td>
-                      <td className="whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="whitespace-nowrap drop-shadow-lg py-2 text-sm sm:text-base font-semibold text-gray-100">
                         {upstream.finality?.finalized?.epoch ?? ''}
                       </td>
                       <td className="hidden sm:table-cell whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100 font-mono">
@@ -154,10 +157,10 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                           ''
                         )}
                       </td>
-                      <td className="hidden lg:table-cell whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="hidden lg:table-cell drop-shadow-lg whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
                         {upstream.finality?.current_justified?.epoch ?? ''}
                       </td>
-                      <td className="hidden lg:table-cell whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100 font-mono">
+                      <td className="hidden lg:table-cell drop-shadow-lg whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100 font-mono">
                         {upstream.finality?.current_justified?.root ? (
                           <span className="flex items-center">
                             <span

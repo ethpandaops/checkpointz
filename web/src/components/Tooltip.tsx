@@ -17,13 +17,13 @@ export default function Tooltip(props: TippyProps & { children?: JSX.Element }) 
           )}
           {...attrs}
         >
-          <span className="font-mono font-bold">
+          <span className="font-mono font-bold text-sm sm:text-base">
             {content}
             {props.content}
           </span>
         </div>
       )}
-      sticky={false}
+      appendTo={document.body}
       trigger="click"
       delay={500}
       interactiveBorder={20}

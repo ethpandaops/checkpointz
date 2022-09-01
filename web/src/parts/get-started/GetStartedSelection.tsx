@@ -183,15 +183,14 @@ INFO  - Loaded initial state at epoch 11348 (state root = 0x08dab651bd667b166a0c
 export default function GetStartedSelection(props: {
   onChange?: (client?: ConsensusClient) => void;
 }) {
-  const [selected, setSelected] = useState<ConsensusClient>(clients[0]);
-  const [isSelected, setIsSelected] = useState<boolean>(false);
+  const [selected, setSelected] = useState<ConsensusClient | undefined>(undefined);
 
   const onSelect = (client?: ConsensusClient) => {
+    setSelected(client);
     props.onChange?.(client);
-    setIsSelected(Boolean(client));
   };
 
-  if (isSelected)
+  if (selected)
     return (
       <div className="flex items-center">
         <span className="pr-1 font-bold text-gray-500">Consensus client: </span>
@@ -223,65 +222,34 @@ export default function GetStartedSelection(props: {
       <h1 className="text-2xl font-bold m-4 text-gray-800">
         Which Ethereum consensus client are you using?
       </h1>
-      <RadioGroup value={selected} onChange={setSelected}>
-        <RadioGroup.Label className="sr-only">Consensus client</RadioGroup.Label>
-        <div className="space-y-4">
-          {clients.map((client) => (
-            <RadioGroup.Option
-              key={client.name}
-              value={client}
-              className={({ checked, active }) =>
-                clsx(
-                  checked ? 'border-transparent' : 'border-gray-300',
-                  active ? 'border-fuchsia-500 ring-2 ring-fuchsia-500' : '',
-                  'relative block cursor-pointer rounded-lg border bg-white px-6 py-4 shadow-sm focus:outline-none sm:flex sm:justify-between',
-                )
-              }
-            >
-              {({ active, checked }) => (
-                <>
-                  <span className="flex items-center">
-                    <span className="flex flex-col text-sm">
-                      <RadioGroup.Label
-                        as="span"
-                        className="font-medium text-gray-900 flex items-center"
-                      >
-                        {client.image && (
-                          <img
-                            src={client.image}
-                            alt={client.name}
-                            className={clsx(client.imageClassName, 'w-6 border rounded shadow')}
-                          />
-                        )}
-                        <span className="text-lg font-bold pl-1">{client.name}</span>
-                      </RadioGroup.Label>
-                      <RadioGroup.Description as="span" className="text-gray-500">
-                        {client.description}
-                      </RadioGroup.Description>
-                    </span>
-                  </span>
-                  <span
-                    className={clsx(
-                      active ? 'border' : 'border-2',
-                      checked ? 'border-fuchsia-500' : 'border-transparent',
-                      'pointer-events-none absolute -inset-px rounded-lg',
-                    )}
-                    aria-hidden="true"
-                  />
-                </>
-              )}
-            </RadioGroup.Option>
-          ))}
-        </div>
-      </RadioGroup>
-      <div className="flex justify-end mt-5">
-        <button
-          type="button"
-          className="inline-flex items-center rounded-md border border-transparent bg-fuchsia-500 px-10 py-3 text-base font-medium text-white shadow-sm hover:bg-fuchsia-600 focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:ring-offset-2"
-          onClick={() => onSelect(selected)}
-        >
-          <span className="font-bold text-lg">Continue</span>
-        </button>
+      <div className="flex flex-col gap-3">
+        {clients.map((client) => (
+          <div
+            key={client.name}
+            onClick={() => onSelect(client)}
+            className="relative block cursor-pointer rounded-lg border bg-white px-6 py-4 shadow-sm focus:outline-none sm:flex sm:justify-between border-gray-300 hover:border-fuchsia-500 hover:ring-2 hover:ring-fuchsia-500"
+          >
+            <span className="flex items-center">
+              <span className="flex flex-col text-sm">
+                <span className="font-medium text-gray-900 flex items-center">
+                  {client.image && (
+                    <img
+                      src={client.image}
+                      alt={client.name}
+                      className={clsx(client.imageClassName, 'w-6 border rounded shadow')}
+                    />
+                  )}
+                  <span className="text-lg font-bold pl-1">{client.name}</span>
+                </span>
+                <span className="text-gray-500">{client.description}</span>
+              </span>
+            </span>
+            <span
+              className="pointer-events-none absolute -inset-px rounded-lg border hover:border-2'"
+              aria-hidden="true"
+            />
+          </div>
+        ))}
       </div>
     </>
   );
