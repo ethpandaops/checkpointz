@@ -18,10 +18,10 @@ export default function Header() {
     setOpen(true);
   };
   return (
-    <header className="relative z-50 pb-5 sm:pb-11 lg:pt-11">
+    <header className="relative z-50 pb-5 pt-2 sm:pb-7 lg:pt-7">
       <nav>
-        <Container className="relative z-50 flex justify-between py-2">
-          <div className="relative z-10 flex items-center gap-16">
+        <Container className="relative z-50 grid grid-cols-2 content-end py-2">
+          <div className="relative z-10 flex items-center justify-self-start">
             <a href="/" aria-label="Home" className="flex items-center">
               {!data?.data?.brand_image_url && !data?.data?.brand_name ? (
                 <>
@@ -42,27 +42,14 @@ export default function Header() {
               )}
             </a>
           </div>
-          <div className="hidden sm:flex md:space-x-10">
-            <div className="flex flex-col items-center">
-              <div className="flex items-center">
-                <dt className="truncate text-sm font-bold tracking-tighter text-gray-500">
-                  Network:
-                </dt>
-                <dd className="pl-1 capitalize text-sm font-semibold tracking-tighter text-fuchsia-600">
-                  {majorityNetwork}
-                </dd>
+          <div className="flex items-center justify-self-end">
+            {majorityNetwork && (
+              <div className="flex-col items-center hidden sm:flex mr-5">
+                <span className="text-gray-500 opacity-70 font-bold">
+                  {majorityNetwork} network
+                </span>
               </div>
-              <div className="flex items-center">
-                <dt className="truncate text-sm font-bold tracking-tighter text-gray-500">
-                  Operation Mode:
-                </dt>
-                <dd className="pl-1 capitalize text-sm font-semibold tracking-tighter text-fuchsia-600">
-                  {data?.data?.operating_mode ?? 'unknown'}
-                </dd>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-6">
+            )}
             <span
               className="cursor-pointer text-gray-600 font-bold hover:text-gray-700 flex items-center"
               onClick={onClick}

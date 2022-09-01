@@ -35,14 +35,17 @@ export default function CheckpointsTable(props: {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="mt-4 sm:flex sm:justify-end">
         <div className="hidden sm:flex flex-auto mr-4 p-2 rounded-md">
-          <p className="mt-2 text-lg text-gray-100 font-semibold self-end">
+          <p className="mt-2 text-lg drop-shadow-lg text-gray-100 font-semibold self-end">
             A list of historical finalized epoch boundaries. The checkpoint currently being served
             has the{' '}
             <img src={FlagImage} alt="flag" className="w-5 inline bg-white/20 rounded p-1" /> icon.
           </p>
         </div>
         <div className="bg-white/20 p-2 rounded-md">
-          <label htmlFor="email" className="block text-lg font-semibold text-gray-100">
+          <label
+            htmlFor="email"
+            className="block text-lg drop-shadow-lg font-semibold text-gray-100"
+          >
             Search
           </label>
           <div className="mt-1">
@@ -50,7 +53,7 @@ export default function CheckpointsTable(props: {
               type="email"
               name="email"
               id="email"
-              className="shadow-sm block w-full sm:text-lg border-gray-300 rounded-md p-1"
+              className="shadow-lg block w-full sm:text-lg border-gray-300 rounded-md p-1"
               onChange={onSearchChange}
             />
           </div>
@@ -65,31 +68,31 @@ export default function CheckpointsTable(props: {
                   <tr>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell whitespace-nowrap sm:pl-6 py-3.5 text-left text-base font-bold text-gray-100"
+                      className="hidden sm:table-cell drop-shadow-lg whitespace-nowrap sm:pl-6 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Epoch
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap pl-2 sm:pl-0 py-3.5 text-left text-base font-bold text-gray-100"
+                      className="whitespace-nowrap drop-shadow-lg pl-2 sm:pl-0 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Slot
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap py-3.5 text-left text-base font-bold text-gray-100"
+                      className="whitespace-nowrap drop-shadow-lg py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Time
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap py-3.5 text-left text-base font-bold text-gray-100"
+                      className="whitespace-nowrap drop-shadow-lg py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       State Root
                     </th>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell whitespace-nowrap py-3.5 text-left text-base font-bold text-gray-100"
+                      className="hidden sm:table-cell drop-shadow-lg whitespace-nowrap py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Block Root
                     </th>
@@ -101,7 +104,7 @@ export default function CheckpointsTable(props: {
                 <tbody className="divide-y divide-gray-200 bg-white/10">
                   {filteredSlots.map((slot) => (
                     <tr key={slot.slot}>
-                      <td className="hidden sm:table-cell sm:pl-6 whitespace-nowrap py-2 font-semibold text-sm sm:text-base text-gray-100">
+                      <td className="hidden sm:table-cell sm:pl-6 drop-shadow-lg whitespace-nowrap py-2 font-semibold text-sm sm:text-base text-gray-100">
                         {slot.epoch}
                         {props.latestEpoch && slot.epoch && slot.epoch === props.latestEpoch && (
                           <img
@@ -111,7 +114,7 @@ export default function CheckpointsTable(props: {
                           />
                         )}
                       </td>
-                      <td className="whitespace-nowrap pl-2 sm:pl-0 py-2 font-semibold text-sm sm:text-base text-gray-100">
+                      <td className="whitespace-nowrap pl-2 drop-shadow-lg sm:pl-0 py-2 font-semibold text-sm sm:text-base text-gray-100">
                         {slot.slot}
                         {props.latestEpoch && slot.epoch && slot.epoch === props.latestEpoch && (
                           <img
@@ -121,7 +124,7 @@ export default function CheckpointsTable(props: {
                           />
                         )}
                       </td>
-                      <td className="whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="whitespace-nowrap py-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
                         {slot.time?.start_time && (
                           <>
                             <ReactTimeAgo
@@ -136,7 +139,7 @@ export default function CheckpointsTable(props: {
                           </>
                         )}
                       </td>
-                      <td className="whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="whitespace-nowrap py-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
                         {slot.state_root ? (
                           <>
                             <span className="xl:hidden font-mono cursor-pointer flex">
@@ -157,7 +160,7 @@ export default function CheckpointsTable(props: {
                           ''
                         )}
                       </td>
-                      <td className="hidden sm:table-cell whitespace-nowrap py-2 text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="hidden sm:table-cell whitespace-nowrap py-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
                         {slot.block_root ? (
                           <>
                             <span className="2xl:hidden font-mono cursor-pointer flex">

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Tab } from '@headlessui/react';
 import clsx from 'clsx';
 
+import useStatus from '@hooks/status';
 import Checkpoints from '@parts/checkpoints/Checkpoints';
 import Upstream from '@parts/upstream/Upstream';
 
@@ -18,6 +19,7 @@ const Sections = [
 ];
 
 export default function Section() {
+  const { data } = useStatus();
   const [tabOrientation, setTabOrientation] = useState('horizontal');
 
   useEffect(() => {
@@ -38,17 +40,34 @@ export default function Section() {
   return (
     <section
       id="sections"
-      className="relative overflow-hidden bg-scooter-200 py-10 bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500"
+      className="relative overflow-hidden shadow-inner bg-scooter-200 bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500"
     >
+      {data?.data?.operating_mode === 'light' && (
+        <div className="absolute w-full">
+          <div className="overflow-hidden h-screen">
+            <div
+              className="bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 origin-top float-right mt-3 mr-3 w-32 text-center"
+              style={{ transform: 'translateX(50%) rotate(45deg)' }}
+            >
+              <div
+                className="text-sm text-gray-100 font-bold"
+                title="Checkpointz instance is running in light operation mode"
+              >
+                Light
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <Tab.Group
         as="div"
-        className="grid grid-cols-1 items-center gap-y-6"
+        className="grid grid-cols-1 items-center gap-y-6 py-10"
         vertical={tabOrientation === 'vertical'}
       >
         {({ selectedIndex }) => (
           <>
-            <div className="-mx-4 px-1 flex overflow-x-auto mx-0 sm:overflow-visible pb-0">
-              <Tab.List className="relative z-10 flex gap-x-4 whitespace-nowrap px-4 mx-auto px-0">
+            <div className="-mx-4 px-1 flex overflow-x-auto sm:overflow-visible pb-0">
+              <Tab.List className="relative z-10 flex gap-x-4 whitespace-nowrap mx-auto px-0">
                 {Sections.map((section, featureIndex) => (
                   <div
                     key={section.title}
