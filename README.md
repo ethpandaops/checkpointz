@@ -5,6 +5,8 @@ Checkpointz simplifies the process of running an Ethereum Beacon Chain checkpoin
 
 > :warning: **Checkpointz is still in heavy development** - use with caution
 
+![Homepage](screenshots/homepage.jpg)
+
 ----------
 ## Contents
 * [Features](#features)
