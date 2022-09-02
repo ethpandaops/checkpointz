@@ -3,7 +3,7 @@
 Checkpointz simplifies the process of running an Ethereum Beacon Chain checkpoint sync endpoint.
 
 
-> :warning: **Checkpointz is still in heavy development** - use with caution.
+> :warning: **Checkpointz is still in heavy development**. Use with caution. Not currently recommended to use with a beacon node that is attached to a validator.
 
 
 
