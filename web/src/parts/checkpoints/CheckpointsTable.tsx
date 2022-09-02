@@ -68,35 +68,35 @@ export default function CheckpointsTable(props: {
                   <tr>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell drop-shadow-lg whitespace-nowrap sm:pl-6 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
+                      className="hidden sm:table-cell drop-shadow-lg whitespace-nowrap sm:pl-6 sm:px-2 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Epoch
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap drop-shadow-lg pl-2 sm:pl-0 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
+                      className="whitespace-nowrap drop-shadow-lg pl-2 sm:pl-0 sm:px-2 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Slot
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap drop-shadow-lg py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
+                      className="whitespace-nowrap drop-shadow-lg sm:px-2 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Time
                     </th>
                     <th
                       scope="col"
-                      className="whitespace-nowrap drop-shadow-lg py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
+                      className="whitespace-nowrap drop-shadow-lg sm:px-2 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       State Root
                     </th>
                     <th
                       scope="col"
-                      className="hidden sm:table-cell drop-shadow-lg whitespace-nowrap py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
+                      className="hidden sm:table-cell drop-shadow-lg whitespace-nowrap sm:px-2 py-3.5 text-left text-sm sm:text-base font-bold text-gray-100"
                     >
                       Block Root
                     </th>
-                    <th scope="col" className="">
+                    <th scope="col" className="sm:px-2">
                       <span className="sr-only">View</span>
                     </th>
                   </tr>
@@ -104,7 +104,7 @@ export default function CheckpointsTable(props: {
                 <tbody className="divide-y divide-gray-200 bg-white/10">
                   {filteredSlots.map((slot) => (
                     <tr key={slot.slot}>
-                      <td className="hidden sm:table-cell sm:pl-6 drop-shadow-lg whitespace-nowrap py-2 font-semibold text-sm sm:text-base text-gray-100">
+                      <td className="hidden sm:table-cell sm:pl-6 sm:px-2 drop-shadow-lg whitespace-nowrap py-2 font-semibold text-sm sm:text-base text-gray-100">
                         {slot.epoch}
                         {props.latestEpoch && slot.epoch && slot.epoch === props.latestEpoch && (
                           <img
@@ -114,7 +114,7 @@ export default function CheckpointsTable(props: {
                           />
                         )}
                       </td>
-                      <td className="whitespace-nowrap pl-2 drop-shadow-lg sm:pl-0 py-2 font-semibold text-sm sm:text-base text-gray-100">
+                      <td className="whitespace-nowrap pl-2 sm:px-2 drop-shadow-lg sm:pl-0 py-2 font-semibold text-sm sm:text-base text-gray-100">
                         {slot.slot}
                         {props.latestEpoch && slot.epoch && slot.epoch === props.latestEpoch && (
                           <img
@@ -124,7 +124,7 @@ export default function CheckpointsTable(props: {
                           />
                         )}
                       </td>
-                      <td className="whitespace-nowrap py-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="whitespace-nowrap py-2 sm:px-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
                         {slot.time?.start_time && (
                           <>
                             <ReactTimeAgo
@@ -139,7 +139,7 @@ export default function CheckpointsTable(props: {
                           </>
                         )}
                       </td>
-                      <td className="whitespace-nowrap py-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="whitespace-nowrap py-2 sm:px-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
                         {slot.state_root ? (
                           <>
                             <span className="xl:hidden font-mono cursor-pointer flex">
@@ -160,7 +160,7 @@ export default function CheckpointsTable(props: {
                           ''
                         )}
                       </td>
-                      <td className="hidden sm:table-cell whitespace-nowrap py-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
+                      <td className="hidden sm:table-cell whitespace-nowrap py-2 sm:px-2 drop-shadow-lg text-sm sm:text-base font-semibold text-gray-100">
                         {slot.block_root ? (
                           <>
                             <span className="2xl:hidden font-mono cursor-pointer flex">
@@ -181,7 +181,7 @@ export default function CheckpointsTable(props: {
                           ''
                         )}
                       </td>
-                      <td className="relative whitespace-nowrap text-right text-sm sm:text-base pr-2 sm:pr-6 font-semibold">
+                      <td className="relative whitespace-nowrap text-right text-sm sm:text-base pr-2 lg:px-6 font-semibold">
                         {slot.block_root && (
                           <button className="align-top" onClick={() => onClick(slot)}>
                             <MagnifyingGlassCircleIcon className="h-7 w-7 stroke-gray-50 hover:stroke-gray-100" />
