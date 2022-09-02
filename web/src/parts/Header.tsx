@@ -9,7 +9,7 @@ import LogoImage from '@images/logo.png';
 import { getMajorityNetworkName } from '@utils';
 
 export default function Header() {
-  const { data } = useStatus();
+  const { data, isLoading } = useStatus();
   const [open, setOpen] = useState(false);
   const majorityNetwork = useMemo(() => {
     return getMajorityNetworkName(Object.values(data?.data?.upstreams ?? {})) ?? 'unknown';
@@ -41,7 +41,7 @@ export default function Header() {
         <Container className="relative z-50 grid grid-cols-2 content-end py-2">
           <div className="relative z-10 flex items-center justify-self-start">
             <a href="/" aria-label="Home" className="flex items-center">
-              {!data?.data?.brand_image_url && !data?.data?.brand_name ? (
+              {!data?.data?.brand_image_url && !data?.data?.brand_name && !isLoading ? (
                 <>
                   <span className="bg-clip-text font-extrabold text-2xl text-transparent tracking-tighest bg-gradient-to-r from-rose-400 via-fuchsia-500 to-red-500">
                     Checkpoint
