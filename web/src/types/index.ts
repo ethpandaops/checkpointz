@@ -58,6 +58,9 @@ export interface APIBeaconBlockMessageBody {
     block_hash?: string;
     block_number?: string;
   };
+  eth1_data?: {
+    block_hash?: string;
+  };
   graffiti?: string;
 }
 
