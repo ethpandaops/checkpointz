@@ -28,6 +28,12 @@ export function stringToHexColour(str: string): string {
     const value = (hash >> (i * 8)) & 255;
     color += value.toString(16).substring(-2);
   }
+  // make sure the hex color is always 6 characters
+  if (color.length < 7) {
+    color += Array.from({ length: 7 - color.length }, () => '0').join('');
+  } else if (color.length > 7) {
+    color = color.substring(0, 7);
+  }
   return color;
 }
 
