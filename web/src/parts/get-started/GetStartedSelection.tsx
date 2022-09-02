@@ -78,7 +78,7 @@ const clients: ConsensusClient[] = [
       <div className="bg-gray-100 rounded-lg grid">
         <pre className="overflow-x-auto p-5">
           {`INFO Starting checkpoint sync                remote_url: ${publicURL}, service: beacon
-INFO Loaded checkpoint block and state       state_root: 0xb6e8c25393411f252775f82b4907298572003ac37acf9422dd2500b5c368a08d, block_root: 0xefe19ea0d99bf45d50d4302f6bbc3feb2c1ec46f8d6e112594ec86b9581596ae, slot: 3480832, service: beacon
+INFO Loaded checkpoint block and state       state_root: 0x854ca984298e6a0d9fc098b4e37f1b28727e545a8e4d3106188fda3587d14cdb, block_root: 0x91e4f5129bc54f7284f1690e00803db360aeb63d34610d6995e1145bd01c0d92, slot: 529024, service: beacon
 `}
         </pre>
       </div>
@@ -99,7 +99,8 @@ INFO Loaded checkpoint block and state       state_root: 0xb6e8c25393411f252775f
       <div className="bg-gray-100 rounded-lg grid">
         <pre className="overflow-x-auto p-5">
           {`info: Fetching weak subjectivity state weakSubjectivityServerUrl=${publicURL}
-info: Download completed`}
+info: Download completed
+info: Initializing beacon state from anchor state slot=529024, epoch=16532, stateRoot=0x854ca984298e6a0d9fc098b4e37f1b28727e545a8e4d3106188fda3587d14cdb`}
         </pre>
       </div>
     ),
@@ -125,10 +126,9 @@ info: Download completed`}
         <pre className="overflow-x-auto p-5">
           {`Starting trusted node sync                 databaseDir=/data/consensus/db restUrl=${publicURL} blockId=finalized backfill=false reindex=false
 Downloading checkpoint block               restUrl=${publicURL} blockId=finalized
-Downloading checkpoint state               restUrl=${publicURL} checkpointSlot=370528
-Writing checkpoint state
-Writing checkpoint block
-Database initialized, historical blocks will be backfilled when starting the node`}
+Downloading checkpoint state               restUrl=${publicURL} checkpointSlot=529024
+Writing checkpoint state                   stateRoot=91e4f512
+Writing checkpoint block                   blockRoot=13b4cc5f blck="(slot: 529024, proposer_index: 1466, parent_root: \\"0b019674\\", state_root: \\"854ca984\\")"`}
         </pre>
       </div>
     ),
@@ -152,7 +152,10 @@ Database initialized, historical blocks will be backfilled when starting the nod
       <div className="bg-gray-100 rounded-lg grid">
         <pre className="overflow-x-auto p-5">
           {`level=info msg="requesting ${publicURL}/eth/v2/debug/beacon/states/genesis"
-level=info msg="requesting ${publicURL}/eth/v2/debug/beacon/states/finalized"`}
+level=info msg="requesting ${publicURL}/eth/v2/debug/beacon/states/finalized"
+level=info msg="requesting ${publicURL}/eth/v2/beacon/blocks/0x91e4f5129bc54f7284f1690e00803db360aeb63d34610d6995e1145bd01c0d92"
+level=info msg="BeaconState slot=529024, Block slot=529024"
+level=info msg="BeaconState htr=0x854ca984298e6a0d9fc098b4e37f1b28727e545a8e4d3106188fda3587d14cdbd, Block state_root=0x854ca984298e6a0d9fc098b4e37f1b28727e545a8e4d3106188fda3587d14cdb"`}
         </pre>
       </div>
     ),
@@ -173,7 +176,7 @@ level=info msg="requesting ${publicURL}/eth/v2/debug/beacon/states/finalized"`}
       <div className="bg-gray-100 rounded-lg grid">
         <pre className="overflow-x-auto p-5">
           {`INFO  - Loading initial state from ${publicURL}
-INFO  - Loaded initial state at epoch 11348 (state root = 0x08dab651bd667b166a0c99b7a21ee455f4f9fadfce0e37dbcee490f5ec841477, block root = 0xa5bd8b3eaadd81f892f120219f3bcee6565a37d045bf0cee4c4023a51def430c, block slot = 363136).  Please ensure that the supplied initial state corresponds to the latest finalized block as of the start of epoch 11348 (slot 363136)."`}
+INFO  - Loaded initial state at epoch 16532 (state root = 0x854ca984298e6a0d9fc098b4e37f1b28727e545a8e4d3106188fda3587d14cdb, block root = 0x91e4f5129bc54f7284f1690e00803db360aeb63d34610d6995e1145bd01c0d92, block slot = 529024).  Please ensure that the supplied initial state corresponds to the latest finalized block as of the start of epoch 16532 (slot 529024)."`}
         </pre>
       </div>
     ),

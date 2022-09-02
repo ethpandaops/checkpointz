@@ -235,6 +235,21 @@ export default function GetStarted() {
             Option A
             <ol className="list-decimal font-normal">
               <li className="ml-10">
+                Check your consensus client logs
+                {client.name !== 'Not applicable' && client.logCheck?.(publicURL)}
+              </li>
+              <li className="ml-10">
+                Find the <span className="font-mono bg-gray-100 p-1">slot</span> number.
+              </li>
+              <li className="ml-10">
+                Find the <span className="font-mono bg-gray-100 p-1">state_root</span> value.
+              </li>
+            </ol>
+          </div>
+          <div className="mt-2 font-semibold">
+            Option B
+            <ol className="list-decimal font-normal">
+              <li className="ml-10">
                 Open{' '}
                 <span className="font-mono bg-gray-100 p-1 break-all">
                   http://YOUR_NODE_IP:YOUR_NODE_PORT/eth/v1/beacon/headers/finalized
@@ -250,7 +265,7 @@ export default function GetStarted() {
             </ol>
           </div>
           <div className="mt-2 font-semibold">
-            Option B
+            Option C
             <ol className="list-decimal font-normal">
               <li className="ml-10">
                 Install <span className="font-mono bg-gray-100 p-1">curl</span> and{' '}

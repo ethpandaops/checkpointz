@@ -19,6 +19,24 @@ export default function Header() {
   };
   return (
     <header className="relative z-50 pb-5 pt-2 sm:pb-7 lg:pt-7">
+      <div className="hidden sm:block absolute top-0 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 p-2 rounded-b-lg border-x-2 border-b-2 border-white/10 shadow-lg">
+        <div className="flex items-center justify-center">
+          <dt className="truncate text-sm tracking-tighter font-semibold text-gray-100">
+            Network:
+          </dt>
+          <dd className="pl-1 underline capitalize text-sm font-bold tracking-tighter text-gray-100 hover:text-gray-200 hover:animate-pulse cursor-default">
+            {majorityNetwork}
+          </dd>
+        </div>
+        <div className="flex items-center justify-center">
+          <dt className="truncate text-sm tracking-tighter font-semibold text-gray-100">
+            Operation Mode:
+          </dt>
+          <dd className="pl-1 underline capitalize text-sm font-bold tracking-tighter text-gray-100 hover:text-gray-200 hover:animate-pulse cursor-default">
+            {data?.data?.operating_mode ?? 'unknown'}
+          </dd>
+        </div>
+      </div>
       <nav>
         <Container className="relative z-50 grid grid-cols-2 content-end py-2">
           <div className="relative z-10 flex items-center justify-self-start">
@@ -42,14 +60,7 @@ export default function Header() {
               )}
             </a>
           </div>
-          <div className="flex items-center justify-self-end">
-            {majorityNetwork && (
-              <div className="flex-col items-center hidden sm:flex mr-5">
-                <span className="text-gray-500 opacity-70 font-bold">
-                  {majorityNetwork} network
-                </span>
-              </div>
-            )}
+          <div className="hidden sm:flex items-center justify-self-end">
             <span
               className="cursor-pointer text-gray-600 font-bold hover:text-gray-700 flex items-center"
               onClick={onClick}
@@ -57,6 +68,27 @@ export default function Header() {
               <span className="pr-1">About</span>
               <InformationCircleIcon className="w-8 text-fuchsia-500 hover:text-fuchsia-600" />
             </span>
+          </div>
+          <div
+            onClick={onClick}
+            className="sm:hidden cursor-pointer absolute top-0 right-0 transform -translate-y-2 bg-gradient-to-r from-rose-400 via-fuchsia-500 to-indigo-500 p-2 rounded-bl-lg border-l-2 border-b-2 border-white/10 shadow-lg"
+          >
+            <div className="flex items-center justify-center">
+              <dt className="truncate text-sm tracking-tighter font-semibold text-gray-100">
+                Network:
+              </dt>
+              <dd className="pl-1 underline capitalize text-sm font-bold tracking-tighter text-gray-100 hover:text-gray-200 hover:animate-pulse cursor-default">
+                {majorityNetwork}
+              </dd>
+            </div>
+            <div className="flex items-center justify-center">
+              <dt className="truncate text-sm tracking-tighter font-semibold text-gray-100">
+                Operation Mode:
+              </dt>
+              <dd className="pl-1 underline capitalize text-sm font-bold tracking-tighter text-gray-100 hover:text-gray-200 hover:animate-pulse cursor-default">
+                {data?.data?.operating_mode ?? 'unknown'}
+              </dd>
+            </div>
           </div>
         </Container>
       </nav>
