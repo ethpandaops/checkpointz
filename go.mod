@@ -2,16 +2,15 @@ module github.com/samcm/checkpointz
 
 go 1.17
 
-// replace github.com/samcm/beacon => /Users/samcm/go/src/github.com/samcm/beacon
-
 require (
 	github.com/attestantio/go-eth2-client v0.13.1
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
+	github.com/creasty/defaults v1.6.0
 	github.com/go-co-op/gocron v1.16.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.0
-	github.com/samcm/beacon v0.3.0
+	github.com/samcm/beacon v0.4.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -20,7 +19,6 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/creasty/defaults v1.6.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/ferranbt/fastssz v0.1.1 // indirect
 	github.com/goccy/go-yaml v1.9.5 // indirect
