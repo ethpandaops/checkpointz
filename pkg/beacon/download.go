@@ -184,6 +184,8 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 		}
 
 		d.historicalSlotFailures[slot] = failureCount
+
+		time.Sleep(50 * time.Millisecond)
 	}
 
 	// Cleanup any banned slots that we don't care about anymore to prevent leaking memory.
