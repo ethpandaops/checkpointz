@@ -34,6 +34,12 @@ export default function Slot(props: { slot: number }) {
         return data?.data?.block?.Phase0;
     }
   }, [data]);
+  const blockHash = useMemo(() => {
+    if (['ALTAIR', 'PHASE0'].includes(data?.data?.block?.Version ?? '')) {
+      return block?.message?.body?.eth1_data?.block_hash;
+    }
+    return block?.message?.body?.execution_payload?.block_hash;
+  }, [data, block]);
   const time = useMemo<string | undefined>(() => {
     if (!data?.data?.time?.start_time) return;
     return format(new Date(data?.data?.time?.start_time), 'PPP pp');
@@ -87,20 +93,20 @@ export default function Slot(props: { slot: number }) {
           <div className="py-4 sm:py-5 sm:grid sm:grid-cols-5 sm:gap-4 sm:px-6">
             <dt className="text-sm font-medium text-gray-500">Block Root</dt>
             <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-4">
-              {block.message.body?.execution_payload?.block_hash && (
+              {blockHash && (
                 <>
                   <span className="lg:hidden font-mono flex">
-                    <Tooltip content={block.message.body.execution_payload.block_hash}>
+                    <Tooltip content={blockHash}>
                       <span className="relative top-1 group transition duration-300 cursor-pointer">
-                        {truncateHash(block.message.body.execution_payload.block_hash)}
+                        {truncateHash(blockHash)}
                         <span className="relative -top-0.5 block max-w-0 group-hover:max-w-full transition-all duration-500 h-0.5 bg-fuchsia-400"></span>
                       </span>
                     </Tooltip>
-                    <CopyToClipboard text={block.message.body.execution_payload.block_hash} />
+                    <CopyToClipboard text={blockHash} />
                   </span>
                   <span className="hidden lg:table-cell font-mono">
-                    {block.message.body.execution_payload.block_hash}
-                    <CopyToClipboard text={block.message.body.execution_payload.block_hash} />
+                    {blockHash}
+                    <CopyToClipboard text={blockHash} />
                   </span>
                 </>
               )}
