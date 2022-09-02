@@ -56,6 +56,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("historical_epoch_count (%d) must be less than caches.blocks.max_items (%d)", c.HistoricalEpochCount, c.Caches.Blocks.MaxItems)
 	}
 
+	if c.HistoricalEpochCount > 200 {
+		return fmt.Errorf("historical_epoch_count (%d) cannot be higher than 200", c.HistoricalEpochCount)
+	}
+
 	return nil
 }
 
