@@ -132,7 +132,7 @@ export default function UpstreamTable(props: { upstreams: APIUpstream[] }) {
                       <td className="whitespace-nowrap drop-shadow-lg sm:px-2 py-2 text-sm sm:text-base font-semibold text-gray-100">
                         {upstream.finality?.finalized?.epoch ?? ''}
                       </td>
-                      <td className="hidden sm:table-cell whitespace-nowrap sm:px-2 py-2 text-sm sm:text-base font-semibold text-gray-100 font-mono">
+                      <td className="hidden sm:table-cell drop-shadow-lg whitespace-nowrap sm:px-2 py-2 text-sm sm:text-base font-semibold text-gray-100 font-mono">
                         {upstream.finality?.finalized?.root ? (
                           <span className="flex items-center">
                             <span
