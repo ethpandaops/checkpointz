@@ -47,10 +47,21 @@ func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, config *be
 }
 
 func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error {
+	router.GET("/eth/v1/beacon/genesis", h.wrappedHandler(h.handleEthV1BeaconGenesis))
 	router.GET("/eth/v1/beacon/blocks/:block_id/root", h.wrappedHandler(h.handleEthV1BeaconBlocksRoot))
-	router.GET("/eth/v1/beacon/states/:state_id/finality_checkpoints", h.wrappedHandler(h.handleEthV1BeaconStatesHeadFinalityCheckpoints))
+	router.GET("/eth/v1/beacon/states/:state_id/finality_checkpoints", h.wrappedHandler(h.handleEthV1BeaconStatesFinalityCheckpoints))
+
+	router.GET("/eth/v1/config/spec", h.wrappedHandler(h.handleEthV1ConfigSpec))
+	router.GET("/eth/v1/config/deposit_contract", h.wrappedHandler(h.handleEthV1ConfigDepositContract))
+	router.GET("/eth/v1/config/fork_schedule", h.wrappedHandler(h.handleEthV1ConfigForkSchedule))
+
+	router.GET("/eth/v1/node/syncing", h.wrappedHandler(h.handleEthV1NodeSyncing))
+	router.GET("/eth/v1/node/version", h.wrappedHandler(h.handleEthV1NodeVersion))
+	router.GET("/eth/v1/node/peers", h.wrappedHandler(h.handleEthV1NodePeers))
+	router.GET("/eth/v1/node/peer_count", h.wrappedHandler(h.handleEthV1NodePeerCount))
 
 	router.GET("/eth/v2/beacon/blocks/:block_id", h.wrappedHandler(h.handleEthV2BeaconBlocks))
+
 	router.GET("/eth/v2/debug/beacon/states/:state_id", h.wrappedHandler(h.handleEthV2DebugBeaconStates))
 
 	router.GET("/checkpointz/v1/status", h.wrappedHandler(h.handleCheckpointzStatus))
@@ -123,6 +134,25 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 	}
 }
 
+func (h *Handler) handleEthV1BeaconGenesis(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	genesis, err := h.eth.BeaconGenesis(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	var rsp = NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: genesis.MarshalJSON,
+	})
+
+	rsp.SetCacheControl("public, s-max-age=30")
+
+	return rsp, nil
+}
+
 func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
 	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON, ContentTypeSSZ}); err != nil {
 		return NewUnsupportedMediaTypeResponse(nil), err
@@ -159,6 +189,9 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 	default:
 		return NewInternalServerErrorResponse(nil), errors.New("unknown block version")
 	}
+
+	rsp.AddExtraData("version", block.Version.String())
+	rsp.AddExtraData("execution_optimistic", "false")
 
 	switch blockID.Type() {
 	case eth.BlockIDRoot, eth.BlockIDGenesis, eth.BlockIDSlot:
@@ -208,6 +241,169 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 	case eth.StateIDHead:
 		rsp.SetCacheControl("public, s-max-age=30")
 	}
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1ConfigSpec(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	sp, err := h.eth.ConfigSpec(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	var rsp = NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(sp)
+		},
+	})
+
+	rsp.SetCacheControl("public, s-max-age=30")
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1ConfigDepositContract(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	contract, err := h.eth.DepositContract(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	var rsp = NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(contract)
+		},
+	})
+
+	rsp.SetCacheControl("public, s-max-age=30")
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1ConfigForkSchedule(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	forks, err := h.eth.ForkSchedule(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	var rsp = NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(forks)
+		},
+	})
+
+	rsp.SetCacheControl("public, s-max-age=30")
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1NodeSyncing(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	syncing, err := h.eth.NodeSyncing(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	var rsp = NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(syncing)
+		},
+	})
+
+	rsp.SetCacheControl("public, s-max-age=10")
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1NodeVersion(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	version, err := h.eth.NodeVersion(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	data := struct {
+		Version string `json:"version"`
+	}{Version: version}
+
+	var rsp = NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(data)
+		},
+	})
+
+	rsp.SetCacheControl("public, s-max-age=60")
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1NodePeerCount(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	peers, err := h.eth.Peers(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	data := struct {
+		Connected     string `json:"connected"`
+		Connecting    string `json:"connecting"`
+		Disconnected  string `json:"disconnected"`
+		Disconnecting string `json:"disconnecting"`
+	}{
+		Connected:     fmt.Sprintf("%d", len(peers.ByState("connected"))),
+		Disconnected:  fmt.Sprintf("%d", len(peers.ByState("disconnected"))),
+		Connecting:    fmt.Sprintf("%d", len(peers.ByState("connecting"))),
+		Disconnecting: fmt.Sprintf("%d", len(peers.ByState("disconnecting"))),
+	}
+
+	var rsp = NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(data)
+		},
+	})
+
+	rsp.SetCacheControl("public, s-max-age=60")
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1NodePeers(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	peers, err := h.eth.Peers(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	var rsp = NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(peers)
+		},
+	})
+
+	rsp.SetCacheControl("public, s-max-age=60")
 
 	return rsp, nil
 }
@@ -307,7 +503,7 @@ func (h *Handler) handleCheckpointzBeaconSlot(ctx context.Context, r *http.Reque
 	return rsp, nil
 }
 
-func (h *Handler) handleEthV1BeaconStatesHeadFinalityCheckpoints(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+func (h *Handler) handleEthV1BeaconStatesFinalityCheckpoints(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
 	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
 		return NewUnsupportedMediaTypeResponse(nil), err
 	}
@@ -322,11 +518,18 @@ func (h *Handler) handleEthV1BeaconStatesHeadFinalityCheckpoints(ctx context.Con
 		return NewInternalServerErrorResponse(nil), err
 	}
 
-	return NewSuccessResponse(ContentTypeResolvers{
+	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeJSON: func() ([]byte, error) {
 			return json.Marshal(finality)
 		},
-	}), nil
+	})
+
+	switch id.Type() {
+	case eth.StateIDFinalized, eth.StateIDHead:
+		rsp.SetCacheControl("public, s-max-age=5")
+	}
+
+	return rsp, nil
 }
 
 func (h *Handler) handleEthV1BeaconBlocksRoot(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {

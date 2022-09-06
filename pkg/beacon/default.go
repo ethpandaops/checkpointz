@@ -11,6 +11,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
 	"github.com/go-co-op/gocron"
+	"github.com/samcm/beacon/api/types"
 	"github.com/samcm/beacon/state"
 	"github.com/samcm/checkpointz/pkg/beacon/checkpoints"
 	"github.com/samcm/checkpointz/pkg/beacon/node"
@@ -226,6 +227,7 @@ func (d *Default) checkForNewServingCheckpoint(ctx context.Context) error {
 
 	return nil
 }
+
 func (d *Default) Healthy(ctx context.Context) (bool, error) {
 	if len(d.nodes.Healthy(ctx)) == 0 {
 		return false, nil
@@ -234,16 +236,77 @@ func (d *Default) Healthy(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (d *Default) Syncing(ctx context.Context) (bool, error) {
-	if len(d.nodes.NotSyncing(ctx)) == 0 {
-		return true, nil
+func (d *Default) Peers(ctx context.Context) (types.Peers, error) {
+	peers := types.Peers{}
+
+	for _, node := range d.nodes {
+		status := "connected"
+
+		if node.Beacon.GetStatus(ctx).Syncing() || !node.Beacon.GetStatus(ctx).Healthy() {
+			status = "disconnected"
+		}
+
+		peers = append(peers, types.Peer{
+			PeerID:    node.Config.Name,
+			State:     status,
+			Direction: "outbound",
+		})
 	}
 
-	return false, nil
+	return peers, nil
 }
 
-func (d *Default) Finality(ctx context.Context) (*v1.Finality, error) {
+func (d *Default) Syncing(ctx context.Context) (*v1.SyncState, error) {
+	syncing := len(d.nodes.Healthy(ctx).Syncing(ctx)) == len(d.nodes.Healthy(ctx))
+
+	syncState := &v1.SyncState{
+		IsSyncing:    syncing,
+		HeadSlot:     0,
+		SyncDistance: 0,
+	}
+
+	sp, err := d.Spec(ctx)
+	if err != nil {
+		return syncState, err
+	}
+
+	if sp == nil {
+		return syncState, errors.New("spec unknown")
+	}
+
+	if d.head != nil && d.head.Finalized != nil {
+		syncState.HeadSlot = phase0.Slot(d.head.Finalized.Epoch) * sp.SlotsPerEpoch
+	}
+
+	if d.servingBundle != nil && d.servingBundle.Finalized != nil {
+		syncState.SyncDistance = syncState.HeadSlot - phase0.Slot(d.servingBundle.Finalized.Epoch)*sp.SlotsPerEpoch
+	}
+
+	return syncState, nil
+}
+
+func (d *Default) Finalized(ctx context.Context) (*v1.Finality, error) {
 	return d.servingBundle, nil
+}
+
+func (d *Default) Head(ctx context.Context) (*v1.Finality, error) {
+	return d.head, nil
+}
+
+func (d *Default) Genesis(ctx context.Context) (*v1.Genesis, error) {
+	if d.genesis == nil {
+		return nil, errors.New("genesis bundle not yet available")
+	}
+
+	return d.genesis, nil
+}
+
+func (d *Default) Spec(ctx context.Context) (*state.Spec, error) {
+	if d.spec == nil {
+		return nil, errors.New("config spec not yet available")
+	}
+
+	return d.spec, nil
 }
 
 func (d *Default) OperatingMode() OperatingMode {
@@ -261,7 +324,7 @@ func (d *Default) checkFinality(ctx context.Context) error {
 	for _, node := range readyNodes {
 		finality, err := node.Beacon.GetFinality(ctx)
 		if err != nil {
-			d.log.Info("Failed to get finality from node", "node", node.Config.Name)
+			d.log.Infof("Failed to get finality from node %s", node.Config.Name)
 
 			continue
 		}
@@ -451,7 +514,7 @@ func (d *Default) storeBlock(ctx context.Context, block *spec.VersionedSignedBea
 	}
 
 	expiresAtSlot := CalculateSlotExpiration(slot, d.config.HistoricalEpochCount*int(d.spec.SlotsPerEpoch))
-	expiresAt := GetSlotTime(expiresAtSlot, d.spec.SecondsPerSlot, d.genesis.GenesisTime).
+	expiresAt := GetSlotTime(expiresAtSlot, d.spec.SecondsPerSlot.AsDuration(), d.genesis.GenesisTime).
 		Add(time.Minute * 15) // Store it for an extra 15 minutes to simplify the expiry logic.
 
 	if slot == phase0.Slot(0) {
@@ -512,7 +575,7 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 		return slots, errors.New("no beacon chain spec available")
 	}
 
-	finality, err := d.Finality(ctx)
+	finality, err := d.Head(ctx)
 	if err != nil {
 		return slots, err
 	}
@@ -538,6 +601,10 @@ func (d *Default) GetEpochBySlot(ctx context.Context, slot phase0.Slot) (phase0.
 	return phase0.Epoch(uint64(slot) / uint64(d.spec.SlotsPerEpoch)), nil
 }
 
+func (d *Default) PeerCount(ctx context.Context) (uint64, error) {
+	return uint64(len(d.nodes.Healthy(ctx).NotSyncing(ctx))), nil
+}
+
 func (d *Default) GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTime, error) {
 	SlotTime := eth.SlotTime{}
 
@@ -549,5 +616,5 @@ func (d *Default) GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTi
 		return SlotTime, errors.New("genesis time is unknown")
 	}
 
-	return eth.CalculateSlotTime(slot, d.genesis.GenesisTime, d.spec.SecondsPerSlot), nil
+	return eth.CalculateSlotTime(slot, d.genesis.GenesisTime, d.spec.SecondsPerSlot.AsDuration()), nil
 }
