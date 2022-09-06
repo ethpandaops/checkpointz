@@ -7,7 +7,10 @@ import (
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/samcm/beacon/api/types"
+	"github.com/samcm/beacon/state"
 	"github.com/samcm/checkpointz/pkg/beacon"
+	"github.com/samcm/checkpointz/pkg/version"
 	"github.com/sirupsen/logrus"
 )
 
@@ -75,6 +78,160 @@ func (h *Handler) BeaconBlock(ctx context.Context, blockID BlockIdentifier) (*sp
 	default:
 		return nil, fmt.Errorf("invalid block id: %v", blockID.String())
 	}
+}
+
+// BeaconGenesis returns the details of the chain's genesis.
+func (h *Handler) BeaconGenesis(ctx context.Context) (*v1.Genesis, error) {
+	var err error
+
+	const call = "beacon_genesis"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	return h.provider.Genesis(ctx)
+}
+
+// ConfigSpec gets the spec configuration.
+func (h *Handler) ConfigSpec(ctx context.Context) (*state.Spec, error) {
+	var err error
+
+	const call = "config_spec"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	return h.provider.Spec(ctx)
+}
+
+// ForkSchedule returns the upcoming forks.
+func (h *Handler) ForkSchedule(ctx context.Context) ([]*state.ScheduledFork, error) {
+	var err error
+
+	const call = "fork_schedule"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	sp, err := h.provider.Spec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	schedule, err := sp.ForkEpochs.AsScheduledForks()
+	if err != nil {
+		return nil, err
+	}
+
+	return schedule, nil
+}
+
+// DepositContract gets the Eth1 deposit address and chain ID
+func (h *Handler) DepositContract(ctx context.Context) (*DepositContract, error) {
+	var err error
+
+	const call = "config_deposit_contract"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	sp, err := h.provider.Spec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DepositContract{
+		Address: sp.DepositContractAddress,
+		ChainID: fmt.Sprintf("%d", sp.DepositChainID),
+	}, nil
+}
+
+// NodeSyncing returns the sync state of the beacon node.
+func (h *Handler) NodeSyncing(ctx context.Context) (*v1.SyncState, error) {
+	var err error
+
+	const call = "node_syncing"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	return h.provider.Syncing(ctx)
+}
+
+// NodeVersion returns the version of the beacon node.
+func (h *Handler) NodeVersion(ctx context.Context) (string, error) {
+	var err error
+
+	const call = "node_version"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	return version.FullVWithGOOS(), nil
+}
+
+// Peers returns the peers connected to the beacon node.
+func (h *Handler) Peers(ctx context.Context) (types.Peers, error) {
+	var err error
+
+	const call = "node_peers"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	return h.provider.Peers(ctx)
+}
+
+// PeerCount returns the amount of peers connected to the beacon node.
+func (h *Handler) PeerCount(ctx context.Context) (uint64, error) {
+	var err error
+
+	const call = "node_peer_count"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	return h.provider.PeerCount(ctx)
 }
 
 // BeaconBlock returns the beacon state for the given state id.

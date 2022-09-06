@@ -13,3 +13,7 @@ func RootAsString(root phase0.Root) string {
 func SlotAsString(slot phase0.Slot) string {
 	return fmt.Sprintf("%d", slot)
 }
+
+func EpochAsString(epoch phase0.Epoch) string {
+	return fmt.Sprintf("%d", epoch)
+}

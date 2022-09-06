@@ -1,6 +1,7 @@
 bin
 .vscode
 config.yaml
+config2.yaml
 __debug_bin
 dist/
 checkpointz

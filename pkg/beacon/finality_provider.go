@@ -6,6 +6,8 @@ import (
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/samcm/beacon/api/types"
+	"github.com/samcm/beacon/state"
 	"github.com/samcm/checkpointz/pkg/eth"
 )
 
@@ -17,10 +19,18 @@ type FinalityProvider interface {
 	StartAsync(ctx context.Context)
 	// Healthy returns true if the provider is healthy.
 	Healthy(ctx context.Context) (bool, error)
-	// Syncing returns true if the provider is syncing.
-	Syncing(ctx context.Context) (bool, error)
+	// Peers returns the peers the provider is connected to).
+	Peers(ctx context.Context) (types.Peers, error)
+	// PeerCount returns the amount of peers the provider is connected to (the amount of healthy upstreams).
+	PeerCount(ctx context.Context) (uint64, error)
+	// Syncing returns the sync state of the provider.
+	Syncing(ctx context.Context) (*v1.SyncState, error)
 	// Finality returns the finality.
 	Finality(ctx context.Context) (*v1.Finality, error)
+	// Genesis returns the chain genesis.
+	Genesis(ctx context.Context) (*v1.Genesis, error)
+	// Spec returns the chain spec.
+	Spec(ctx context.Context) (*state.Spec, error)
 	// UpstreamsStatus returns the status of all the upstreams.
 	UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error)
 	// GetBlockBySlot returns the block at the given slot.
