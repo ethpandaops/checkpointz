@@ -49,7 +49,7 @@ func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, config *be
 func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error {
 	router.GET("/eth/v1/beacon/genesis", h.wrappedHandler(h.handleEthV1BeaconGenesis))
 	router.GET("/eth/v1/beacon/blocks/:block_id/root", h.wrappedHandler(h.handleEthV1BeaconBlocksRoot))
-	router.GET("/eth/v1/beacon/states/:state_id/finality_checkpoints", h.wrappedHandler(h.handleEthV1BeaconStatesHeadFinalityCheckpoints))
+	router.GET("/eth/v1/beacon/states/:state_id/finality_checkpoints", h.wrappedHandler(h.handleEthV1BeaconStatesFinalityCheckpoints))
 
 	router.GET("/eth/v1/config/spec", h.wrappedHandler(h.handleEthV1ConfigSpec))
 	router.GET("/eth/v1/config/deposit_contract", h.wrappedHandler(h.handleEthV1ConfigDepositContract))
@@ -503,7 +503,7 @@ func (h *Handler) handleCheckpointzBeaconSlot(ctx context.Context, r *http.Reque
 	return rsp, nil
 }
 
-func (h *Handler) handleEthV1BeaconStatesHeadFinalityCheckpoints(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+func (h *Handler) handleEthV1BeaconStatesFinalityCheckpoints(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
 	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
 		return NewUnsupportedMediaTypeResponse(nil), err
 	}
@@ -518,11 +518,18 @@ func (h *Handler) handleEthV1BeaconStatesHeadFinalityCheckpoints(ctx context.Con
 		return NewInternalServerErrorResponse(nil), err
 	}
 
-	return NewSuccessResponse(ContentTypeResolvers{
+	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeJSON: func() ([]byte, error) {
 			return json.Marshal(finality)
 		},
-	}), nil
+	})
+
+	switch id.Type() {
+	case eth.StateIDFinalized, eth.StateIDHead:
+		rsp.SetCacheControl("public, s-max-age=5")
+	}
+
+	return rsp, nil
 }
 
 func (h *Handler) handleEthV1BeaconBlocksRoot(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
