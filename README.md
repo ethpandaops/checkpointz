@@ -59,7 +59,7 @@ More info: https://notes.ethereum.org/sWeLohipS9GdgMugYn9VkQ
 |   |  Prysm |  Lighthouse | Nimbus |  Lodestar  | Teku |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 |  Light mode | ✅  | ✅  |  ✅ | ✅  | ✅ |
-|  Full mode |  ✅ | ✅  | ❌ | ✅  |  with `--data-storage-mode archive` |
+|  Full mode |  ✅ | ✅  | ✅ | ✅  |  with `--data-storage-mode archive` |
 
 Note: Teku will require a resync from genesis if you enable `--data-storage-mode archive`.
 # Usage

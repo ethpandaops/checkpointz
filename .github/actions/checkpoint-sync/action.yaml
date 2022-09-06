@@ -68,7 +68,7 @@ runs:
       shell: bash
       run: |
         echo "Waiting for checkpointz to have a finalized checkpoint...";
-        bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5555/eth/v1/beacon/states/head/finality_checkpoints)" != "200" ]]; do sleep 1; done';
+        bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5555/eth/v1/beacon/states/finalized/finality_checkpoints)" != "200" ]]; do sleep 1; done';
         echo "Checkpointz has a finalized checkpoint.";
     - name: Wait for checkpointz to have the genesis block
       shell: bash

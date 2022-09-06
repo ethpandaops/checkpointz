@@ -269,12 +269,12 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 
 	stateRoot, err := block.StateRoot()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get state root from block: %w", err)
 	}
 
 	blockRoot, err := block.Root()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get block root from block: %w", err)
 	}
 
 	if blockRoot != root {
@@ -283,7 +283,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 
 	slot, err := block.Slot()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get slot from block: %w", err)
 	}
 
 	d.log.
@@ -294,7 +294,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 
 	err = d.storeBlock(ctx, block)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to store block: %w", err)
 	}
 
 	if d.shouldDownloadStates() {
@@ -306,9 +306,9 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 			return block, nil
 		}
 
-		beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, fmt.Sprintf("%#x", stateRoot), "application/octet-stream")
+		beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, eth.SlotAsString(slot), "application/octet-stream")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to fetch beacon state: %w", err)
 		}
 
 		if beaconState == nil {
@@ -321,7 +321,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 
 		if err := d.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to store beacon state: %w", err)
 		}
 	}
 
