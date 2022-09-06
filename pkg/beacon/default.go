@@ -285,8 +285,12 @@ func (d *Default) Syncing(ctx context.Context) (*v1.SyncState, error) {
 	return syncState, nil
 }
 
-func (d *Default) Finality(ctx context.Context) (*v1.Finality, error) {
+func (d *Default) Finalized(ctx context.Context) (*v1.Finality, error) {
 	return d.servingBundle, nil
+}
+
+func (d *Default) Head(ctx context.Context) (*v1.Finality, error) {
+	return d.head, nil
 }
 
 func (d *Default) Genesis(ctx context.Context) (*v1.Genesis, error) {
@@ -571,7 +575,7 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 		return slots, errors.New("no beacon chain spec available")
 	}
 
-	finality, err := d.Finality(ctx)
+	finality, err := d.Head(ctx)
 	if err != nil {
 		return slots, err
 	}

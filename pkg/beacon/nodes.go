@@ -30,7 +30,7 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace
 
 		opts := *sbeacon.DefaultOptions()
 
-		opts.HealthCheck.Interval.Duration = time.Second * 2
+		opts.HealthCheck.Interval.Duration = time.Second * 5
 		opts.HealthCheck.SuccessfulResponses = 2
 
 		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, opts)

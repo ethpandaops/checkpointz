@@ -65,7 +65,7 @@ func (h *Handler) BeaconBlock(ctx context.Context, blockID BlockIdentifier) (*sp
 
 		return h.provider.GetBlockByRoot(ctx, root)
 	case BlockIDFinalized:
-		finality, err := h.provider.Finality(ctx)
+		finality, err := h.provider.Finalized(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -264,7 +264,7 @@ func (h *Handler) BeaconState(ctx context.Context, stateID StateIdentifier) (*[]
 
 		return h.provider.GetBeaconStateByStateRoot(ctx, root)
 	case StateIDFinalized:
-		finality, err := h.provider.Finality(ctx)
+		finality, err := h.provider.Finalized(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -297,7 +297,18 @@ func (h *Handler) FinalityCheckpoints(ctx context.Context, stateID StateIdentifi
 
 	switch stateID.Type() {
 	case StateIDHead:
-		finality, err := h.provider.Finality(ctx)
+		finality, err := h.provider.Head(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if finality.Finalized == nil {
+			return nil, fmt.Errorf("no finalized state known")
+		}
+
+		return finality, nil
+	case StateIDFinalized:
+		finality, err := h.provider.Finalized(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -371,7 +382,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 
 		return block.Root()
 	case BlockIDFinalized:
-		finality, err := h.provider.Finality(ctx)
+		finality, err := h.provider.Finalized(ctx)
 		if err != nil {
 			return phase0.Root{}, err
 		}
