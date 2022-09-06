@@ -13,6 +13,7 @@ export default function CheckpointsTable(props: {
   latestEpoch?: number;
   slots: APIBeaconSlot[];
   onSlotClick?: (slot: APIBeaconSlot) => void;
+  showCheckpoint?: boolean;
 }) {
   const [search, setSearch] = useState('');
   const filteredSlots = useMemo(() => {
@@ -36,9 +37,14 @@ export default function CheckpointsTable(props: {
       <div className="mt-4 sm:flex sm:justify-end">
         <div className="hidden sm:flex flex-auto mr-4 p-2 rounded-md">
           <p className="mt-2 text-lg drop-shadow-lg text-gray-100 font-semibold self-end">
-            A list of historical finalized epoch boundaries. The checkpoint currently being served
-            has the{' '}
-            <img src={FlagImage} alt="flag" className="w-5 inline bg-white/20 rounded p-1" /> icon.
+            A list of historical finalized epoch boundaries.{' '}
+            {props.showCheckpoint && (
+              <span>
+                The checkpoint currently being served has the{' '}
+                <img src={FlagImage} alt="flag" className="w-5 inline bg-white/20 rounded p-1" />{' '}
+                icon.
+              </span>
+            )}
           </p>
         </div>
         <div className="bg-white/20 p-2 rounded-md">
@@ -106,13 +112,16 @@ export default function CheckpointsTable(props: {
                     <tr key={slot.slot}>
                       <td className="hidden sm:table-cell sm:pl-6 sm:px-2 drop-shadow-lg whitespace-nowrap py-2 font-semibold text-sm sm:text-base text-gray-100">
                         {slot.epoch}
-                        {props.latestEpoch && slot.epoch && slot.epoch === props.latestEpoch && (
-                          <img
-                            className="hidden sm:inline-block w-5 pl-2 -mt-1"
-                            src={FlagImage}
-                            alt="Latest checkpoint"
-                          />
-                        )}
+                        {props.showCheckpoint &&
+                          props.latestEpoch &&
+                          slot.epoch &&
+                          slot.epoch === props.latestEpoch && (
+                            <img
+                              className="hidden sm:inline-block w-5 pl-2 -mt-1"
+                              src={FlagImage}
+                              alt="Latest checkpoint"
+                            />
+                          )}
                       </td>
                       <td className="whitespace-nowrap pl-2 sm:px-2 drop-shadow-lg sm:pl-0 py-2 font-semibold text-sm sm:text-base text-gray-100">
                         {slot.slot}

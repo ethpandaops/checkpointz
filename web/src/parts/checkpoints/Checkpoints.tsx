@@ -48,6 +48,7 @@ export default function Checkpoints() {
       <CheckpointsTable
         slots={Object.values(data?.data?.slots ?? {})}
         latestEpoch={latestEpoch}
+        showCheckpoint={statusData?.data?.operating_mode === 'full'}
         onSlotClick={setSlot}
       />
     </>

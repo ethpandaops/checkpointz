@@ -38,7 +38,10 @@ export default function Slot(props: { slot: number }) {
     if (['ALTAIR', 'PHASE0'].includes(data?.data?.block?.Version ?? '')) {
       return block?.message?.body?.eth1_data?.block_hash;
     }
-    return block?.message?.body?.execution_payload?.block_hash;
+    return (
+      block?.message?.body?.eth1_data?.block_hash ??
+      block?.message?.body?.execution_payload?.block_hash
+    );
   }, [data, block]);
   const time = useMemo<string | undefined>(() => {
     if (!data?.data?.time?.start_time) return;
