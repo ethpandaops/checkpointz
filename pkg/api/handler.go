@@ -359,7 +359,7 @@ func (h *Handler) handleEthV1NodePeerCount(ctx context.Context, r *http.Request,
 		return NewUnsupportedMediaTypeResponse(nil), err
 	}
 
-	peerCount, err := h.eth.PeerCount(ctx)
+	peers, err := h.eth.Peers(ctx)
 	if err != nil {
 		return NewInternalServerErrorResponse(nil), err
 	}
@@ -370,10 +370,10 @@ func (h *Handler) handleEthV1NodePeerCount(ctx context.Context, r *http.Request,
 		Disconnected  string `json:"disconnected"`
 		Disconnecting string `json:"disconnecting"`
 	}{
-		Connected:     fmt.Sprintf("%d", peerCount),
-		Disconnected:  "0",
-		Connecting:    "0",
-		Disconnecting: "0",
+		Connected:     fmt.Sprintf("%d", len(peers.ByState("connected"))),
+		Disconnected:  fmt.Sprintf("%d", len(peers.ByState("disconnected"))),
+		Connecting:    fmt.Sprintf("%d", len(peers.ByState("connecting"))),
+		Disconnecting: fmt.Sprintf("%d", len(peers.ByState("disconnecting"))),
 	}
 
 	var rsp = NewSuccessResponse(ContentTypeResolvers{
