@@ -43,7 +43,7 @@ func (h *Handler) V1Status(ctx context.Context, req *StatusRequest) (*StatusResp
 
 	response.Upstreams = upstreams
 
-	finality, err := h.provider.Finality(ctx)
+	finality, err := h.provider.Finalized(ctx)
 	if err != nil {
 		return nil, err
 	}
