@@ -265,21 +265,21 @@ func (d *Default) Syncing(ctx context.Context) (*v1.SyncState, error) {
 		SyncDistance: 0,
 	}
 
-	spec, err := d.Spec(ctx)
+	sp, err := d.Spec(ctx)
 	if err != nil {
 		return syncState, err
 	}
 
-	if spec == nil {
+	if sp == nil {
 		return syncState, errors.New("spec unknown")
 	}
 
 	if d.head != nil && d.head.Finalized != nil {
-		syncState.HeadSlot = phase0.Slot(d.head.Finalized.Epoch) * spec.SlotsPerEpoch
+		syncState.HeadSlot = phase0.Slot(d.head.Finalized.Epoch) * sp.SlotsPerEpoch
 	}
 
 	if d.servingBundle != nil && d.servingBundle.Finalized != nil {
-		syncState.SyncDistance = syncState.HeadSlot - phase0.Slot(d.servingBundle.Finalized.Epoch)*spec.SlotsPerEpoch
+		syncState.SyncDistance = syncState.HeadSlot - phase0.Slot(d.servingBundle.Finalized.Epoch)*sp.SlotsPerEpoch
 	}
 
 	return syncState, nil
