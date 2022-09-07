@@ -148,10 +148,19 @@ export default function Header() {
                                 An Ethereum beacon chain checkpoint sync provider
                               </h1>
                               <div className="mt-6 space-y-6 font-display text-xl sm:text-2xl tracking-tight text-gray-600">
+                                <h4 className="font-display text-3xl font-bold tracking-tighter bg-clip-text">
+                                  About
+                                </h4>
                                 <p>
-                                  <span className="font-semibold">Checkpointz</span> exists to
+                                  <span className="font-semibold">Checkpointz</span> was created to
                                   reduce the operational burden of running a checkpoint sync
                                   endpoint.
+                                </p>
+                                <p>
+                                  While the <span className="font-semibold">Checkpointz</span>{' '}
+                                  source code is maintained by the Ethereum Foundation DevOps team,
+                                  instances and endpoints (like this one!) are operated by the
+                                  community ❤️
                                 </p>
                                 <p>
                                   If you&apos;d like to run your own instance of{' '}
