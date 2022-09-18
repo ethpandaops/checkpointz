@@ -13,7 +13,7 @@ builds:
       - linux
       - windows
       - darwin
-
+    id: slim
     goarch:
       - amd64
       - arm64
@@ -24,6 +24,25 @@ builds:
       - goarch: 386
     ldflags:
       - -s -w -X github.com/samcm/checkpointz/pkg/version.Release={{.Tag}} -X github.com/samcm/checkpointz/pkg/version.GitCommit={{.ShortCommit}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+  - env:
+      - CGO_ENABLED=0
+    binary: checkpointz-{{.Version}}-debug
+    goos:
+      - linux
+      - windows
+      - darwin
+    id: debug
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - 6
+      - 7
+    ignore:
+      - goarch: 386
+    ldflags:
+      - -X github.com/samcm/checkpointz/pkg/version.Release={{.Tag}} -X github.com/samcm/checkpointz/pkg/version.GitCommit={{.ShortCommit}}
     mod_timestamp: "{{ .CommitTimestamp }}"
 checksum:
   name_template: 'checksums.txt'
@@ -37,8 +56,11 @@ changelog:
       - '^test:'
 
 dockers:
+  # Slim
   ## Scratch
   - use: buildx
+    ids:
+    - slim
     goos: linux
     goarch: amd64
     dockerfile: goreleaser-scratch.Dockerfile
@@ -52,6 +74,8 @@ dockers:
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
   - use: buildx
+    ids:
+    - slim
     goos: linux
     goarch: arm64
     dockerfile: goreleaser-scratch.Dockerfile
@@ -66,6 +90,8 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
   ## Debian
   - use: buildx
+    ids:
+    - slim
     goos: linux
     goarch: amd64
     dockerfile: goreleaser-debian.Dockerfile
@@ -79,6 +105,8 @@ dockers:
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
   - use: buildx
+    ids:
+    - slim
     goos: linux
     goarch: arm64
     dockerfile: goreleaser-debian.Dockerfile
@@ -91,7 +119,72 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
+  
+  # Debug
+    ## Scratch
+  - use: buildx
+    ids:
+    - debug
+    goos: linux
+    goarch: amd64
+    dockerfile: goreleaser-scratch.Dockerfile
+    image_templates:
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-amd64-debug"
+      - "samcm/{{ .ProjectName }}:latest-amd64-debug"
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+  - use: buildx
+    ids:
+    - slim
+    goos: linux
+    goarch: arm64
+    dockerfile: goreleaser-scratch.Dockerfile
+    image_templates:
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8-debug"
+      - "samcm/{{ .ProjectName }}:latest-arm64v8-debug"
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+  ## Debian
+  - use: buildx
+    ids:
+    - debug
+    goos: linux
+    goarch: amd64
+    dockerfile: goreleaser-debian.Dockerfile
+    image_templates:
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-debian-amd64-debug"
+      - "samcm/{{ .ProjectName }}:debian-latest-amd64-debug"
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+  - use: buildx
+    ids:
+    - debug
+    goos: linux
+    goarch: arm64
+    dockerfile: goreleaser-debian.Dockerfile
+    image_templates:
+      - "samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8-debug"
+      - "samcm/{{ .ProjectName }}:debian-latest-arm64v8-debug"
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
 docker_manifests:
+  # Slim
   ## Scratch
   - name_template: samcm/{{ .ProjectName }}:{{ .Version }}
     image_templates:
@@ -117,3 +210,29 @@ docker_manifests:
     image_templates:
       - samcm/{{ .ProjectName }}:debian-latest-amd64
       - samcm/{{ .ProjectName }}:debian-latest-arm64v8
+  # Debug
+    ## Scratch
+  - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-debug
+    image_templates:
+      - samcm/{{ .ProjectName }}:{{ .Version }}-amd64-debug
+      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8-debug
+  - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-arm64-debug
+    image_templates:
+      - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8-debug
+  - name_template: samcm/{{ .ProjectName }}:latest-debug
+    image_templates:
+      - samcm/{{ .ProjectName }}:latest-amd64-debug
+      - samcm/{{ .ProjectName }}:latest-arm64v8-debug
+
+  ## Debian
+  - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-debian-debug
+    image_templates:
+      - samcm/{{ .ProjectName }}:{{ .Version }}-debian-amd64-debug
+      - samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8-debug
+  - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64-debug
+    image_templates:
+      - samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8-debug
+  - name_template: samcm/{{ .ProjectName }}:debian-latest-debug
+    image_templates:
+      - samcm/{{ .ProjectName }}:debian-latest-amd64-debug
+      - samcm/{{ .ProjectName }}:debian-latest-arm64v8-debug
