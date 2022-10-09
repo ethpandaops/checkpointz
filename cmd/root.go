@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/creasty/defaults"
-	"github.com/samcm/checkpointz/pkg/checkpointz"
+	"github.com/ethpandaops/checkpointz/pkg/checkpointz"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"

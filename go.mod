@@ -1,4 +1,4 @@
-module github.com/samcm/checkpointz
+module github.com/ethpandaops/checkpointz
 
 go 1.17
 

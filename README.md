@@ -63,7 +63,7 @@ More info: https://notes.ethereum.org/sWeLohipS9GdgMugYn9VkQ
 
 Note: Teku will require a resync from genesis if you enable `--data-storage-mode archive`.
 # Usage
-Checkpointz requires a config file. An example file can be found [here](https://github.com/samcm/checkpointz/blob/master/example_config.yaml).
+Checkpointz requires a config file. An example file can be found [here](https://github.com/ethpandaops/checkpointz/blob/master/example_config.yaml).
 
 ```
 Checkpoint sync provider for Ethereum beacon nodes
@@ -183,13 +183,13 @@ beacon:
 ## Getting Started
 
 ### Download a release
-Download the latest release from the [Releases page](https://github.com/samcm/checkpointz/releases). Extract and run with:
+Download the latest release from the [Releases page](https://github.com/ethpandaops/checkpointz/releases). Extract and run with:
 ```
 ./checkpointz --config your-config.yaml
 ```
 
 ### Docker
-Available as a docker image at [samcm/checkpointz](https://hub.docker.com/r/samcm/checkpointz/tags)
+Available as a docker image at [ethpandaops/checkpointz](https://hub.docker.com/r/ethpandaops/checkpointz/tags)
 #### Images
 - `latest` - distroless, multiarch
 - `latest-debian` - debian, multiarch
@@ -198,7 +198,7 @@ Available as a docker image at [samcm/checkpointz](https://hub.docker.com/r/samc
 
 **Quick start**
 ```
-docker run -d  --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/checkpointz/config.yaml -p 9090:9090 -p 5555:5555 -it samcm/checkpointz:latest --config /opt/checkpointz/config.yaml;
+docker run -d  --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/checkpointz/config.yaml -p 9090:9090 -p 5555:5555 -it ethpandaops/checkpointz:latest --config /opt/checkpointz/config.yaml;
 docker logs -f checkpointz;
 ```
 
@@ -217,7 +217,7 @@ helm install checkpointz ethereum-helm-charts/checkpointz -f your_values.yaml
 
 1. Clone the repo
    ```sh
-   go get github.com/samcm/checkpointz
+   go get github.com/ethpandaops/checkpointz
    ```
 2. Change directories
    ```sh
@@ -253,7 +253,7 @@ go run main.go --config your_config.yaml
 
 #### Frontend
 
-A basic frontend is provided in this project in [`./web`](https://github.com/samcm/checkpointz/blob/master/example_config.yaml) directory which needs to be built before it can be served by the server, eg. `http://localhost:5555`.
+A basic frontend is provided in this project in [`./web`](https://github.com/ethpandaops/checkpointz/blob/master/example_config.yaml) directory which needs to be built before it can be served by the server, eg. `http://localhost:5555`.
 
 The frontend can be built with the following command;
 ```bash

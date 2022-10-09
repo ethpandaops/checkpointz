@@ -2,7 +2,7 @@ package checkpoints
 
 import (
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
-	"github.com/samcm/checkpointz/pkg/beacon/checkpoints/majority"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/checkpoints/majority"
 )
 
 type Decider interface {

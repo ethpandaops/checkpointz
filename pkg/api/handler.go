@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/attestantio/go-eth2-client/spec"
+	"github.com/ethpandaops/checkpointz/pkg/beacon"
+	"github.com/ethpandaops/checkpointz/pkg/service/checkpointz"
+	"github.com/ethpandaops/checkpointz/pkg/service/eth"
 	"github.com/julienschmidt/httprouter"
-	"github.com/samcm/checkpointz/pkg/beacon"
-	"github.com/samcm/checkpointz/pkg/service/checkpointz"
-	"github.com/samcm/checkpointz/pkg/service/eth"
 	"github.com/sirupsen/logrus"
 )
 
