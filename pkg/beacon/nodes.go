@@ -7,8 +7,8 @@ import (
 	"time"
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
 	sbeacon "github.com/samcm/beacon"
-	"github.com/samcm/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
 )
 

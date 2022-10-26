@@ -12,7 +12,7 @@ export default function Footer() {
             <div className="flex items-center font-bold text-lg">
               powered by
               <a
-                href="https://github.com/samcm/checkpointz"
+                href="https://github.com/ethpandaops/checkpointz"
                 className="flex items-center pl-1 hover:animate-pulse"
                 aria-label="Checkpointz GitHub"
               >
