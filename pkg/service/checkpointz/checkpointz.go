@@ -3,9 +3,9 @@ package checkpointz
 import (
 	"context"
 
-	"github.com/samcm/checkpointz/pkg/beacon"
-	"github.com/samcm/checkpointz/pkg/eth"
-	"github.com/samcm/checkpointz/pkg/version"
+	"github.com/ethpandaops/checkpointz/pkg/beacon"
+	"github.com/ethpandaops/checkpointz/pkg/eth"
+	"github.com/ethpandaops/checkpointz/pkg/version"
 	"github.com/sirupsen/logrus"
 )
 
