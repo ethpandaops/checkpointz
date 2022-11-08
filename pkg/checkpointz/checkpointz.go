@@ -79,6 +79,7 @@ func (s *Server) Start(ctx context.Context) error {
 	server := &http.Server{
 		Addr:              s.Cfg.GlobalConfig.ListenAddr,
 		ReadHeaderTimeout: 3 * time.Minute,
+		WriteTimeout:      15 * time.Minute,
 	}
 
 	server.Handler = router
