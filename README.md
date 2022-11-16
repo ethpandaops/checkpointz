@@ -227,22 +227,22 @@ helm install checkpointz ethereum-helm-charts/checkpointz -f your_values.yaml
    ```sh  
     go build -o checkpointz .
    ```
-4. Run the exporter
+4. Run the service
    ```sh  
     ./checkpointz
    ```
 
 ## Contributing
 
-Contributions are greatly appreciated! Pull requests will be reviewed and merged promptly if you're interested in improving the exporter! 
+Contributions are greatly appreciated! Pull requests will be reviewed and merged promptly if you're interested in improving the Checkpointz!
 
 1. Fork the project
 2. Create your feature branch:
-    - `git checkout -b feat/new-metric-profit`
+    - `git checkout -b feat/new-feature`
 3. Commit your changes:
-    - `git commit -m 'feat(profit): Export new metric: profit`
+    - `git commit -m 'feat(profit): new feature`
 4. Push to the branch:
-    -`git push origin feat/new-metric-profit`
+    -`git push origin feat/new-feature`
 5. Open a pull request
 
 ### Running locally
