@@ -10,13 +10,13 @@ import (
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/checkpoints"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/store"
+	"github.com/ethpandaops/checkpointz/pkg/eth"
 	"github.com/go-co-op/gocron"
 	"github.com/samcm/beacon/api/types"
 	"github.com/samcm/beacon/state"
-	"github.com/samcm/checkpointz/pkg/beacon/checkpoints"
-	"github.com/samcm/checkpointz/pkg/beacon/node"
-	"github.com/samcm/checkpointz/pkg/beacon/store"
-	"github.com/samcm/checkpointz/pkg/eth"
 	"github.com/sirupsen/logrus"
 )
 

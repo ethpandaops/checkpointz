@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
-	"github.com/samcm/checkpointz/pkg/eth"
+	"github.com/ethpandaops/checkpointz/pkg/eth"
 )
 
 type Decider struct{}

@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/samcm/checkpointz/cmd"
+	"github.com/ethpandaops/checkpointz/cmd"
 )
 
 func main() {

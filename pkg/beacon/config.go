@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/samcm/checkpointz/pkg/beacon/store"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/store"
 )
 
 // Config holds configuration for running a FinalityProvider config

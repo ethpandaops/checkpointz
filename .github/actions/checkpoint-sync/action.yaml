@@ -24,7 +24,7 @@ runs:
     - name: Build checkpointz
       shell: bash
       run: |
-        docker build . -t samcm/checkpointz:local;
+        docker build . -t ethpandaops/checkpointz:local;
     - name: Configure checkpointz
       shell: bash
       run: |
@@ -60,7 +60,7 @@ runs:
       shell: bash
       run: |
         echo "Starting checkpointz...";
-        docker run -d --network eth -p 5555:5555 -v $(pwd):/data --name checkpointz samcm/checkpointz:local --config /data/checkpointz.yaml;
+        docker run -d --network eth -p 5555:5555 -v $(pwd):/data --name checkpointz ethpandaops/checkpointz:local --config /data/checkpointz.yaml;
         docker logs checkpointz -f &> logs/checkpointz.log &
         docker logs checkpointz -f &
         echo "Checkpointz is running.";

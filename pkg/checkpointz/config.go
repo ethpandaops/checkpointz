@@ -3,8 +3,8 @@ package checkpointz
 import (
 	"fmt"
 
-	"github.com/samcm/checkpointz/pkg/beacon"
-	"github.com/samcm/checkpointz/pkg/beacon/node"
+	"github.com/ethpandaops/checkpointz/pkg/beacon"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
 )
 
 type Config struct {

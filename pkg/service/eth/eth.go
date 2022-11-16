@@ -7,10 +7,10 @@ import (
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/ethpandaops/checkpointz/pkg/beacon"
+	"github.com/ethpandaops/checkpointz/pkg/version"
 	"github.com/samcm/beacon/api/types"
 	"github.com/samcm/beacon/state"
-	"github.com/samcm/checkpointz/pkg/beacon"
-	"github.com/samcm/checkpointz/pkg/version"
 	"github.com/sirupsen/logrus"
 )
 

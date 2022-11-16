@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ethpandaops/checkpointz/pkg/api"
+	"github.com/ethpandaops/checkpointz/pkg/beacon"
+	"github.com/ethpandaops/checkpointz/pkg/version"
+	static "github.com/ethpandaops/checkpointz/web"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/samcm/checkpointz/pkg/api"
-	"github.com/samcm/checkpointz/pkg/beacon"
-	"github.com/samcm/checkpointz/pkg/version"
-	static "github.com/samcm/checkpointz/web"
 	"github.com/sirupsen/logrus"
 )
 

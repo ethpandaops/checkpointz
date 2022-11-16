@@ -168,7 +168,7 @@ export default function Header() {
                                   the{' '}
                                   <a
                                     className="underline text-fuchsia-500 hover:text-fuchsia-600"
-                                    href="https://github.com/samcm/checkpointz"
+                                    href="https://github.com/ethpandaops/checkpointz"
                                   >
                                     Github repository
                                   </a>{' '}
