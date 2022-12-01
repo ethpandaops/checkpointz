@@ -13,7 +13,7 @@ Checkpointz simplifies the process of running an Ethereum Beacon Chain checkpoin
 ## Contents
 * [Features](#features)
 * [What is checkpoint sync?](#what-is-checkpoint-sync)
-* [Supported Beacon clients](#supported-beacon-clients)
+* [Supported Beacon clients](#supported-beacon-upstreams)
 - [Usage](#usage)
   * [Configuration](#configuration)
     + [Simple example](#simple-example)
