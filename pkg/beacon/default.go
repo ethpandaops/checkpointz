@@ -515,7 +515,7 @@ func (d *Default) storeBlock(ctx context.Context, block *spec.VersionedSignedBea
 
 	expiresAtSlot := CalculateSlotExpiration(slot, d.config.HistoricalEpochCount*int(d.spec.SlotsPerEpoch))
 	expiresAt := GetSlotTime(expiresAtSlot, d.spec.SecondsPerSlot.AsDuration(), d.genesis.GenesisTime).
-		Add(time.Minute * 15) // Store it for an extra 15 minutes to simplify the expiry logic.
+		Add(time.Minute * 22) // Store it for an extra 22 minutes to simplify the expiry logic.
 
 	if slot == phase0.Slot(0) {
 		expiresAt = time.Now().Add(999999 * time.Hour)
