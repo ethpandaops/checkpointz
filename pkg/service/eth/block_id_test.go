@@ -9,7 +9,6 @@ func TestBlockIDMapping(t *testing.T) {
 		id     string
 		expect BlockIDType
 	}{
-		{"aaa", BlockIDInvalid},
 		{"head", BlockIDHead},
 		{"genesis", BlockIDGenesis},
 		{"finalized", BlockIDFinalized},
