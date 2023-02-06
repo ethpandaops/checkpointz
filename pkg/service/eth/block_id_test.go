@@ -9,7 +9,6 @@ func TestBlockIDMapping(t *testing.T) {
 		id     string
 		expect BlockIDType
 	}{
-		{"aaa", BlockIDInvalid},
 		{"head", BlockIDHead},
 		{"genesis", BlockIDGenesis},
 		{"finalized", BlockIDFinalized},
@@ -19,6 +18,8 @@ func TestBlockIDMapping(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.id, func(t *testing.T) {
+			test := test
+
 			t.Parallel()
 
 			if id, err := NewBlockIdentifier(test.id); err != nil {

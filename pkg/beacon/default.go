@@ -10,13 +10,13 @@ import (
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
+	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
+	"github.com/ethpandaops/beacon/pkg/beacon/state"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/checkpoints"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/store"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 	"github.com/go-co-op/gocron"
-	"github.com/samcm/beacon/api/types"
-	"github.com/samcm/beacon/state"
 	"github.com/sirupsen/logrus"
 )
 
@@ -242,7 +242,7 @@ func (d *Default) Peers(ctx context.Context) (types.Peers, error) {
 	for _, node := range d.nodes {
 		status := "connected"
 
-		if node.Beacon.GetStatus(ctx).Syncing() || !node.Beacon.GetStatus(ctx).Healthy() {
+		if node.Beacon.Status().Syncing() || !node.Beacon.Status().Healthy() {
 			status = "disconnected"
 		}
 
@@ -322,7 +322,7 @@ func (d *Default) checkFinality(ctx context.Context) error {
 	readyNodes := d.nodes.Ready(ctx)
 
 	for _, node := range readyNodes {
-		finality, err := node.Beacon.GetFinality(ctx)
+		finality, err := node.Beacon.Finality()
 		if err != nil {
 			d.log.Infof("Failed to get finality from node %s", node.Config.Name)
 
@@ -363,7 +363,7 @@ func (d *Default) checkBeaconSpec(ctx context.Context) error {
 		return err
 	}
 
-	s, err := upstream.Beacon.GetSpec(ctx)
+	s, err := upstream.Beacon.Spec()
 	if err != nil {
 		return err
 	}
@@ -389,7 +389,7 @@ func (d *Default) checkGenesisTime(ctx context.Context) error {
 		return err
 	}
 
-	g, err := upstream.Beacon.GetGenesis(ctx)
+	g, err := upstream.Beacon.Genesis()
 	if err != nil {
 		return err
 	}
@@ -515,7 +515,7 @@ func (d *Default) storeBlock(ctx context.Context, block *spec.VersionedSignedBea
 
 	expiresAtSlot := CalculateSlotExpiration(slot, d.config.HistoricalEpochCount*int(d.spec.SlotsPerEpoch))
 	expiresAt := GetSlotTime(expiresAtSlot, d.spec.SecondsPerSlot.AsDuration(), d.genesis.GenesisTime).
-		Add(time.Minute * 15) // Store it for an extra 15 minutes to simplify the expiry logic.
+		Add(time.Minute * 22) // Store it for an extra 22 minutes to simplify the expiry logic.
 
 	if slot == phase0.Slot(0) {
 		expiresAt = time.Now().Add(999999 * time.Hour)
@@ -537,14 +537,10 @@ func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStat
 			Healthy: false,
 		}
 
-		if node.Beacon == nil {
-			continue
-		}
-
-		rsp[node.Config.Name].Healthy = node.Beacon.GetStatus(ctx).Healthy()
+		rsp[node.Config.Name].Healthy = node.Beacon.Status().Healthy()
 
 		//nolint:gocritic // invalid
-		if spec, err := node.Beacon.GetSpec(ctx); err == nil {
+		if spec, err := node.Beacon.Spec(); err == nil {
 			network := spec.ConfigName
 			if network == "" {
 				// Fall back to our static map.
@@ -554,7 +550,7 @@ func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStat
 			rsp[node.Config.Name].NetworkName = network
 		}
 
-		finality, err := node.Beacon.GetFinality(ctx)
+		finality, err := node.Beacon.Finality()
 		if err != nil {
 			continue
 		}
