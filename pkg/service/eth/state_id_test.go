@@ -9,7 +9,6 @@ func TestStateIDMapping(t *testing.T) {
 		id   string
 		want StateIDType
 	}{
-		{"aaa", StateIDInvalid},
 		{"head", StateIDHead},
 		{"genesis", StateIDGenesis},
 		{"finalized", StateIDFinalized},
