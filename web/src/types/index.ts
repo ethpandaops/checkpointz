@@ -76,9 +76,10 @@ export interface APIBeaconBlockMessage {
 }
 
 export interface APIBeaconBlock {
-  Version: 'BELLATRIX' | 'ALTAIR' | 'PHASE0';
+  Version: 'BELLATRIX' | 'ALTAIR' | 'PHASE0' | 'CAPELLA';
   Altair?: APIBeaconBlockMessage;
   Bellatrix?: APIBeaconBlockMessage;
+  Capella?: APIBeaconBlockMessage;
   Phase0?: APIBeaconBlockMessage;
 }
 

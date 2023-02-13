@@ -30,6 +30,8 @@ export default function Slot(props: { slot: number }) {
         return data?.data?.block?.Altair;
       case 'BELLATRIX':
         return data?.data?.block?.Bellatrix;
+      case 'CAPELLA':
+        return data?.data?.block?.Capella;
       case 'PHASE0':
         return data?.data?.block?.Phase0;
     }
