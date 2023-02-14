@@ -4,15 +4,15 @@
   "private": true,
   "dependencies": {
     "@craco/craco": "7.0.0-alpha.7",
-    "@headlessui/react": "1.6.6",
+    "@headlessui/react": "1.7.10",
     "@heroicons/react": "2.0.10",
     "@tanstack/react-query": "4.2.3",
     "@testing-library/jest-dom": "5.16.5",
-    "@testing-library/react": "13.3.0",
+    "@testing-library/react": "13.4.0",
     "@testing-library/user-event": "13.5.0",
     "@tippyjs/react": "4.2.6",
     "@types/jest": "27.5.2",
-    "@types/node": "16.11.55",
+    "@types/node": "16.18.12",
     "@types/react": "18.0.17",
     "@types/react-dom": "18.0.6",
     "clsx": "1.2.1",
@@ -22,7 +22,7 @@
     "react-dom": "18.2.0",
     "react-scripts": "5.0.1",
     "react-time-ago": "7.2.1",
-    "typescript": "4.7.4"
+    "typescript": "4.9.5"
   },
   "scripts": {
     "start": "EXTEND_ESLINT=true craco start",
@@ -53,8 +53,8 @@
     "node": ">=16.11.0"
   },
   "volta": {
-    "node": "16.17.0",
-    "npm": "8.15.0"
+    "node": "16.19.0",
+    "npm": "8.19.3"
   },
   "proxy": "http://localhost:5555",
   "devDependencies": {
