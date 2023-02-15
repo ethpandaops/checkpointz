@@ -54,7 +54,7 @@
   },
   "volta": {
     "node": "16.19.0",
-    "npm": "8.19.3"
+    "npm": "9.4.0"
   },
   "proxy": "http://localhost:5555",
   "devDependencies": {
