@@ -11,7 +11,7 @@
     "@testing-library/react": "13.4.0",
     "@testing-library/user-event": "13.5.0",
     "@tippyjs/react": "4.2.6",
-    "@types/jest": "27.5.2",
+    "@types/jest": "29.4.0",
     "@types/node": "16.18.12",
     "@types/react": "18.0.27",
     "@types/react-dom": "18.0.10",
