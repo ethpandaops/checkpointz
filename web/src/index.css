@@ -1,3 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* fix for safari https://github.com/mdn/browser-compat-data/issues/17726 */
+.drop-shadow-sm, .drop-shadow, .drop-shadow-md, .drop-shadow-lg, .drop-shadow-xl, .drop-shadow-2xl { transform: translateZ(0) }

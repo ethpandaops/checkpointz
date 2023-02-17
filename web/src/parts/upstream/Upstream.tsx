@@ -16,7 +16,7 @@ export default function Upstream() {
   if (!data && error)
     return (
       <div className="flex justify-center">
-        <div className="flex justify-center bg-white/20 py-5 px-10 font-semibold rounded-lg text-gray-100">
+        <div className="flex justify-center bg-white/20 mt-5 py-5 px-10 font-semibold rounded-lg text-gray-100">
           <ExclamationTriangleIcon className="h-6 w-6 text-yellow-400 pr-1" aria-hidden="true" />
           Something went wrong
         </div>
