@@ -25,7 +25,7 @@ export default function Slot(props: { slot: number }) {
     return res.json();
   });
   const block = useMemo<APIBeaconBlockMessage | undefined>(() => {
-    switch (data?.data?.block?.Version) {
+    switch (data?.data?.block?.Version?.toUpperCase()) {
       case 'ALTAIR':
         return data?.data?.block?.Altair;
       case 'BELLATRIX':
@@ -37,7 +37,7 @@ export default function Slot(props: { slot: number }) {
     }
   }, [data]);
   const blockHash = useMemo(() => {
-    if (['ALTAIR', 'PHASE0'].includes(data?.data?.block?.Version ?? '')) {
+    if (['ALTAIR', 'PHASE0'].includes(data?.data?.block?.Version?.toUpperCase() ?? '')) {
       return block?.message?.body?.eth1_data?.block_hash;
     }
     return (
