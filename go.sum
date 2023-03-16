@@ -72,6 +72,8 @@ github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1m
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/ethpandaops/beacon v0.20.0 h1:z389nMmzVYbPhP4+ahcaezqr9SivolWhnCYeWVeWFz8=
 github.com/ethpandaops/beacon v0.20.0/go.mod h1:fkS2U962xdB6+VwBn+J+DMK8cTgTtzVtjZWtvTKjbuE=
+github.com/ethpandaops/beacon v0.21.0 h1:s/088DT9oOYWt/mrDQ+mkhHiyK2wtMAOyE3Voar6nf0=
+github.com/ethpandaops/beacon v0.21.0/go.mod h1:fkS2U962xdB6+VwBn+J+DMK8cTgTtzVtjZWtvTKjbuE=
 github.com/ethpandaops/ethwallclock v0.2.0 h1:EeFKtZ7v6TAdn/oAh0xaPujD7N4amjBxrWIByraUfLM=
 github.com/ethpandaops/ethwallclock v0.2.0/go.mod h1:y0Cu+mhGLlem19vnAV2x0hpFS5KZ7oOi2SWYayv9l24=
 github.com/fatih/color v1.10.0/go.mod h1:ELkj/draVOlAH/xkhN6mQ50Qd0MPOk5AAr3maGEBuJM=
