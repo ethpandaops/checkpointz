@@ -6,7 +6,7 @@ require (
 	github.com/attestantio/go-eth2-client v0.15.2
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
 	github.com/creasty/defaults v1.6.0
-	github.com/ethpandaops/beacon v0.20.0
+	github.com/ethpandaops/beacon v0.21.0
 	github.com/go-co-op/gocron v1.18.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/pkg/errors v0.9.1
