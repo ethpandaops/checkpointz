@@ -27,6 +27,8 @@ type CacheConfig struct {
 	Blocks store.Config `yaml:"blocks" default:"{\"MaxItems\": 200}"`
 	// States holds the state cache configuration.
 	States store.Config `yaml:"states" default:"{\"MaxItems\": 5}"`
+	// DepositSnapshots holds the deposit snapshot cache configuration.
+	DepositSnapshots store.Config `yaml:"deposit_snapshots" default:"{\"MaxItems\": 50}"`
 }
 
 type FrontendConfig struct {

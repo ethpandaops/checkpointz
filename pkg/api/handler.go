@@ -50,6 +50,7 @@ func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error
 	router.GET("/eth/v1/beacon/genesis", h.wrappedHandler(h.handleEthV1BeaconGenesis))
 	router.GET("/eth/v1/beacon/blocks/:block_id/root", h.wrappedHandler(h.handleEthV1BeaconBlocksRoot))
 	router.GET("/eth/v1/beacon/states/:state_id/finality_checkpoints", h.wrappedHandler(h.handleEthV1BeaconStatesFinalityCheckpoints))
+	router.GET("/eth/v1/beacon/deposit_snapshot", h.wrappedHandler(h.handleEthV1BeaconDepositSnapshot))
 
 	router.GET("/eth/v1/config/spec", h.wrappedHandler(h.handleEthV1ConfigSpec))
 	router.GET("/eth/v1/config/deposit_contract", h.wrappedHandler(h.handleEthV1ConfigDepositContract))
@@ -561,6 +562,23 @@ func (h *Handler) handleEthV1BeaconBlocksRoot(ctx context.Context, r *http.Reque
 	return NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeJSON: func() ([]byte, error) {
 			return json.Marshal(wrapped)
+		},
+	}), nil
+}
+
+func (h *Handler) handleEthV1BeaconDepositSnapshot(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	snapshot, err := h.eth.DepositSnapshot(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	return NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(snapshot)
 		},
 	}), nil
 }
