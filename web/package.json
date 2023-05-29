@@ -4,8 +4,8 @@
   "private": true,
   "dependencies": {
     "@craco/craco": "7.0.0",
-    "@headlessui/react": "1.7.11",
-    "@heroicons/react": "2.0.15",
+    "@headlessui/react": "1.7.14",
+    "@heroicons/react": "2.0.18",
     "@tanstack/react-query": "4.24.6",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "14.0.0",
@@ -54,7 +54,7 @@
   },
   "volta": {
     "node": "18.14.1",
-    "npm": "9.6.0"
+    "npm": "9.6.6"
   },
   "proxy": "http://localhost:5555",
   "devDependencies": {
