@@ -32,7 +32,7 @@ func NewDepositSnapshot(log logrus.FieldLogger, config Config, namespace string)
 }
 
 func (d *DepositSnapshot) Add(epoch phase0.Epoch, snapshot *types.DepositSnapshot, expiresAt time.Time) error {
-	d.store.Add(eth.EpochAsString(epoch), snapshot, expiresAt)
+	d.store.Add(eth.EpochAsString(epoch), snapshot, expiresAt, false)
 
 	d.log.WithFields(
 		logrus.Fields{

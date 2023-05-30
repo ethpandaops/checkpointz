@@ -49,6 +49,12 @@ var (
 	topicFinalityHeadUpdated = "finality_head_updated"
 )
 
+const (
+	// FinalityHaltedServingPeriod defines how long we will happily serve finality data for after the chain has stopped finality.
+	// TODO(sam.calder-mason): Derive from weak subjectivity period.
+	FinalityHaltedServingPeriod = 14 * 24 * time.Hour
+)
+
 func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, config *Config) FinalityProvider {
 	return &Default{
 		nodeConfigs: nodes,
@@ -515,9 +521,7 @@ func (d *Default) storeBlock(ctx context.Context, block *spec.VersionedSignedBea
 		return err
 	}
 
-	expiresAtSlot := CalculateSlotExpiration(slot, d.config.HistoricalEpochCount*int(d.spec.SlotsPerEpoch))
-	expiresAt := GetSlotTime(expiresAtSlot, d.spec.SecondsPerSlot.AsDuration(), d.genesis.GenesisTime).
-		Add(time.Minute * 22) // Store it for an extra 22 minutes to simplify the expiry logic.
+	expiresAt := time.Now().Add(FinalityHaltedServingPeriod)
 
 	if slot == phase0.Slot(0) {
 		expiresAt = time.Now().Add(999999 * time.Hour)
