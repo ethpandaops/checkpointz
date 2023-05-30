@@ -325,7 +325,48 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 	}
 
+	if slot != phase0.Slot(0) {
+		epoch := phase0.Epoch(slot / d.spec.SlotsPerEpoch)
+
+		// Download and store deposit snapshots
+		if err := d.downloadAndStoreDepositSnapshot(ctx, epoch, upstream); err != nil {
+			return nil, fmt.Errorf("failed to download and store deposit snapshot: %w", err)
+		}
+	}
+
 	d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
 	return block, nil
+}
+
+func (d *Default) downloadAndStoreDepositSnapshot(ctx context.Context, epoch phase0.Epoch, node *Node) error {
+	// Check if we already have the deposit snapshot.
+	if _, err := d.depositSnapshots.GetByEpoch(epoch); err == nil {
+		return nil
+	}
+
+	// Download the deposit snapshot from our upstream.
+	depositSnapshot, err := node.Beacon.FetchDepositSnapshot(ctx)
+	if err != nil {
+		return err
+	}
+
+	if depositSnapshot == nil {
+		return errors.New("invalid deposit snapshot")
+	}
+
+	// These are small so store them for a month. Max items will most likely purge it before then.
+	// Mostly just guarding against periods of non-finality; we won't have new items to purge the old ones which
+	// is a good thing here.
+	expiresAt := time.Now().Add(672 * time.Hour)
+
+	if err := d.depositSnapshots.Add(epoch, depositSnapshot, expiresAt); err != nil {
+		return fmt.Errorf("failed to store deposit snapshot: %w", err)
+	}
+
+	d.log.
+		WithFields(logrus.Fields{"epoch": epoch}).
+		Infof("Downloaded and stored deposit snapshot for epoch %d", epoch)
+
+	return nil
 }

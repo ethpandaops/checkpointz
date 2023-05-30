@@ -166,6 +166,33 @@ func (h *Handler) DepositContract(ctx context.Context) (*DepositContract, error)
 	}, nil
 }
 
+// DepositContract gets the deposit snapshot at the finalized checkpoint.
+func (h *Handler) DepositSnapshot(ctx context.Context) (*types.DepositSnapshot, error) {
+	var err error
+
+	const call = "beacon_deposit_snapshot"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	finality, err := h.provider.Finalized(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	snapshot, err := h.provider.GetDepositSnapshot(ctx, finality.Finalized.Epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	return snapshot, nil
+}
+
 // NodeSyncing returns the sync state of the beacon node.
 func (h *Handler) NodeSyncing(ctx context.Context) (*v1.SyncState, error) {
 	var err error

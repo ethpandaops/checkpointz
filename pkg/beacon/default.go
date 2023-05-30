@@ -31,8 +31,9 @@ type Default struct {
 	head          *v1.Finality
 	servingBundle *v1.Finality
 
-	blocks *store.Block
-	states *store.BeaconState
+	blocks           *store.Block
+	states           *store.BeaconState
+	depositSnapshots *store.DepositSnapshot
 
 	spec    *state.Spec
 	genesis *v1.Genesis
@@ -60,9 +61,10 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 
 		historicalSlotFailures: make(map[phase0.Slot]int),
 
-		broker: emission.NewEmitter(),
-		blocks: store.NewBlock(log, config.Caches.Blocks, namespace),
-		states: store.NewBeaconState(log, config.Caches.States, namespace),
+		broker:           emission.NewEmitter(),
+		blocks:           store.NewBlock(log, config.Caches.Blocks, namespace),
+		states:           store.NewBeaconState(log, config.Caches.States, namespace),
+		depositSnapshots: store.NewDepositSnapshot(log, config.Caches.DepositSnapshots, namespace),
 
 		metrics: NewMetrics(namespace + "_beacon"),
 	}
@@ -613,4 +615,8 @@ func (d *Default) GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTi
 	}
 
 	return eth.CalculateSlotTime(slot, d.genesis.GenesisTime, d.spec.SecondsPerSlot.AsDuration()), nil
+}
+
+func (d *Default) GetDepositSnapshot(ctx context.Context, epoch phase0.Epoch) (*types.DepositSnapshot, error) {
+	return d.depositSnapshots.GetByEpoch(epoch)
 }

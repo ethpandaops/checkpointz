@@ -55,4 +55,6 @@ type FinalityProvider interface {
 	OperatingMode() OperatingMode
 	// GetSlotTime returns the wall clock for the given slot.
 	GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTime, error)
+	// GetDepositSnapshot returns the deposit snapshot at the given epoch.
+	GetDepositSnapshot(ctx context.Context, epoch phase0.Epoch) (*types.DepositSnapshot, error)
 }
