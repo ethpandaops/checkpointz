@@ -315,12 +315,12 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 			return nil, errors.New("beacon state is nil")
 		}
 
-		expiresAt := time.Now().Add(3 * time.Hour)
+		expiresAt := time.Now().Add(FinalityHaltedServingPeriod)
 		if slot == phase0.Slot(0) {
 			expiresAt = time.Now().Add(999999 * time.Hour)
 		}
 
-		if err := d.states.Add(stateRoot, &beaconState, expiresAt); err != nil {
+		if err := d.states.Add(stateRoot, &beaconState, expiresAt, slot); err != nil {
 			return nil, fmt.Errorf("failed to store beacon state: %w", err)
 		}
 	}

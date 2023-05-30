@@ -30,8 +30,14 @@ func NewBeaconState(log logrus.FieldLogger, config Config, namespace string) *Be
 	return c
 }
 
-func (c *BeaconState) Add(stateRoot phase0.Root, state *[]byte, expiresAt time.Time) error {
-	c.store.Add(eth.RootAsString(stateRoot), state, expiresAt)
+func (c *BeaconState) Add(stateRoot phase0.Root, state *[]byte, expiresAt time.Time, slot phase0.Slot) error {
+	invincible := false
+	if slot == 0 {
+		invincible = true
+	}
+
+	c.store.Add(eth.RootAsString(stateRoot), state, expiresAt, invincible)
+
 	c.log.WithFields(
 		logrus.Fields{
 			"state_root": eth.RootAsString(stateRoot),

@@ -12,7 +12,7 @@ func TestItemAdds(t *testing.T) {
 	key := "key1"
 	value := "value1"
 
-	instance.Add(key, value, time.Now().Add(time.Hour))
+	instance.Add(key, value, time.Now().Add(time.Hour), false)
 
 	data, _, err := instance.Get(key)
 	if err != nil {
@@ -30,7 +30,7 @@ func TestItemDeletes(t *testing.T) {
 	key := "key2"
 	value := "value2"
 
-	instance.Add(key, value, time.Now().Add(time.Hour))
+	instance.Add(key, value, time.Now().Add(time.Hour), false)
 	instance.Delete(key)
 
 	_, _, err := instance.Get(key)
@@ -45,7 +45,7 @@ func TestItemDoesExpire(t *testing.T) {
 	key := "key3"
 	value := "value3"
 
-	instance.Add(key, value, time.Now().Add(time.Second))
+	instance.Add(key, value, time.Now().Add(time.Second), false)
 
 	time.Sleep(time.Second * 3)
 
@@ -58,7 +58,7 @@ func TestItemDoesExpire(t *testing.T) {
 func TestMaxItems(t *testing.T) {
 	instance := NewTTLMap(3, "", "")
 	for i := 1; i <= 10; i++ {
-		instance.Add(fmt.Sprintf("key%d", i), "value", time.Now().Add(time.Hour))
+		instance.Add(fmt.Sprintf("key%d", i), "value", time.Now().Add(time.Hour), false)
 	}
 
 	if len(instance.m) != 3 {
@@ -69,7 +69,7 @@ func TestMaxItems(t *testing.T) {
 func TestMaxItemsEvictsOldest(t *testing.T) {
 	instance := NewTTLMap(3, "", "")
 	for i := 1; i <= 10; i++ {
-		instance.Add(fmt.Sprintf("key%d", i), "value", time.Now().Add(time.Hour).Add(time.Second*time.Duration(i)))
+		instance.Add(fmt.Sprintf("key%d", i), "value", time.Now().Add(time.Hour).Add(time.Second*time.Duration(i)), false)
 	}
 
 	if _, _, err := instance.Get("key1"); err == nil {
@@ -124,7 +124,7 @@ func TestCallbacks(t *testing.T) {
 		addedCallback = true
 	})
 
-	instance.Add("key4", "value4", time.Now().Add(time.Hour))
+	instance.Add("key4", "value4", time.Now().Add(time.Hour), false)
 	instance.Delete("key4")
 
 	time.Sleep(time.Second * 1)
@@ -135,5 +135,40 @@ func TestCallbacks(t *testing.T) {
 
 	if !addedCallback {
 		t.Fatalf("Expected added callback to have been called")
+	}
+}
+
+func TestInvincible(t *testing.T) {
+	ttlMap := NewTTLMap(2, "myCache", "default")
+
+	now := time.Now()
+
+	// add an item with 1 second expiry
+	ttlMap.Add("key1", "value1", now.Add(time.Second), false)
+
+	// add an item with 2 second expiry and invincible
+	ttlMap.Add("key2", "value2", now.Add(time.Second*2), true)
+
+	// add an item with 3 second expiry
+	ttlMap.Add("key3", "value3", now.Add(time.Second*3), false)
+
+	time.Sleep(5 * time.Second)
+
+	// get key2, should be present as it is invincible
+	_, _, err := ttlMap.Get("key2")
+	if err != nil {
+		t.Error("key2 not found")
+	}
+
+	// get key1, should not be found as it has expired
+	_, _, err = ttlMap.Get("key1")
+	if err == nil {
+		t.Error("key1 should not be found")
+	}
+
+	// get key2, should be present as it is invincible
+	_, _, err = ttlMap.Get("key3")
+	if err == nil {
+		t.Error("key2 should not be found")
 	}
 }

@@ -8,8 +8,9 @@ import (
 )
 
 type item struct {
-	value     interface{}
-	expiresAt time.Time
+	value      interface{}
+	expiresAt  time.Time
+	invincible bool
 }
 
 type sortableItem struct {
@@ -39,6 +40,10 @@ func NewTTLMap(maxItems int, name, namespace string) (m *TTLMap) {
 	go func() {
 		for now := range time.Tick(time.Second * 1) {
 			for k, v := range m.m {
+				if v.invincible {
+					continue
+				}
+
 				if v.expiresAt.Before(now) {
 					m.Delete(k)
 				}
@@ -92,7 +97,12 @@ func (m *TTLMap) evictItemToClosestToExpiry() {
 	// This is a very naive implementation.
 	items := []sortableItem{}
 
+	// Get all non-invincible items.
 	for k, v := range m.m {
+		if v.invincible {
+			continue
+		}
+
 		items = append(items, sortableItem{
 			key:       k,
 			expiresAt: v.expiresAt,
@@ -113,7 +123,7 @@ func (m *TTLMap) Len() int {
 	return len(m.m)
 }
 
-func (m *TTLMap) Add(k string, v interface{}, expiresAt time.Time) {
+func (m *TTLMap) Add(k string, v interface{}, expiresAt time.Time, invincible bool) {
 	if m.Len() >= m.maxItems {
 		m.evictItemToClosestToExpiry()
 	}
@@ -125,8 +135,9 @@ func (m *TTLMap) Add(k string, v interface{}, expiresAt time.Time) {
 	it, ok := m.m[k]
 	if !ok {
 		it = &item{
-			value:     v,
-			expiresAt: expiresAt,
+			value:      v,
+			expiresAt:  expiresAt,
+			invincible: invincible,
 		}
 		m.m[k] = it
 	}
