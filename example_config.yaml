@@ -27,3 +27,5 @@ beacon:
     address: http://localhost:5052
     timeoutSeconds: 30
     dataProvider: true
+    # headers:
+    #  header_name: header_value

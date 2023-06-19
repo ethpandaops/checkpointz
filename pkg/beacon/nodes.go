@@ -24,8 +24,9 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace
 
 	for i, config := range configs {
 		sconfig := &sbeacon.Config{
-			Name: config.Name,
-			Addr: config.Address,
+			Name:    config.Name,
+			Addr:    config.Address,
+			Headers: config.Headers,
 		}
 
 		opts := *sbeacon.DefaultOptions()
