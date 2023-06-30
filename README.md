@@ -99,7 +99,7 @@ Checkpointz relies entirely on a single `yaml` config file.
 
 ### Simple example
 
-```
+```yaml
 # use defaults and add a single beacon upstream node
 
 beacon:
@@ -111,7 +111,7 @@ beacon:
 
 ### Full mode
 
-```
+```yaml
 checkpointz:
   mode: full
 
@@ -124,7 +124,7 @@ beacon:
 
 ### Disabled frontend
 
-```
+```yaml
 checkpointz:
   frontend:
     enabled: false
@@ -138,7 +138,7 @@ beacon:
 
 ### Full example
 
-```
+```yaml
 global:
   # The address the main http server will listen on
   listenAddr: ":5555"
@@ -184,7 +184,7 @@ beacon:
 
 ### Download a release
 Download the latest release from the [Releases page](https://github.com/ethpandaops/checkpointz/releases). Extract and run with:
-```
+```sh
 ./checkpointz --config your-config.yaml
 ```
 
@@ -247,7 +247,7 @@ Contributions are greatly appreciated! Pull requests will be reviewed and merged
 
 ### Running locally
 #### Backend
-```
+```sh
 go run main.go --config your_config.yaml
 ```
 
