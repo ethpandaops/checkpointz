@@ -147,4 +147,4 @@ docker_manifests:
   - name_template: ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest
     image_templates:
       - ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-amd64
-      - ethpandaops/{{ .ProjectName }}{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}:debian-latest-arm64v8
+      - ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-arm64v8
