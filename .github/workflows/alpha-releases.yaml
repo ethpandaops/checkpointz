@@ -1,0 +1,59 @@
+name: alpha releases
+
+on:
+  push:
+    branches:
+      - 'release/*'
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+          token: ${{ secrets.EPOBOT_TOKEN }}
+      - name: Get latest release version for this release branch
+        if: startsWith(github.ref, 'refs/heads/release/')
+        id: latest_version
+        run: |
+          # Extract suffix from branch name (e.g., 'dencun' from 'release/dencun')
+          RELEASE_SUFFIX=${GITHUB_REF#refs/heads/release/}
+
+          # Fetch all tags and get the latest that matches the pattern
+          # Using the refs/tags API
+          LATEST_VERSION=$(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/git/refs/tags" \
+                      | jq -r --arg suffix "$RELEASE_SUFFIX" '.[] | select(.ref | test("refs/tags/v?[0-9]+\\.[0-9]+\\.[0-9]+-" + $suffix + "$")) | .ref' \
+                      | sed 's|refs/tags/||' | sort -V | tail -n 1)
+          echo "Found latest $RELEASE_SUFFIX version: $LATEST_VERSION"
+
+          # Default to 0.0.0 if no matching release was found
+          if [[ -z "$LATEST_VERSION" ]]; then
+            LATEST_VERSION="0.0.0"
+          fi
+
+          # Increment the patch version using bash
+          LATEST_VERSION=$(echo "$LATEST_VERSION" | awk -F. -v OFS=. '{$NF = $NF + 1;} 1')
+
+          VERSION=$LATEST_VERSION-$RELEASE_SUFFIX
+
+          echo "Releasing version: $VERSION"
+
+          git config --global user.email "ethpandaopsbot@ethereum.org"
+          git config --global user.name "ethpandaopsbot"
+
+          # Log the short commit SHA
+          SHORT_COMMIT=$(git rev-parse --short HEAD)
+
+          echo "Git commit: $SHORT_COMMIT"
+
+          git tag -a "$VERSION" -m "Release $VERSION"
+
+          echo "RELEASE_SUFFIX=$RELEASE_SUFFIX" >> $GITHUB_ENV
+
+          # Push the tag
+          git push origin "$VERSION" 
+        env:
+          GITHUB_TOKEN: ${{ secrets.EPOBOT_TOKEN }}
