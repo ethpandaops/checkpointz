@@ -44,9 +44,9 @@ dockers:
     dockerfile: goreleaser-scratch.Dockerfile
     image_templates:
       - "samcm/{{ .ProjectName }}:{{ .Version }}-amd64"
-      - "samcm/{{ .ProjectName }}:latest-amd64"
+      - "samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest-amd64"
       - "ethpandaops/{{ .ProjectName }}:{{ .Version }}-amd64"
-      - "ethpandaops/{{ .ProjectName }}:latest-amd64"
+      - "ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest-amd64"
     build_flag_templates:
       - "--platform=linux/amd64"
       - "--label=org.opencontainers.image.created={{.Date}}"
@@ -59,9 +59,9 @@ dockers:
     dockerfile: goreleaser-scratch.Dockerfile
     image_templates:
       - "samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8"
-      - "samcm/{{ .ProjectName }}:latest-arm64v8"
+      - "samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest-arm64v8"
       - "ethpandaops/{{ .ProjectName }}:{{ .Version }}-arm64v8"
-      - "ethpandaops/{{ .ProjectName }}:latest-arm64v8"
+      - "ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest-arm64v8"
     build_flag_templates:
       - "--platform=linux/arm64/v8"
       - "--label=org.opencontainers.image.created={{.Date}}"
@@ -75,9 +75,9 @@ dockers:
     dockerfile: goreleaser-debian.Dockerfile
     image_templates:
       - "samcm/{{ .ProjectName }}:{{ .Version }}-debian-amd64"
-      - "samcm/{{ .ProjectName }}:debian-latest-amd64"
+      - "samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-amd64"
       - "ethpandaops/{{ .ProjectName }}:{{ .Version }}-debian-amd64"
-      - "ethpandaops/{{ .ProjectName }}:debian-latest-amd64"
+      - "ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-amd64"
     build_flag_templates:
       - "--platform=linux/amd64"
       - "--label=org.opencontainers.image.created={{.Date}}"
@@ -90,9 +90,9 @@ dockers:
     dockerfile: goreleaser-debian.Dockerfile
     image_templates:
       - "samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8"
-      - "samcm/{{ .ProjectName }}:debian-latest-arm64v8"
+      - "samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-arm64v8"
       - "ethpandaops/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8"
-      - "ethpandaops/{{ .ProjectName }}:debian-latest-arm64v8"
+      - "ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-arm64v8"
     build_flag_templates:
       - "--platform=linux/arm64/v8"
       - "--label=org.opencontainers.image.created={{.Date}}"
@@ -108,10 +108,10 @@ docker_manifests:
   - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-arm64
     image_templates:
       - samcm/{{ .ProjectName }}:{{ .Version }}-arm64v8
-  - name_template: samcm/{{ .ProjectName }}:latest
+  - name_template: samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest
     image_templates:
-      - samcm/{{ .ProjectName }}:latest-amd64
-      - samcm/{{ .ProjectName }}:latest-arm64v8
+      - samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest-amd64
+      - samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest-arm64v8
 
   - name_template: ethpandaops/{{ .ProjectName }}:{{ .Version }}
     image_templates:
@@ -120,10 +120,10 @@ docker_manifests:
   - name_template: ethpandaops/{{ .ProjectName }}:{{ .Version }}-arm64
     image_templates:
       - ethpandaops/{{ .ProjectName }}:{{ .Version }}-arm64v8
-  - name_template: ethpandaops/{{ .ProjectName }}:latest
+  - name_template: ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest
     image_templates:
-      - ethpandaops/{{ .ProjectName }}:latest-amd64
-      - ethpandaops/{{ .ProjectName }}:latest-arm64v8
+      - ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest-amd64
+      - ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest-arm64v8
 
   ## Debian
   - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-debian
@@ -133,10 +133,10 @@ docker_manifests:
   - name_template: samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64
     image_templates:
       - samcm/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8
-  - name_template: samcm/{{ .ProjectName }}:debian-latest
+  - name_template: samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest
     image_templates:
-      - samcm/{{ .ProjectName }}:debian-latest-amd64
-      - samcm/{{ .ProjectName }}:debian-latest-arm64v8
+      - samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-amd64
+      - samcm/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-arm64v8
   - name_template: ethpandaops/{{ .ProjectName }}:{{ .Version }}-debian
     image_templates:
       - ethpandaops/{{ .ProjectName }}:{{ .Version }}-debian-amd64
@@ -144,7 +144,7 @@ docker_manifests:
   - name_template: ethpandaops/{{ .ProjectName }}:{{ .Version }}-debian-arm64
     image_templates:
       - ethpandaops/{{ .ProjectName }}:{{ .Version }}-debian-arm64v8
-  - name_template: ethpandaops/{{ .ProjectName }}:debian-latest
+  - name_template: ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest
     image_templates:
-      - ethpandaops/{{ .ProjectName }}:debian-latest-amd64
-      - ethpandaops/{{ .ProjectName }}:debian-latest-arm64v8
+      - ethpandaops/{{ .ProjectName }}:{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest-amd64
+      - ethpandaops/{{ .ProjectName }}{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}:debian-latest-arm64v8
