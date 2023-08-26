@@ -261,7 +261,7 @@ func (h *Handler) PeerCount(ctx context.Context) (uint64, error) {
 	return h.provider.PeerCount(ctx)
 }
 
-// BeaconBlock returns the beacon state for the given state id.
+// BeaconState returns the beacon state for the given state id.
 func (h *Handler) BeaconState(ctx context.Context, stateID StateIdentifier) (*[]byte, error) {
 	var err error
 

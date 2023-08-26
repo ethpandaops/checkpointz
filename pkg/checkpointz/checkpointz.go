@@ -11,6 +11,7 @@ import (
 	"github.com/ethpandaops/checkpointz/pkg/version"
 	static "github.com/ethpandaops/checkpointz/web"
 	"github.com/julienschmidt/httprouter"
+	"github.com/nanmu42/gzip"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 )
@@ -82,7 +83,16 @@ func (s *Server) Start(ctx context.Context) error {
 		WriteTimeout:      15 * time.Minute,
 	}
 
-	server.Handler = router
+	// Gzip any content longer than 1024 bytes if requested via the Accept-Encoding header
+	gzipHandler := gzip.NewHandler(gzip.Config{
+		CompressionLevel: 6,
+		MinContentLength: 1024,
+		RequestFilter: []gzip.RequestFilter{
+			gzip.NewCommonRequestFilter(),
+		},
+		ResponseHeaderFilter: []gzip.ResponseHeaderFilter{},
+	})
+	server.Handler = gzipHandler.WrapHandler(router)
 
 	s.log.Infof("Serving http at %s", s.Cfg.GlobalConfig.ListenAddr)
 
