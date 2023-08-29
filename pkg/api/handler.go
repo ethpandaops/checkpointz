@@ -192,6 +192,11 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 			ContentTypeJSON: block.Capella.MarshalJSON,
 			ContentTypeSSZ:  block.Capella.MarshalSSZ,
 		})
+	case spec.DataVersionDeneb:
+		rsp = NewSuccessResponse(ContentTypeResolvers{
+			ContentTypeJSON: block.Deneb.MarshalJSON,
+			ContentTypeSSZ:  block.Deneb.MarshalSSZ,
+		})
 	default:
 		return NewInternalServerErrorResponse(nil), errors.New("unknown block version")
 	}
