@@ -38,6 +38,13 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
+      - name: Run apt-get update
+        run: sudo apt-get update
+      - name: Install cross-compiler for linux/arm64
+        run: sudo apt-get -y install gcc-aarch64-linux-gnu
+      - name: Install make
+        run: sudo apt-get -y install make
+      - name: Set up QEMU
       -
         name: Login to DockerHub
         uses: docker/login-action@v2
