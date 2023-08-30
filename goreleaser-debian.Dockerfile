@@ -1,7 +1,8 @@
-FROM debian:bullseye
-RUN apt update && \
-    apt install -y ca-certificates && \
-    update-ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+FROM debian:latest
+RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends \
+  libssl-dev \
+  ca-certificates \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 COPY checkpointz* /checkpointz
 ENTRYPOINT ["/checkpointz"]
