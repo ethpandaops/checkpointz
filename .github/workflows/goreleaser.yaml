@@ -45,6 +45,7 @@ jobs:
       - name: Install make
         run: sudo apt-get -y install make
       - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
       -
         name: Login to DockerHub
         uses: docker/login-action@v2
