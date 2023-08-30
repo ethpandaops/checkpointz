@@ -34,9 +34,10 @@ jobs:
           echo "RELEASE_SUFFIX=$RELEASE_SUFFIX" >> $GITHUB_ENV
 
           echo "Release suffix: $RELEASE_SUFFIX"
-      -
-        name: Set up Go
+      - name: Set up Go
         uses: actions/setup-go@v3
+        with:
+          go-version: '1.19'
       -
         name: Set up NodeJS
         uses: actions/setup-node@v3
