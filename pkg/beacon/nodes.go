@@ -36,8 +36,11 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace
 
 		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, opts)
 
-		// TODO(sam.calder-mason): Can we re-enable this if we're expecting to use a full beacon node for v1?
-		snode.Options().BeaconSubscription.Enabled = false
+		snode.Options().BeaconSubscription.Enabled = true
+
+		opts.BeaconSubscription.Topics = sbeacon.EventTopics{
+			"finalized_checkpoint",
+		}
 
 		nodes[i] = &Node{
 			Config: config,
