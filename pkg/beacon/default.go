@@ -88,7 +88,7 @@ func (d *Default) Start(ctx context.Context) error {
 	go func() {
 		for {
 			// Wait until we have a single healthy node.
-			_, err := d.nodes.Healthy(ctx).NotSyncing(ctx).RandomNode(ctx)
+			_, err := d.nodes.Ready(ctx).RandomNode(ctx)
 			if err != nil {
 				d.log.WithError(err).Error("Waiting for a healthy, non-syncing node before beginning..")
 				time.Sleep(time.Second * 5)

@@ -114,19 +114,15 @@ func (n Nodes) Syncing(ctx context.Context) Nodes {
 
 func (n Nodes) Ready(ctx context.Context) Nodes {
 	return n.
-		Healthy(ctx).
-		NotSyncing(ctx)
+		Healthy(ctx)
 }
 
 func (n Nodes) RandomNode(ctx context.Context) (*Node, error) {
-	nodes := n.Ready(ctx)
-
-	if len(nodes) == 0 {
-		return nil, errors.New("no nodes found")
+	if len(n) == 0 {
+		return nil, errors.New("no nodes available")
 	}
-
 	//nolint:gosec // not critical to worry about/will probably be replaced.
-	return nodes[rand.Intn(len(nodes))], nil
+	return n[rand.Intn(len(n))], nil
 }
 
 func (n Nodes) Filter(ctx context.Context, f func(*Node) bool) Nodes {
