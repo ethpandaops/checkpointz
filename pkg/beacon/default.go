@@ -126,6 +126,16 @@ func (d *Default) startCrons(ctx context.Context) error {
 		return err
 	}
 
+	if _, err := s.Every("3m").Do(func() {
+		for _, node := range d.nodes.Healthy(ctx) {
+			if _, err := node.Beacon.FetchFinality(ctx, "head"); err != nil {
+				d.log.WithError(err).Error("Failed to fetch finality when polling")
+			}
+		}
+	}); err != nil {
+		return err
+	}
+
 	go func() {
 		if err := d.startGenesisLoop(ctx); err != nil {
 			d.log.WithError(err).Fatal("Failed to start genesis loop")
