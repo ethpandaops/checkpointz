@@ -7,6 +7,8 @@ on:
 
 jobs:
   goreleaser:
+    permissions:
+      contents: write
     runs-on:
       - environment=production
       - size=xlarge
