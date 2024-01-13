@@ -15,7 +15,6 @@ export type ConsensusClient = {
   image?: string;
   imageClassName?: string;
   description: string;
-  endpointPathSuffix?: string;
   commandLine?: (publicURL: string) => JSX.Element;
   logCheck?: (publicURL: string) => JSX.Element;
   defaultPort?: number;
@@ -165,11 +164,10 @@ level=info msg="BeaconState htr=0x854ca984298e6a0d9fc098b4e37f1b28727e545a8e4d31
     image: TekuImage,
     imageClassName: 'bg-[#ff6e42] p-1',
     description: 'Teku is a Java-based Ethereum 2.0 client developed by ConsenSys.',
-    endpointPathSuffix: '/eth/v2/debug/beacon/states/finalized',
     defaultPort: 5051,
     commandLine: (publicURL: string) => (
       <div className="bg-gray-100 rounded-lg grid">
-        <pre className="overflow-x-auto p-5">--initial-state={publicURL}</pre>
+        <pre className="overflow-x-auto p-5">--checkpoint-sync-url={publicURL}</pre>
       </div>
     ),
     logCheck: (publicURL: string) => (
