@@ -311,30 +311,9 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 	}
 
 	if d.shouldDownloadStates() {
-		// If the state already exists, don't bother downloading it again.
-		existingState, err := d.states.GetByStateRoot(stateRoot)
-		if err == nil && existingState != nil {
-			d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
-
-			return block, nil
-		}
-
-		beaconState, err := upstream.Beacon.FetchRawBeaconState(ctx, eth.SlotAsString(slot), "application/octet-stream")
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch beacon state: %w", err)
-		}
-
-		if beaconState == nil {
-			return nil, errors.New("beacon state is nil")
-		}
-
-		expiresAt := time.Now().Add(FinalityHaltedServingPeriod)
-		if slot == phase0.Slot(0) {
-			expiresAt = time.Now().Add(999999 * time.Hour)
-		}
-
-		if err := d.states.Add(stateRoot, &beaconState, expiresAt, slot); err != nil {
-			return nil, fmt.Errorf("failed to store beacon state: %w", err)
+		// Download and store beacon state
+		if err := d.downloadAndStoreBeaconState(ctx, stateRoot, slot, upstream); err != nil {
+			return nil, fmt.Errorf("failed to download and store beacon state: %w", err)
 		}
 	}
 
@@ -345,17 +324,15 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		if err := d.downloadAndStoreDepositSnapshot(ctx, epoch, upstream); err != nil {
 			return nil, fmt.Errorf("failed to download and store deposit snapshot: %w", err)
 		}
+	}
 
-		sp, err := upstream.Beacon.Spec()
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch spec from upstream node: %w", err)
-		}
+	sp, err := upstream.Beacon.Spec()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch spec from upstream node: %w", err)
+	}
 
-		denebFork, err := sp.ForkEpochs.GetByName("DENEB")
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch deneb fork: %w", err)
-		}
-
+	denebFork, err := sp.ForkEpochs.GetByName("DENEB")
+	if err == nil && denebFork != nil {
 		if denebFork.Active(slot, sp.SlotsPerEpoch) {
 			// Download and store blob sidecars
 			if err := d.downloadAndStoreBlobSidecars(ctx, slot, upstream); err != nil {
@@ -367,6 +344,34 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 	d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
 	return block, nil
+}
+
+func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot phase0.Root, slot phase0.Slot, node *Node) error {
+	// If the state already exists, don't bother downloading it again.
+	existingState, err := d.states.GetByStateRoot(stateRoot)
+	if err == nil && existingState != nil {
+		return nil
+	}
+
+	beaconState, err := node.Beacon.FetchRawBeaconState(ctx, eth.SlotAsString(slot), "application/octet-stream")
+	if err != nil {
+		return fmt.Errorf("failed to fetch beacon state: %w", err)
+	}
+
+	if beaconState == nil {
+		return errors.New("beacon state is nil")
+	}
+
+	expiresAt := time.Now().Add(FinalityHaltedServingPeriod)
+	if slot == phase0.Slot(0) {
+		expiresAt = time.Now().Add(999999 * time.Hour)
+	}
+
+	if err := d.states.Add(stateRoot, &beaconState, expiresAt, slot); err != nil {
+		return fmt.Errorf("failed to store beacon state: %w", err)
+	}
+
+	return nil
 }
 
 func (d *Default) downloadAndStoreDepositSnapshot(ctx context.Context, epoch phase0.Epoch, node *Node) error {
