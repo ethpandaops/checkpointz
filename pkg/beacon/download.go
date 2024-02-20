@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
@@ -14,25 +13,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.Finality) error {
+func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *phase0.Checkpoint) error {
 	if checkpoint == nil {
 		return errors.New("checkpoint is nil")
-	}
-
-	if checkpoint.Finalized == nil {
-		return errors.New("finalized checkpoint is nil")
 	}
 
 	upstream, err := d.nodes.
 		Ready(ctx).
 		DataProviders(ctx).
-		PastFinalizedCheckpoint(ctx, checkpoint). // Ensure we attempt to fetch the bundle from a node that knows about the checkpoint.
+		HasFinalizedCheckpoint(ctx, checkpoint). // Ensure we attempt to fetch the bundle from a node that knows about the checkpoint.
 		RandomNode(ctx)
 	if err != nil {
 		return perrors.Wrap(err, "no data provider node available")
 	}
 
-	block, err := d.fetchBundle(ctx, checkpoint.Finalized.Root, upstream)
+	block, err := d.fetchBundle(ctx, checkpoint.Root, upstream)
 	if err != nil {
 		return perrors.Wrap(err, "failed to fetch bundle")
 	}
@@ -52,12 +47,12 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 	}
 
 	d.servingBundle = checkpoint
-	d.metrics.ObserveServingEpoch(checkpoint.Finalized.Epoch)
+	d.metrics.ObserveServingEpoch(checkpoint.Epoch)
 
 	d.log.WithFields(
 		logrus.Fields{
-			"epoch": checkpoint.Finalized.Epoch,
-			"root":  fmt.Sprintf("%#x", checkpoint.Finalized.Root),
+			"epoch": checkpoint.Epoch,
+			"root":  fmt.Sprintf("%#x", checkpoint.Root),
 		},
 	).Info("Serving a new finalized checkpoint bundle")
 
@@ -125,7 +120,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 	return nil
 }
 
-func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1.Finality) error {
+func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *phase0.Checkpoint) error {
 	d.historicalMutex.Lock()
 	defer d.historicalMutex.Unlock()
 
@@ -141,7 +136,7 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	upstream, err := d.nodes.
 		Ready(ctx).
 		DataProviders(ctx).
-		PastFinalizedCheckpoint(ctx, checkpoint).
+		HasFinalizedCheckpoint(ctx, checkpoint).
 		RandomNode(ctx)
 	if err != nil {
 		return errors.New("no data provider node available")
@@ -160,7 +155,7 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 
 	// Calculate the epoch boundaries we need to fetch
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
-	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
+	currentSlot := uint64(checkpoint.Epoch) * uint64(sp.SlotsPerEpoch)
 	for i := uint64(1); i < uint64(d.config.HistoricalEpochCount); i++ {
 		slot := phase0.Slot(currentSlot - i*uint64(sp.SlotsPerEpoch))
 		slotsInScope[slot] = struct{}{}

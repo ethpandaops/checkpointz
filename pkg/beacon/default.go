@@ -32,8 +32,8 @@ type Default struct {
 	nodes       Nodes
 	broker      *emission.Emitter
 
-	head          *v1.Finality
-	servingBundle *v1.Finality
+	head          *phase0.Checkpoint
+	servingBundle *phase0.Checkpoint
 
 	blocks           *store.Block
 	states           *store.BeaconState
@@ -70,8 +70,8 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 		nodes:       NewNodesFromConfig(log, nodes, namespace),
 		config:      config,
 
-		head:          &v1.Finality{},
-		servingBundle: &v1.Finality{},
+		head:          nil,
+		servingBundle: nil,
 
 		historicalSlotFailures: make(map[phase0.Slot]int),
 
@@ -253,7 +253,7 @@ func (d *Default) startHistoricalLoop(ctx context.Context) error {
 	for {
 		select {
 		case <-time.After(time.Second * 15):
-			if d.head == nil || d.head.Finalized == nil {
+			if d.head == nil {
 				continue
 			}
 
@@ -294,39 +294,101 @@ func (d *Default) checkForNewServingCheckpoint(ctx context.Context) error {
 		return errors.New("head finality is unknown")
 	}
 
-	if d.head.Finalized == nil {
-		return errors.New("head finalized checkpoint is unknown")
-	}
-
 	logCtx := d.log.WithFields(logrus.Fields{
-		"head_epoch": d.head.Finalized.Epoch,
-		"head_root":  fmt.Sprintf("%#x", d.head.Finalized.Root),
+		"head_epoch": d.head.Epoch,
+		"head_root":  fmt.Sprintf("%#x", d.head.Root),
 	})
 
 	// If we don't have a serving bundle already, download one.
 	if d.servingBundle == nil {
-		logCtx.Info("No serving bundle available, downloading")
-
-		return d.downloadServingCheckpoint(ctx, d.head)
-	}
-
-	if d.servingBundle.Finalized == nil {
-		logCtx.Info("Serving bundle is unknown, downloading")
+		logCtx.Info("No serving bundle available, downloading and serving any available historical checkpoint")
 
 		return d.downloadServingCheckpoint(ctx, d.head)
 	}
 
 	// If the head has moved on, download a new serving bundle.
-	if d.servingBundle.Finalized.Epoch != d.head.Finalized.Epoch {
+	if d.servingBundle.Epoch != d.head.Epoch {
 		logCtx.
-			WithField("serving_epoch", d.servingBundle.Finalized.Epoch).
-			WithField("serving_root", fmt.Sprintf("%#x", d.servingBundle.Finalized.Root)).
+			WithField("serving_epoch", d.servingBundle.Epoch).
+			WithField("serving_root", fmt.Sprintf("%#x", d.servingBundle.Root)).
 			Info("Head finality has advanced, downloading new serving bundle")
 
 		return d.downloadServingCheckpoint(ctx, d.head)
 	}
 
 	return nil
+}
+
+func (d *Default) serveInitialCheckpoint(ctx context.Context, head *phase0.Checkpoint) error {
+	/*
+		We're booting up for the first time and need to serve a checkpoint.
+		We'll attempt to serve the "head" checkpoint, but if that fails we'll
+		work our way back through epochs until we find a checkpoint that we can serve.
+	*/
+
+	if head == nil {
+		return errors.New("head checkpoint is nil")
+	}
+
+	// If we have a head checkpoint, we'll attempt to serve it.
+	if err := d.downloadServingCheckpoint(ctx, head); err == nil {
+		return nil
+
+	}
+
+	// We'll go back as far as our historical epoch is configured, ensuring we don't go below epoch 0.
+	for i := 0; i < d.config.HistoricalEpochCount; i++ {
+		proposedEpoch := int64(head.Epoch) - int64(i)
+		if proposedEpoch < 0 {
+			break
+		}
+
+		logCtx := d.log.WithFields(logrus.Fields{
+			"proposed_epoch":     proposedEpoch,
+			"distance_from_head": i,
+			"cause":              "initial_serve",
+		})
+
+		epoch := phase0.Epoch(proposedEpoch)
+
+		// We need to grab the root of the slot at the start of the epoch.
+		slot := phase0.Slot(uint64(epoch) / uint64(d.spec.SlotsPerEpoch))
+
+		upstream, err := d.nodes.
+			Ready(ctx).
+			DataProviders(ctx).
+			HasFinalizedCheckpoint(ctx, head). // Ensure we attempt to fetch the bundle from a node that knows about the checkpoint.
+			RandomNode(ctx)
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to find a node")
+
+			continue
+		}
+
+		block, err := upstream.Beacon.FetchBlock(ctx, eth.SlotAsString(slot))
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to fetch block")
+
+			continue
+		}
+
+		root, err := block.Root()
+		if err != nil {
+			logCtx.WithError(err).Error("Failed to get block root")
+
+			continue
+		}
+
+		// We'll attempt to serve the checkpoint.
+		if err := d.downloadServingCheckpoint(ctx, &phase0.Checkpoint{
+			Epoch: epoch,
+			Root:  root,
+		}); err == nil {
+			return nil
+		}
+	}
+
+	return errors.New("failed to serve any checkpoint")
 }
 
 func (d *Default) Healthy(ctx context.Context) (bool, error) {
@@ -375,22 +437,30 @@ func (d *Default) Syncing(ctx context.Context) (*v1.SyncState, error) {
 		return syncState, errors.New("spec unknown")
 	}
 
-	if d.head != nil && d.head.Finalized != nil {
-		syncState.HeadSlot = phase0.Slot(d.head.Finalized.Epoch) * sp.SlotsPerEpoch
+	if d.head != nil && d.head != nil {
+		syncState.HeadSlot = phase0.Slot(d.head.Epoch) * sp.SlotsPerEpoch
 	}
 
-	if d.servingBundle != nil && d.servingBundle.Finalized != nil {
-		syncState.SyncDistance = syncState.HeadSlot - phase0.Slot(d.servingBundle.Finalized.Epoch)*sp.SlotsPerEpoch
+	if d.servingBundle != nil && d.servingBundle != nil {
+		syncState.SyncDistance = syncState.HeadSlot - phase0.Slot(d.servingBundle.Epoch)*sp.SlotsPerEpoch
 	}
 
 	return syncState, nil
 }
 
-func (d *Default) Finalized(ctx context.Context) (*v1.Finality, error) {
+func (d *Default) Finalized(ctx context.Context) (*phase0.Checkpoint, error) {
+	if d.servingBundle == nil {
+		return nil, errors.New("finalized checkpoint is unknown")
+	}
+
 	return d.servingBundle, nil
 }
 
-func (d *Default) Head(ctx context.Context) (*v1.Finality, error) {
+func (d *Default) Head(ctx context.Context) (*phase0.Checkpoint, error) {
+	if d.head == nil {
+		return nil, errors.New("head checkpoint is unknown")
+	}
+
 	return d.head, nil
 }
 
@@ -441,8 +511,8 @@ func (d *Default) checkFinality(ctx context.Context) error {
 		return perrors.Wrap(err, "failed to decide majority finality")
 	}
 
-	if d.head == nil || d.head.Finalized == nil || d.head.Finalized.Root != majority.Finalized.Root {
-		d.head = majority
+	if d.head == nil || d.head == nil || d.head.Root != majority.Finalized.Root {
+		d.head = majority.Finalized
 
 		d.publishFinalityCheckpointHeadUpdated(ctx, majority)
 
@@ -681,11 +751,11 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 		return slots, err
 	}
 
-	if finality.Finalized == nil {
+	if finality == nil {
 		return slots, errors.New("no finalized checkpoint available")
 	}
 
-	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(d.spec.SlotsPerEpoch))
+	latestSlot := phase0.Slot(uint64(finality.Epoch) * uint64(d.spec.SlotsPerEpoch))
 
 	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(d.spec.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(d.spec.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))

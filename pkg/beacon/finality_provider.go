@@ -25,10 +25,10 @@ type FinalityProvider interface {
 	PeerCount(ctx context.Context) (uint64, error)
 	// Syncing returns the sync state of the provider.
 	Syncing(ctx context.Context) (*v1.SyncState, error)
-	// Head returns the head finality.
-	Head(ctx context.Context) (*v1.Finality, error)
-	// Finalized returns the finalized finality.
-	Finalized(ctx context.Context) (*v1.Finality, error)
+	// Head returns the head checkpoint.
+	Head(ctx context.Context) (*phase0.Checkpoint, error)
+	// Finalized returns the finalized checkpoint.
+	Finalized(ctx context.Context) (*phase0.Checkpoint, error)
 	// Genesis returns the chain genesis.
 	Genesis(ctx context.Context) (*v1.Genesis, error)
 	// Spec returns the chain spec.

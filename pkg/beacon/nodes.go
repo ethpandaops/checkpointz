@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	v1 "github.com/attestantio/go-eth2-client/api/v1"
+	"github.com/attestantio/go-eth2-client/spec/phase0"
 	sbeacon "github.com/ethpandaops/beacon/pkg/beacon"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
@@ -147,14 +147,14 @@ func (n Nodes) Filter(ctx context.Context, f func(*Node) bool) Nodes {
 	return nodes
 }
 
-func (n Nodes) PastFinalizedCheckpoint(ctx context.Context, checkpoint *v1.Finality) Nodes {
+func (n Nodes) HasFinalizedCheckpoint(ctx context.Context, checkpoint *phase0.Checkpoint) Nodes {
 	return n.Filter(ctx, func(node *Node) bool {
 		finality, err := node.Beacon.Finality()
 		if err != nil {
 			return false
 		}
 
-		if finality.Finalized.Epoch < checkpoint.Finalized.Epoch {
+		if finality.Finalized.Epoch < checkpoint.Epoch {
 			return false
 		}
 

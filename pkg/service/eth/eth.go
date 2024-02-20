@@ -185,7 +185,7 @@ func (h *Handler) DepositSnapshot(ctx context.Context) (*types.DepositSnapshot, 
 		return nil, err
 	}
 
-	snapshot, err := h.provider.GetDepositSnapshot(ctx, finality.Finalized.Epoch)
+	snapshot, err := h.provider.GetDepositSnapshot(ctx, finality.Epoch)
 	if err != nil {
 		return nil, err
 	}
@@ -296,11 +296,11 @@ func (h *Handler) BeaconState(ctx context.Context, stateID StateIdentifier) (*[]
 			return nil, err
 		}
 
-		if finality == nil || finality.Finalized == nil {
+		if finality == nil {
 			return nil, fmt.Errorf("no finality known")
 		}
 
-		return h.provider.GetBeaconStateByRoot(ctx, finality.Finalized.Root)
+		return h.provider.GetBeaconStateByRoot(ctx, finality.Root)
 	case StateIDGenesis:
 		return h.provider.GetBeaconStateBySlot(ctx, phase0.Slot(0))
 	default:
