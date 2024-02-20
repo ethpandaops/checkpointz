@@ -67,8 +67,11 @@ func TestExpireMultiple(t *testing.T) {
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%v", test.slot), func(t *testing.T) {
 			test := test
+
 			t.Parallel()
+
 			expirySlot := CalculateSlotExpiration(test.slot, slotsOfHistory)
+
 			expiryTime := GetSlotTime(expirySlot, defaultSecondsPerSlot, genesis)
 
 			if expiryTime.String() != test.expect {
