@@ -95,7 +95,7 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 			"path":         r.URL.Path,
 			"content_type": contentType,
 			"accept":       r.Header.Get("Accept"),
-		}).Debug("Handling request")
+		}).Trace("Handling request")
 
 		h.metrics.ObserveRequest(r.Method, registeredPath)
 
@@ -439,7 +439,7 @@ func (h *Handler) handleCheckpointzStatus(ctx context.Context, r *http.Request, 
 		},
 	})
 
-	rsp.SetCacheControl("public, s-max-age=30")
+	rsp.SetCacheControl("public, s-max-age=5")
 
 	return rsp, nil
 }
@@ -483,7 +483,7 @@ func (h *Handler) handleCheckpointzBeaconSlots(ctx context.Context, r *http.Requ
 		},
 	})
 
-	rsp.SetCacheControl("public, s-max-age=30")
+	rsp.SetCacheControl("public, s-max-age=5")
 
 	return rsp, nil
 }
@@ -509,7 +509,7 @@ func (h *Handler) handleCheckpointzBeaconSlot(ctx context.Context, r *http.Reque
 		},
 	})
 
-	rsp.SetCacheControl("public, s-max-age=60")
+	rsp.SetCacheControl("public, s-max-age=5")
 
 	return rsp, nil
 }
