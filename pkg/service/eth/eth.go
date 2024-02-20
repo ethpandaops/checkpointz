@@ -538,7 +538,5 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier) ([]
 		return nil, fmt.Errorf("invalid block id: %v", blockID.String())
 	}
 
-	h.log.WithField("slot", slot).Debug("Getting blob sidecars")
-
 	return h.provider.GetBlobSidecarsBySlot(ctx, slot)
 }
