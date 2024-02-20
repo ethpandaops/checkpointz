@@ -345,6 +345,24 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		if err := d.downloadAndStoreDepositSnapshot(ctx, epoch, upstream); err != nil {
 			return nil, fmt.Errorf("failed to download and store deposit snapshot: %w", err)
 		}
+
+		spec, err := upstream.Beacon.Spec()
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch spec from upstream node: %w", err)
+		}
+
+		denebFork, err := spec.ForkEpochs.GetByName("DENEB")
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch deneb fork: %w", err)
+		}
+
+		if denebFork.Active(slot, spec.SlotsPerEpoch) {
+			// Download and store blob sidecars
+			if err := d.downloadAndStoreBlobSidecars(ctx, slot, upstream); err != nil {
+				return nil, fmt.Errorf("failed to download and store blob sidecars: %w", err)
+			}
+		}
+
 	}
 
 	d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
@@ -383,6 +401,40 @@ func (d *Default) downloadAndStoreDepositSnapshot(ctx context.Context, epoch pha
 			"node":  node.Config.Name,
 		}).
 		Infof("Downloaded and stored deposit snapshot for epoch %d", epoch)
+
+	return nil
+}
+
+func (d *Default) downloadAndStoreBlobSidecars(ctx context.Context, slot phase0.Slot, node *Node) error {
+	// Check if we already have the blob sidecars.
+	if _, err := d.blobSidecars.GetBySlot(slot); err == nil {
+		return nil
+	}
+
+	// Download the blob sidecars from our upstream.
+	blobSidecars, err := node.Beacon.FetchBeaconBlockBlobs(ctx, eth.SlotAsString(slot))
+	if err != nil {
+		return err
+	}
+
+	if blobSidecars == nil {
+		return errors.New("invalid blob sidecars")
+	}
+
+	// Store for the FinalityHaltedServingPeriod to ensure we have them in case of non-finality.
+	// We'll let the store handle purging old items.
+	expiresAt := time.Now().Add(FinalityHaltedServingPeriod)
+
+	if err := d.blobSidecars.Add(slot, blobSidecars, expiresAt); err != nil {
+		return fmt.Errorf("failed to store blob sidecars: %w", err)
+	}
+
+	d.log.
+		WithFields(logrus.Fields{
+			"slot": slot,
+			"node": node.Config.Name,
+		}).
+		Infof("Downloaded and stored blob sidecar for slot %d", slot)
 
 	return nil
 }

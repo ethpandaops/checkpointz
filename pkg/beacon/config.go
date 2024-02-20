@@ -24,11 +24,13 @@ type Config struct {
 // Cache configuration holds configuration for the caches.
 type CacheConfig struct {
 	// Blocks holds the block cache configuration.
-	Blocks store.Config `yaml:"blocks" default:"{\"MaxItems\": 200}"`
+	Blocks store.Config `yaml:"blocks" default:"{\"MaxItems\": 30}"`
 	// States holds the state cache configuration.
 	States store.Config `yaml:"states" default:"{\"MaxItems\": 5}"`
 	// DepositSnapshots holds the deposit snapshot cache configuration.
-	DepositSnapshots store.Config `yaml:"deposit_snapshots" default:"{\"MaxItems\": 50}"`
+	DepositSnapshots store.Config `yaml:"deposit_snapshots" default:"{\"MaxItems\": 30}"`
+	// BlobSidecars holds the blob sidecar cache configuration.
+	BlobSidecars store.Config `yaml:"blob_sidecars" default:"{\"MaxItems\": 30}"`
 }
 
 type FrontendConfig struct {

@@ -51,6 +51,7 @@ func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error
 	router.GET("/eth/v1/beacon/blocks/:block_id/root", h.wrappedHandler(h.handleEthV1BeaconBlocksRoot))
 	router.GET("/eth/v1/beacon/states/:state_id/finality_checkpoints", h.wrappedHandler(h.handleEthV1BeaconStatesFinalityCheckpoints))
 	router.GET("/eth/v1/beacon/deposit_snapshot", h.wrappedHandler(h.handleEthV1BeaconDepositSnapshot))
+	router.GET("/eth/v1/beacon/blob_sidecars/:block_id", h.wrappedHandler(h.handleEthV1BeaconBlobSidecars))
 
 	router.GET("/eth/v1/config/spec", h.wrappedHandler(h.handleEthV1ConfigSpec))
 	router.GET("/eth/v1/config/deposit_contract", h.wrappedHandler(h.handleEthV1ConfigDepositContract))
@@ -439,7 +440,7 @@ func (h *Handler) handleCheckpointzStatus(ctx context.Context, r *http.Request, 
 		},
 	})
 
-	rsp.SetCacheControl("public, s-max-age=30")
+	rsp.SetCacheControl("public, s-max-age=5")
 
 	return rsp, nil
 }
@@ -483,7 +484,7 @@ func (h *Handler) handleCheckpointzBeaconSlots(ctx context.Context, r *http.Requ
 		},
 	})
 
-	rsp.SetCacheControl("public, s-max-age=30")
+	rsp.SetCacheControl("public, s-max-age=5")
 
 	return rsp, nil
 }
@@ -509,7 +510,7 @@ func (h *Handler) handleCheckpointzBeaconSlot(ctx context.Context, r *http.Reque
 		},
 	})
 
-	rsp.SetCacheControl("public, s-max-age=60")
+	rsp.SetCacheControl("public, s-max-age=5")
 
 	return rsp, nil
 }
@@ -586,4 +587,35 @@ func (h *Handler) handleEthV1BeaconDepositSnapshot(ctx context.Context, r *http.
 			return json.Marshal(snapshot)
 		},
 	}), nil
+}
+
+func (h *Handler) handleEthV1BeaconBlobSidecars(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	id, err := eth.NewBlockIdentifier(p.ByName("block_id"))
+	if err != nil {
+		return NewBadRequestResponse(nil), err
+	}
+
+	sidecars, err := h.eth.BlobSidecars(ctx, id)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	rsp := NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(sidecars)
+		},
+	})
+
+	switch id.Type() {
+	case eth.BlockIDFinalized, eth.BlockIDRoot:
+		rsp.SetCacheControl("public, s-max-age=6000")
+	default:
+		rsp.SetCacheControl("public, s-max-age=15")
+	}
+
+	return rsp, nil
 }
