@@ -5,6 +5,7 @@ import (
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
+	"github.com/attestantio/go-eth2-client/spec/deneb"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
@@ -47,6 +48,8 @@ type FinalityProvider interface {
 	GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
 	// GetBeaconStateByRoot returns the beacon sate with the given root.
 	GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
+	// GetBlobSidecarsBySlot returns the blob sidecars for the given slot.
+	GetBlobSidecarsBySlot(ctx context.Context, slot phase0.Slot) ([]*deneb.BlobSidecar, error)
 	// ListFinalizedSlots returns a slice of finalized slots.
 	ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 	// GetEpochBySlot returns the epoch for the given slot.

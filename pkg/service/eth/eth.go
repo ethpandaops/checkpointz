@@ -6,6 +6,7 @@ import (
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
+	"github.com/attestantio/go-eth2-client/spec/deneb"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
@@ -431,4 +432,113 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 	default:
 		return phase0.Root{}, fmt.Errorf("invalid block id: %v", blockID.String())
 	}
+}
+
+// BlobSidecars returns the blob sidecars for the given block ID.
+func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier) ([]*deneb.BlobSidecar, error) {
+	var err error
+
+	const call = "blob_sidecars"
+
+	h.metrics.ObserveCall(call, blockID.Type().String())
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, blockID.Type().String())
+		}
+	}()
+
+	slot := phase0.Slot(0)
+
+	switch blockID.Type() {
+	case BlockIDGenesis:
+		block, err := h.provider.GetBlockBySlot(ctx, phase0.Slot(0))
+		if err != nil {
+			return nil, err
+		}
+
+		if block == nil {
+			return nil, fmt.Errorf("no genesis block")
+		}
+
+		sl, err := block.Slot()
+		if err != nil {
+			return nil, err
+		}
+
+		slot = sl
+	case BlockIDSlot:
+		sslot, err := NewSlotFromString(blockID.Value())
+		if err != nil {
+			return nil, err
+		}
+
+		block, err := h.provider.GetBlockBySlot(ctx, sslot)
+		if err != nil {
+			return nil, err
+		}
+
+		if block == nil {
+			return nil, fmt.Errorf("no block for slot %v", sslot)
+		}
+
+		sl, err := block.Slot()
+		if err != nil {
+			return nil, err
+		}
+
+		slot = sl
+	case BlockIDRoot:
+		root, err := blockID.AsRoot()
+		if err != nil {
+			return nil, err
+		}
+
+		block, err := h.provider.GetBlockByRoot(ctx, root)
+		if err != nil {
+			return nil, err
+		}
+
+		if block == nil {
+			return nil, fmt.Errorf("no block for root %v", root)
+		}
+
+		sl, err := block.Slot()
+		if err != nil {
+			return nil, err
+		}
+
+		slot = sl
+	case BlockIDFinalized:
+		finality, err := h.provider.Finalized(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if finality == nil || finality.Finalized == nil {
+			return nil, fmt.Errorf("no finality")
+		}
+
+		block, err := h.provider.GetBlockByRoot(ctx, finality.Finalized.Root)
+		if err != nil {
+			return nil, err
+		}
+
+		if block == nil {
+			return nil, fmt.Errorf("no block for finalized root %v", finality.Finalized.Root)
+		}
+
+		sl, err := block.Slot()
+		if err != nil {
+			return nil, err
+		}
+
+		slot = sl
+	default:
+		return nil, fmt.Errorf("invalid block id: %v", blockID.String())
+	}
+
+	h.log.WithField("slot", slot).Debug("Getting blob sidecars")
+
+	return h.provider.GetBlobSidecarsBySlot(ctx, slot)
 }
