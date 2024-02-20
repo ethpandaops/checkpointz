@@ -155,7 +155,7 @@ func (d *Default) Start(ctx context.Context) error {
 
 		node.Beacon.OnReady(ctx, func(ctx context.Context, _ *beacon.ReadyEvent) error {
 			node.Beacon.Wallclock().OnEpochChanged(func(epoch ethwallclock.Epoch) {
-				time.Sleep(time.Second * 15)
+				time.Sleep(time.Second * 5)
 
 				if _, err := node.Beacon.FetchFinality(ctx, "head"); err != nil {
 					logCtx.WithError(err).Error("Failed to fetch finality after epoch transition")
@@ -163,6 +163,10 @@ func (d *Default) Start(ctx context.Context) error {
 
 				if err := d.checkFinality(ctx); err != nil {
 					logCtx.WithError(err).Error("Failed to check finality")
+				}
+
+				if err := d.checkForNewServingCheckpoint(ctx); err != nil {
+					logCtx.WithError(err).Error("Failed to check for new serving checkpoint after epoch change")
 				}
 			})
 
