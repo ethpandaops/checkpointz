@@ -10,22 +10,31 @@ import (
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
+	perrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.Finality) error {
+	if checkpoint == nil {
+		return errors.New("checkpoint is nil")
+	}
+
+	if checkpoint.Finalized == nil {
+		return errors.New("finalized checkpoint is nil")
+	}
+
 	upstream, err := d.nodes.
 		Ready(ctx).
 		DataProviders(ctx).
 		PastFinalizedCheckpoint(ctx, checkpoint). // Ensure we attempt to fetch the bundle from a node that knows about the checkpoint.
 		RandomNode(ctx)
 	if err != nil {
-		return err
+		return perrors.Wrap(err, "no data provider node available")
 	}
 
 	block, err := d.fetchBundle(ctx, checkpoint.Finalized.Root, upstream)
 	if err != nil {
-		return err
+		return perrors.Wrap(err, "failed to fetch bundle")
 	}
 
 	// Validate that everything is ok to serve.
@@ -117,6 +126,9 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 }
 
 func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1.Finality) error {
+	d.historicalMutex.Lock()
+	defer d.historicalMutex.Unlock()
+
 	if d.spec == nil {
 		return errors.New("beacon spec unavailable")
 	}

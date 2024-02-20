@@ -4,19 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
+	"github.com/ethpandaops/beacon/pkg/beacon"
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/checkpoints"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/store"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
+	"github.com/ethpandaops/ethwallclock"
 	"github.com/go-co-op/gocron"
+	perrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,6 +43,10 @@ type Default struct {
 	genesis *v1.Genesis
 
 	historicalSlotFailures map[phase0.Slot]int
+
+	servingMutex    sync.Mutex
+	historicalMutex sync.Mutex
+	majorityMutex   sync.Mutex
 
 	metrics *Metrics
 }
@@ -72,6 +80,10 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 		states:           store.NewBeaconState(log, config.Caches.States, namespace),
 		depositSnapshots: store.NewDepositSnapshot(log, config.Caches.DepositSnapshots, namespace),
 
+		servingMutex:    sync.Mutex{},
+		historicalMutex: sync.Mutex{},
+		majorityMutex:   sync.Mutex{},
+
 		metrics: NewMetrics(namespace + "_beacon"),
 	}
 }
@@ -100,9 +112,38 @@ func (d *Default) Start(ctx context.Context) error {
 				d.log.WithError(err).Fatal("Failed to start crons")
 			}
 
+			// Check for new serving checkpoints after each epoch
+			node, err := d.nodes.Healthy(ctx).NotSyncing(ctx).RandomNode(ctx)
+			if err != nil {
+				d.log.WithError(err).Fatal("Failed to get a healthy, non-syncing node to subscribe to wallclock events")
+			}
+
+			node.Beacon.Wallclock().OnEpochChanged(func(epoch ethwallclock.Epoch) {
+				// Sleep for a bit to allow the beacon nodes to run their epoch transition.
+				time.Sleep(time.Second * 30)
+
+				if err := d.checkForNewServingCheckpoint(ctx); err != nil {
+					d.log.WithError(err).Error("Failed to check for new serving checkpoint after epoch change")
+				}
+			})
+
 			break
 		}
 	}()
+
+	// Subscribe to the nodes' finality updates.
+	for _, node := range d.nodes {
+		node.Beacon.OnFinalityCheckpointUpdated(ctx, func(ctx context.Context, checkpoint *beacon.FinalityCheckpointUpdated) error {
+			// Check if we have a new majority finality.
+			if err := d.checkFinality(ctx); err != nil {
+				d.log.WithError(err).Error("Failed to check finality")
+
+				return err
+			}
+
+			return d.checkForNewServingCheckpoint(ctx)
+		})
+	}
 
 	return nil
 }
@@ -110,7 +151,7 @@ func (d *Default) Start(ctx context.Context) error {
 func (d *Default) startCrons(ctx context.Context) error {
 	s := gocron.NewScheduler(time.Local)
 
-	if _, err := s.Every("5s").Do(func() {
+	if _, err := s.Every("30s").Do(func() {
 		if err := d.checkFinality(ctx); err != nil {
 			d.log.WithError(err).Error("Failed to check finality")
 		}
@@ -210,13 +251,17 @@ func (d *Default) startHistoricalLoop(ctx context.Context) error {
 }
 
 func (d *Default) startServingLoop(ctx context.Context) error {
+	if err := d.checkForNewServingCheckpoint(ctx); err != nil {
+		d.log.WithError(err).Error("Failed to check for serving checkpoint")
+	}
+
 	for {
 		select {
-		case <-time.After(time.Second * 1):
+		case <-time.After(time.Second * 5):
 			if err := d.checkForNewServingCheckpoint(ctx); err != nil {
 				d.log.WithError(err).Error("Failed to check for new serving checkpoint")
 
-				time.Sleep(time.Second * 30)
+				time.Sleep(time.Second * 15)
 			}
 		case <-ctx.Done():
 			return ctx.Err()
@@ -225,22 +270,44 @@ func (d *Default) startServingLoop(ctx context.Context) error {
 }
 
 func (d *Default) checkForNewServingCheckpoint(ctx context.Context) error {
+	d.servingMutex.Lock()
+	defer d.servingMutex.Unlock()
+
 	// Don't bother checking if we don't know the head yet.
 	if d.head == nil {
-		return nil
+		return errors.New("head finality is unknown")
 	}
 
 	if d.head.Finalized == nil {
-		return nil
+		return errors.New("head finalized checkpoint is unknown")
 	}
 
-	// If head == serving, we're done.
-	if d.servingBundle != nil && d.servingBundle.Finalized != nil && d.servingBundle.Finalized.Epoch == d.head.Finalized.Epoch {
-		return nil
+	logCtx := d.log.WithFields(logrus.Fields{
+		"head_epoch": d.head.Finalized.Epoch,
+		"head_root":  fmt.Sprintf("%#x", d.head.Finalized.Root),
+	})
+
+	// If we don't have a serving bundle already, download one.
+	if d.servingBundle == nil {
+		logCtx.Info("No serving bundle available, downloading")
+
+		return d.downloadServingCheckpoint(ctx, d.head)
 	}
 
-	if err := d.downloadServingCheckpoint(ctx, d.head); err != nil {
-		return err
+	if d.servingBundle.Finalized == nil {
+		logCtx.Info("Serving bundle is unknown, downloading")
+
+		return d.downloadServingCheckpoint(ctx, d.head)
+	}
+
+	// If the head has moved on, download a new serving bundle.
+	if d.servingBundle.Finalized.Epoch != d.head.Finalized.Epoch {
+		logCtx.
+			WithField("serving_epoch", d.servingBundle.Finalized.Epoch).
+			WithField("serving_root", fmt.Sprintf("%#x", d.servingBundle.Finalized.Root)).
+			Info("Head finality has advanced, downloading new serving bundle")
+
+		return d.downloadServingCheckpoint(ctx, d.head)
 	}
 
 	return nil
@@ -336,6 +403,9 @@ func (d *Default) shouldDownloadStates() bool {
 }
 
 func (d *Default) checkFinality(ctx context.Context) error {
+	d.majorityMutex.Lock()
+	defer d.majorityMutex.Unlock()
+
 	aggFinality := []*v1.Finality{}
 	readyNodes := d.nodes.Ready(ctx)
 
@@ -350,19 +420,22 @@ func (d *Default) checkFinality(ctx context.Context) error {
 		aggFinality = append(aggFinality, finality)
 	}
 
-	Default, err := checkpoints.NewMajorityDecider().Decide(aggFinality)
+	majority, err := checkpoints.NewMajorityDecider().Decide(aggFinality)
 	if err != nil {
-		return err
+		return perrors.Wrap(err, "failed to decide majority finality")
 	}
 
-	if d.head == nil || d.head.Finalized == nil || d.head.Finalized.Root != Default.Finalized.Root {
-		d.head = Default
+	if d.head == nil || d.head.Finalized == nil || d.head.Finalized.Root != majority.Finalized.Root {
+		d.head = majority
 
-		d.publishFinalityCheckpointHeadUpdated(ctx, Default)
+		d.publishFinalityCheckpointHeadUpdated(ctx, majority)
 
-		d.log.WithField("epoch", Default.Finalized.Epoch).WithField("root", fmt.Sprintf("%#x", Default.Finalized.Root)).Info("New finalized head checkpoint")
+		d.log.
+			WithField("epoch", majority.Finalized.Epoch).
+			WithField("root", fmt.Sprintf("%#x", majority.Finalized.Root)).
+			Info("New finalized head checkpoint")
 
-		d.metrics.ObserveHeadEpoch(Default.Finalized.Epoch)
+		d.metrics.ObserveHeadEpoch(majority.Finalized.Epoch)
 	}
 
 	return nil
