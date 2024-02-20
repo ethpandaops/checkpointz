@@ -13,7 +13,7 @@ import (
 func TestBlobSidecarAddAndGet(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	config := Config{MaxItems: 10}
-	namespace := "test"
+	namespace := "test_a"
 	blobSidecarStore := NewBlobSidecar(logger, config, namespace)
 
 	slot := phase0.Slot(100)
@@ -36,7 +36,7 @@ func TestBlobSidecarAddAndGet(t *testing.T) {
 func TestBlobSidecarGetBySlotNotFound(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	config := Config{MaxItems: 10}
-	namespace := "test"
+	namespace := "test_b"
 	blobSidecarStore := NewBlobSidecar(logger, config, namespace)
 
 	slot := phase0.Slot(200)
