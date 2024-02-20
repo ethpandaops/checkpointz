@@ -7,9 +7,11 @@ on:
 
 jobs:
   goreleaser:
+    permissions:
+      contents: write
     runs-on:
       - environment=production
-      - size=xxxxlarge
+      - size=xlarge
       - provider=ethpandaops
       - realm=platform
     steps:

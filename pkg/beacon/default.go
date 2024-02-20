@@ -87,6 +87,10 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 		historicalMutex: sync.Mutex{},
 		majorityMutex:   sync.Mutex{},
 
+		servingMutex:    sync.Mutex{},
+		historicalMutex: sync.Mutex{},
+		majorityMutex:   sync.Mutex{},
+
 		metrics: NewMetrics(namespace + "_beacon"),
 	}
 }

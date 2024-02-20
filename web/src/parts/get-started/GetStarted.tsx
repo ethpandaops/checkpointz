@@ -20,7 +20,7 @@ export default function GetStarted() {
     const defaultPublicURL = `${window.location.origin}${
       window.location.pathname === '/' ? '' : window.location.pathname
     }`;
-    return `${data?.data?.public_url ?? defaultPublicURL}${client?.endpointPathSuffix ?? ''}`;
+    return `${data?.data?.public_url ?? defaultPublicURL}`;
   }, [data, client]);
   const lightModeWarning = useMemo(() => {
     if (data?.data?.operating_mode !== 'light') return;
