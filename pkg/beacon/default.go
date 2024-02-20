@@ -9,6 +9,7 @@ import (
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
+	"github.com/attestantio/go-eth2-client/spec/deneb"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
 	"github.com/ethpandaops/beacon/pkg/beacon"
@@ -38,6 +39,7 @@ type Default struct {
 	blocks           *store.Block
 	states           *store.BeaconState
 	depositSnapshots *store.DepositSnapshot
+	blobSidecars     *store.BlobSidecar
 
 	spec    *state.Spec
 	genesis *v1.Genesis
@@ -79,6 +81,7 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 		blocks:           store.NewBlock(log, config.Caches.Blocks, namespace),
 		states:           store.NewBeaconState(log, config.Caches.States, namespace),
 		depositSnapshots: store.NewDepositSnapshot(log, config.Caches.DepositSnapshots, namespace),
+		blobSidecars:     store.NewBlobSidecar(log, config.Caches.BlobSidecars, namespace),
 
 		servingMutex:    sync.Mutex{},
 		historicalMutex: sync.Mutex{},
@@ -558,6 +561,10 @@ func (d *Default) GetBlockByStateRoot(ctx context.Context, stateRoot phase0.Root
 	}
 
 	return block, nil
+}
+
+func (d *Default) GetBlobSidecarsBySlot(ctx context.Context, slot phase0.Slot) ([]*deneb.BlobSidecar, error) {
+	return d.blobSidecars.GetBySlot(slot)
 }
 
 func (d *Default) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*[]byte, error) {
