@@ -312,7 +312,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 
 	if d.shouldDownloadStates() {
 		// Download and store beacon state
-		if err := d.downloadAndStoreBeaconState(ctx, stateRoot, slot, upstream); err != nil {
+		if err = d.downloadAndStoreBeaconState(ctx, stateRoot, slot, upstream); err != nil {
 			return nil, fmt.Errorf("failed to download and store beacon state: %w", err)
 		}
 	}
@@ -321,7 +321,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		epoch := phase0.Epoch(slot / d.spec.SlotsPerEpoch)
 
 		// Download and store deposit snapshots
-		if err := d.downloadAndStoreDepositSnapshot(ctx, epoch, upstream); err != nil {
+		if err = d.downloadAndStoreDepositSnapshot(ctx, epoch, upstream); err != nil {
 			return nil, fmt.Errorf("failed to download and store deposit snapshot: %w", err)
 		}
 	}
