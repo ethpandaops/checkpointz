@@ -346,23 +346,22 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 			return nil, fmt.Errorf("failed to download and store deposit snapshot: %w", err)
 		}
 
-		spec, err := upstream.Beacon.Spec()
+		sp, err := upstream.Beacon.Spec()
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch spec from upstream node: %w", err)
 		}
 
-		denebFork, err := spec.ForkEpochs.GetByName("DENEB")
+		denebFork, err := sp.ForkEpochs.GetByName("DENEB")
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch deneb fork: %w", err)
 		}
 
-		if denebFork.Active(slot, spec.SlotsPerEpoch) {
+		if denebFork.Active(slot, sp.SlotsPerEpoch) {
 			// Download and store blob sidecars
 			if err := d.downloadAndStoreBlobSidecars(ctx, slot, upstream); err != nil {
 				return nil, fmt.Errorf("failed to download and store blob sidecars: %w", err)
 			}
 		}
-
 	}
 
 	d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
