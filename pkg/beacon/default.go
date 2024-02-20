@@ -133,15 +133,40 @@ func (d *Default) Start(ctx context.Context) error {
 
 	// Subscribe to the nodes' finality updates.
 	for _, node := range d.nodes {
-		node.Beacon.OnFinalityCheckpointUpdated(ctx, func(ctx context.Context, checkpoint *beacon.FinalityCheckpointUpdated) error {
+		logCtx := d.log.WithFields(logrus.Fields{
+			"node": node.Config.Name,
+		})
+
+		node.Beacon.OnFinalityCheckpointUpdated(ctx, func(ctx context.Context, event *beacon.FinalityCheckpointUpdated) error {
+			logCtx.WithFields(logrus.Fields{
+				"epoch": event.Finality.Finalized.Epoch,
+				"root":  fmt.Sprintf("%#x", event.Finality.Finalized.Root),
+			}).Info("Node has a new finalized checkpoint")
+
 			// Check if we have a new majority finality.
 			if err := d.checkFinality(ctx); err != nil {
-				d.log.WithError(err).Error("Failed to check finality")
+				logCtx.WithError(err).Error("Failed to check finality")
 
 				return err
 			}
 
 			return d.checkForNewServingCheckpoint(ctx)
+		})
+
+		node.Beacon.OnReady(ctx, func(ctx context.Context, _ *beacon.ReadyEvent) error {
+			node.Beacon.Wallclock().OnEpochChanged(func(epoch ethwallclock.Epoch) {
+				time.Sleep(time.Second * 15)
+
+				if _, err := node.Beacon.FetchFinality(ctx, "head"); err != nil {
+					logCtx.WithError(err).Error("Failed to fetch finality after epoch transition")
+				}
+
+				if err := d.checkFinality(ctx); err != nil {
+					logCtx.WithError(err).Error("Failed to check finality")
+				}
+			})
+
+			return nil
 		})
 	}
 
