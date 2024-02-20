@@ -406,7 +406,7 @@ func (d *Default) downloadAndStoreDepositSnapshot(ctx context.Context, epoch pha
 }
 
 func (d *Default) downloadAndStoreBlobSidecars(ctx context.Context, slot phase0.Slot, node *Node) error {
-	// Check if we already have the deposit snapshot.
+	// Check if we already have the blob sidecars.
 	if _, err := d.blobSidecars.GetBySlot(slot); err == nil {
 		return nil
 	}
