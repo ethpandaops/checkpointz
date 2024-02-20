@@ -257,6 +257,7 @@ func (d *Default) downloadBlock(ctx context.Context, slot phase0.Slot, upstream 
 			"slot":       slot,
 			"root":       eth.RootAsString(root),
 			"state_root": eth.RootAsString(stateRoot),
+			"node":       upstream.Config.Name,
 		}).
 		Infof("Downloaded and stored block for slot %d", slot)
 
@@ -377,7 +378,10 @@ func (d *Default) downloadAndStoreDepositSnapshot(ctx context.Context, epoch pha
 	}
 
 	d.log.
-		WithFields(logrus.Fields{"epoch": epoch}).
+		WithFields(logrus.Fields{
+			"epoch": epoch,
+			"node":  node.Config.Name,
+		}).
 		Infof("Downloaded and stored deposit snapshot for epoch %d", epoch)
 
 	return nil

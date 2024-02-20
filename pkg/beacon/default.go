@@ -112,32 +112,19 @@ func (d *Default) Start(ctx context.Context) error {
 				d.log.WithError(err).Fatal("Failed to start crons")
 			}
 
-			// Check for new serving checkpoints after each epoch
-			node, err := d.nodes.Healthy(ctx).NotSyncing(ctx).RandomNode(ctx)
-			if err != nil {
-				d.log.WithError(err).Fatal("Failed to get a healthy, non-syncing node to subscribe to wallclock events")
-			}
-
-			node.Beacon.Wallclock().OnEpochChanged(func(epoch ethwallclock.Epoch) {
-				// Sleep for a bit to allow the beacon nodes to run their epoch transition.
-				time.Sleep(time.Second * 30)
-
-				if err := d.checkForNewServingCheckpoint(ctx); err != nil {
-					d.log.WithError(err).Error("Failed to check for new serving checkpoint after epoch change")
-				}
-			})
-
 			break
 		}
 	}()
 
 	// Subscribe to the nodes' finality updates.
 	for _, node := range d.nodes {
+		n := node
+
 		logCtx := d.log.WithFields(logrus.Fields{
-			"node": node.Config.Name,
+			"node": n.Config.Name,
 		})
 
-		node.Beacon.OnFinalityCheckpointUpdated(ctx, func(ctx context.Context, event *beacon.FinalityCheckpointUpdated) error {
+		n.Beacon.OnFinalityCheckpointUpdated(ctx, func(ctx context.Context, event *beacon.FinalityCheckpointUpdated) error {
 			logCtx.WithFields(logrus.Fields{
 				"epoch": event.Finality.Finalized.Epoch,
 				"root":  fmt.Sprintf("%#x", event.Finality.Finalized.Root),
@@ -153,8 +140,8 @@ func (d *Default) Start(ctx context.Context) error {
 			return d.checkForNewServingCheckpoint(ctx)
 		})
 
-		node.Beacon.OnReady(ctx, func(ctx context.Context, _ *beacon.ReadyEvent) error {
-			node.Beacon.Wallclock().OnEpochChanged(func(epoch ethwallclock.Epoch) {
+		n.Beacon.OnReady(ctx, func(ctx context.Context, _ *beacon.ReadyEvent) error {
+			n.Beacon.Wallclock().OnEpochChanged(func(epoch ethwallclock.Epoch) {
 				time.Sleep(time.Second * 5)
 
 				if _, err := node.Beacon.FetchFinality(ctx, "head"); err != nil {
