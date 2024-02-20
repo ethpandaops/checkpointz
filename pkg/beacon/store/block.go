@@ -35,7 +35,6 @@ func NewBlock(log logrus.FieldLogger, config Config, namespace string) *Block {
 		block, ok := value.(*spec.VersionedSignedBeaconBlock)
 		if !ok {
 			c.log.WithField("block_root", key).Error("Invalid block type when cleaning up block cache")
-
 			return
 		}
 

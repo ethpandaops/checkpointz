@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"strings"
 	"time"
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
@@ -25,7 +26,7 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace
 	for i, config := range configs {
 		sconfig := &sbeacon.Config{
 			Name:    config.Name,
-			Addr:    config.Address,
+			Addr:    strings.TrimRight(config.Address, "/"),
 			Headers: config.Headers,
 		}
 

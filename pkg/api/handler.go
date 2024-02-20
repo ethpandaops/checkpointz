@@ -95,7 +95,7 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 			"path":         r.URL.Path,
 			"content_type": contentType,
 			"accept":       r.Header.Get("Accept"),
-		}).Debug("Handling request")
+		}).Trace("Handling request")
 
 		h.metrics.ObserveRequest(r.Method, registeredPath)
 
