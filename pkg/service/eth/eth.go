@@ -112,7 +112,7 @@ func (h *Handler) ConfigSpec(ctx context.Context) (*state.Spec, error) {
 		}
 	}()
 
-	return h.provider.Spec(ctx)
+	return h.provider.Spec()
 }
 
 // ForkSchedule returns the upcoming forks.
@@ -129,7 +129,7 @@ func (h *Handler) ForkSchedule(ctx context.Context) ([]*state.ScheduledFork, err
 		}
 	}()
 
-	sp, err := h.provider.Spec(ctx)
+	sp, err := h.provider.Spec()
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (h *Handler) DepositContract(ctx context.Context) (*DepositContract, error)
 		}
 	}()
 
-	sp, err := h.provider.Spec(ctx)
+	sp, err := h.provider.Spec()
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +184,10 @@ func (h *Handler) DepositSnapshot(ctx context.Context) (*types.DepositSnapshot, 
 	finality, err := h.provider.Finalized(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	if finality == nil || finality.Finalized == nil {
+		return nil, fmt.Errorf("no finality known")
 	}
 
 	snapshot, err := h.provider.GetDepositSnapshot(ctx, finality.Finalized.Epoch)
@@ -435,7 +439,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 }
 
 // BlobSidecars returns the blob sidecars for the given block ID.
-func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier) ([]*deneb.BlobSidecar, error) {
+func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, indices []int) ([]*deneb.BlobSidecar, error) {
 	var err error
 
 	const call = "blob_sidecars"
@@ -538,5 +542,31 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier) ([]
 		return nil, fmt.Errorf("invalid block id: %v", blockID.String())
 	}
 
-	return h.provider.GetBlobSidecarsBySlot(ctx, slot)
+	sidecars, err := h.provider.GetBlobSidecarsBySlot(ctx, slot)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(indices) == 0 {
+		return sidecars, nil
+	}
+
+	filtered := make([]*deneb.BlobSidecar, 0, len(indices))
+
+	for _, index := range indices {
+		if index < 0 {
+			return nil, fmt.Errorf("invalid index %v", index)
+		}
+
+		// Find the sidecar with the given index
+		for i, sidecar := range sidecars {
+			if index == int(sidecar.Index) {
+				filtered = append(filtered, sidecars[i])
+
+				break
+			}
+		}
+	}
+
+	return filtered, nil
 }

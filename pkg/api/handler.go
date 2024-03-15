@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -599,7 +600,21 @@ func (h *Handler) handleEthV1BeaconBlobSidecars(ctx context.Context, r *http.Req
 		return NewBadRequestResponse(nil), err
 	}
 
-	sidecars, err := h.eth.BlobSidecars(ctx, id)
+	queryParams := r.URL.Query()
+	indicesRaw := queryParams["indices"]
+
+	indices := make([]int, 0, len(indicesRaw))
+
+	for _, index := range indicesRaw {
+		converted, errr := strconv.Atoi(index)
+		if errr != nil {
+			return NewBadRequestResponse(nil), errr
+		}
+
+		indices = append(indices, converted)
+	}
+
+	sidecars, err := h.eth.BlobSidecars(ctx, id, indices)
 	if err != nil {
 		return NewInternalServerErrorResponse(nil), err
 	}
