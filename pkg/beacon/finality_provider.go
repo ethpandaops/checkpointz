@@ -33,7 +33,7 @@ type FinalityProvider interface {
 	// Genesis returns the chain genesis.
 	Genesis(ctx context.Context) (*v1.Genesis, error)
 	// Spec returns the chain spec.
-	Spec(ctx context.Context) (*state.Spec, error)
+	Spec() (*state.Spec, error)
 	// UpstreamsStatus returns the status of all the upstreams.
 	UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error)
 	// GetBlockBySlot returns the block at the given slot.

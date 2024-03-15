@@ -23,6 +23,8 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 		return errors.New("finalized checkpoint is nil")
 	}
 
+	d.log.WithField("epoch", checkpoint.Finalized.Epoch).Info("Downloading serving checkpoint")
+
 	upstream, err := d.nodes.
 		Ready(ctx).
 		DataProviders(ctx).
@@ -44,10 +46,12 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 		return fmt.Errorf("failed to get slot from block: %w", err)
 	}
 
-	// For simplicity we'll hardcode SLOTS_PER_EPOCH to 32.
-	// TODO(sam.calder-mason): Fetch this from a beacon node and store it in the instance.
-	const slotsPerEpoch = 32
-	if blockSlot%slotsPerEpoch != 0 {
+	sp, err := d.Spec()
+	if err != nil {
+		return fmt.Errorf("failed to fetch spec: %w", err)
+	}
+
+	if blockSlot%sp.SlotsPerEpoch != 0 {
 		return fmt.Errorf("block slot is not aligned from an epoch boundary: %d", blockSlot)
 	}
 
@@ -129,8 +133,9 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	d.historicalMutex.Lock()
 	defer d.historicalMutex.Unlock()
 
-	if d.spec == nil {
-		return errors.New("beacon spec unavailable")
+	sp, err := d.Spec()
+	if err != nil {
+		return errors.New("chain spec unavailable")
 	}
 
 	if d.genesis == nil {
@@ -146,8 +151,6 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	if err != nil {
 		return errors.New("no data provider node available")
 	}
-
-	sp := d.spec
 
 	slotsInScope := make(map[phase0.Slot]struct{})
 
@@ -218,7 +221,8 @@ func (d *Default) downloadBlock(ctx context.Context, slot phase0.Slot, upstream 
 	}
 
 	// Same thing with the chain spec.
-	if d.spec == nil {
+	_, err := d.Spec()
+	if err != nil {
 		return nil, errors.New("chain spec not known")
 	}
 
@@ -326,9 +330,9 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 	}
 
-	sp, err := upstream.Beacon.Spec()
+	sp, err := d.Spec()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch spec from upstream node: %w", err)
+		return nil, fmt.Errorf("failed to fetch spec: %w", err)
 	}
 
 	denebFork, err := sp.ForkEpochs.GetByName("DENEB")
@@ -341,7 +345,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 	}
 
-	d.log.Infof("Successfully fetched bundle from %s", upstream.Config.Name)
+	d.log.WithField("root", eth.RootAsString(root)).Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
 	return block, nil
 }
