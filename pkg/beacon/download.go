@@ -133,7 +133,7 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	d.historicalMutex.Lock()
 	defer d.historicalMutex.Unlock()
 
-	spec, err := d.Spec()
+	sp, err := d.Spec()
 	if err != nil {
 		return errors.New("chain spec unavailable")
 	}
@@ -151,8 +151,6 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	if err != nil {
 		return errors.New("no data provider node available")
 	}
-
-	sp := spec
 
 	slotsInScope := make(map[phase0.Slot]struct{})
 

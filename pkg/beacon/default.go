@@ -727,7 +727,7 @@ func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStat
 func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error) {
 	slots := []phase0.Slot{}
 
-	spec, err := d.Spec()
+	sp, err := d.Spec()
 	if err != nil {
 		return slots, errors.New("no beacon chain spec available")
 	}
@@ -741,9 +741,9 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 		return slots, errors.New("no finalized checkpoint available")
 	}
 
-	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(spec.SlotsPerEpoch))
+	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(sp.SlotsPerEpoch))
 
-	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(spec.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(spec.SlotsPerEpoch) {
+	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(sp.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(sp.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))
 	}
 
