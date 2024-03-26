@@ -8,7 +8,8 @@ require (
 	github.com/creasty/defaults v1.6.0
 	github.com/ethpandaops/beacon v0.35.0
 	github.com/ethpandaops/ethwallclock v0.2.0
-	github.com/go-co-op/gocron v1.18.0
+	github.com/go-co-op/gocron v1.16.2
+	github.com/go-co-op/gocron/v2 v2.2.5
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/nanmu42/gzip v1.2.0
 	github.com/pkg/errors v0.9.1
