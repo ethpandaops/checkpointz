@@ -326,7 +326,8 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 
 		// Download and store deposit snapshots
 		if err = d.downloadAndStoreDepositSnapshot(ctx, epoch, upstream); err != nil {
-			return nil, fmt.Errorf("failed to download and store deposit snapshot: %w", err)
+			d.log.WithError(err).
+				Warn("failed to download and store deposit snapshot")
 		}
 	}
 
