@@ -23,7 +23,23 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 		return errors.New("finalized checkpoint is nil")
 	}
 
-	d.log.WithField("epoch", checkpoint.Finalized.Epoch).Info("Downloading serving checkpoint")
+	sp, err := d.Spec()
+	if err != nil {
+		return fmt.Errorf("failed to fetch spec: %w", err)
+	}
+
+	fork, err := sp.ForkEpochs.CurrentFork(
+		phase0.Slot(uint64(checkpoint.Finalized.Epoch)*uint64(sp.SlotsPerEpoch)),
+		sp.SlotsPerEpoch,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to get current fork: %w", err)
+	}
+
+	d.log.
+		WithField("epoch", checkpoint.Finalized.Epoch).
+		WithField("fork_name", fork.Name).
+		Info("Downloading serving checkpoint")
 
 	upstream, err := d.nodes.
 		Ready(ctx).
@@ -44,11 +60,6 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 	blockSlot, err := block.Slot()
 	if err != nil {
 		return fmt.Errorf("failed to get slot from block: %w", err)
-	}
-
-	sp, err := d.Spec()
-	if err != nil {
-		return fmt.Errorf("failed to fetch spec: %w", err)
 	}
 
 	if blockSlot%sp.SlotsPerEpoch != 0 {
