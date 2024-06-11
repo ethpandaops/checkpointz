@@ -76,7 +76,7 @@ func NewBadRequestResponse(resolvers ContentTypeResolvers) *HTTPResponse {
 func NewUnsupportedMediaTypeResponse(resolvers ContentTypeResolvers) *HTTPResponse {
 	return &HTTPResponse{
 		resolvers:  resolvers,
-		StatusCode: http.StatusUnsupportedMediaType,
+		StatusCode: http.StatusNotAcceptable,
 		Headers:    make(map[string]string),
 		ExtraData:  make(map[string]interface{}),
 	}

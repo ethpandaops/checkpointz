@@ -1,6 +1,9 @@
 package api
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type ContentType int
 
@@ -20,27 +23,34 @@ func (c ContentType) String() string {
 	case ContentTypeSSZ:
 		return "application/octet-stream"
 	case ContentTypeUnknown:
-		return "unknown"
+		return "application/unknown"
 	}
 
 	return ""
 }
 
 func DeriveContentType(accept string) ContentType {
-	switch accept {
-	case "application/json":
-		return ContentTypeJSON
-	case "*/*":
-		return ContentTypeJSON
-	case "application/yaml":
-		return ContentTypeYAML
-	case "application/octet-stream":
-		return ContentTypeSSZ
-	// TODO(sam.caldermason): HACK to support Nimbus - what should we do here?
-	case "application/octet-stream,application/json;q=0.9":
-		return ContentTypeSSZ
+	// Split the accept header by commas to handle multiple content types
+	acceptTypes := strings.Split(accept, ",")
+	for _, acceptType := range acceptTypes {
+		// Split each type by semicolon to handle q-values
+		parts := strings.Split(acceptType, ";")
+		contentType := strings.TrimSpace(parts[0])
+
+		switch contentType {
+		case "application/json":
+			return ContentTypeJSON
+		case "*/*":
+			return ContentTypeJSON
+		case "application/yaml":
+			return ContentTypeYAML
+		case "application/octet-stream":
+			return ContentTypeSSZ
+		}
+	}
+
 	// Default to JSON if they don't care what they get.
-	case "":
+	if accept == "" {
 		return ContentTypeJSON
 	}
 
