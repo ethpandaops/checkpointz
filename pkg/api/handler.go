@@ -224,12 +224,27 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 		return NewUnsupportedMediaTypeResponse(nil), err
 	}
 
-	id, err := eth.NewStateIdentifier(p.ByName("state_id"))
+	blockID, err := eth.NewBlockIdentifier(p.ByName("state_id"))
 	if err != nil {
 		return NewBadRequestResponse(nil), err
 	}
 
-	state, err := h.eth.BeaconState(ctx, id)
+	block, err := h.eth.BeaconBlock(ctx, blockID)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	slot, err := block.Slot()
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	stateID, err := eth.NewStateIdentifier(fmt.Sprintf("%d", slot))
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	state, err := h.eth.BeaconState(ctx, stateID)
 	if err != nil {
 		return NewInternalServerErrorResponse(nil), err
 	}
@@ -244,16 +259,18 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 		},
 	})
 
-	switch id.Type() {
-	case eth.StateIDRoot, eth.StateIDGenesis, eth.StateIDSlot:
+	switch blockID.Type() {
+	case eth.BlockIDRoot, eth.BlockIDGenesis, eth.BlockIDSlot:
 		// TODO(sam.calder-mason): This should be calculated using the Weak-Subjectivity period.
 		rsp.SetCacheControl("public, s-max-age=6000")
-	case eth.StateIDFinalized:
+	case eth.BlockIDFinalized:
 		// TODO(sam.calder-mason): This should be calculated using the Weak-Subjectivity period.
 		rsp.SetCacheControl("public, s-max-age=180")
-	case eth.StateIDHead:
+	case eth.BlockIDHead:
 		rsp.SetCacheControl("public, s-max-age=30")
 	}
+
+	rsp.SetEthConsensusVersion(block.Version.String())
 
 	return rsp, nil
 }
