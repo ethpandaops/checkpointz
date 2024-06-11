@@ -43,7 +43,7 @@ func (r HTTPResponse) SetCacheControl(v string) {
 }
 
 func (r HTTPResponse) SetEthConsensusVersion(version string) {
-	r.ExtraData["Eth-Consensus-Version"] = version
+	r.Headers["Eth-Consensus-Version"] = version
 }
 
 func NewSuccessResponse(resolvers ContentTypeResolvers) *HTTPResponse {
