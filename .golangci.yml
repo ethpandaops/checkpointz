@@ -21,7 +21,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - dogsled
     - dupl
     - errcheck
@@ -39,13 +38,11 @@ linters:
     - nakedret
     - prealloc
     - staticcheck
-    - structcheck
     - stylecheck
     - thelper
     - tparallel
     - typecheck
     - unconvert
-    - varcheck
     - whitespace
     - wsl
 
