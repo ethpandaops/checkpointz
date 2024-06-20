@@ -357,7 +357,10 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 	}
 
-	d.log.WithField("root", eth.RootAsString(root)).Infof("Successfully fetched bundle from %s", upstream.Config.Name)
+	d.log.WithFields(logrus.Fields{
+		"block_root": eth.RootAsString(root),
+		"state_root": eth.RootAsString(stateRoot),
+	}).Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
 	return block, nil
 }

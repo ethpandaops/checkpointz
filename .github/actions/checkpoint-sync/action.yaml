@@ -93,7 +93,7 @@ runs:
         check_endpoint() {
           local path=$1
           local accept_header=$2
-          local response=$(curl -s -w "\n%{http_code}" -H "accept: ${accept_header}" "localhost:5555${path}")
+          local response=$(curl -s -w "\n%{http_code}" -H "accept: ${accept_header}" "localhost:5555${path}" | tr -d '\0')
           local http_code=$(echo "$response" | tail -n1)
           local json_response=$(echo "$response" | sed '$d')
           if [[ $http_code -ge 200 && $http_code -lt 300 ]]; then
@@ -143,18 +143,25 @@ runs:
           fi
           echo "Extracted finalized root: $finalized_root"
 
-          echo "Checking endpoint /eth/v2/debug/beacon/states/$finalized_root with accept header application/octet-stream..."
-          finalized_state=$(check_endpoint "/eth/v2/debug/beacon/states/$finalized_root" "application/octet-stream")
-          [[ $? -ne 0 ]] && continue
-          echo "Finalized state is available."
-
           echo "Checking endpoint /eth/v2/beacon/blocks/$finalized_root with accept header application/json..."
           finalized_block=$(check_endpoint "/eth/v2/beacon/blocks/$finalized_root" "application/json")
           [[ $? -ne 0 ]] && continue
           echo "Finalized block is available."
 
+          finalized_state_root=$(echo $finalized_block | jq -r '.data.message.state_root')
+          if [[ -z "$finalized_state_root" ]]; then
+            echo "Failed to extract finalized state root from the finalized block."
+            continue
+          fi
+          echo "Extracted finalized state root: $finalized_state_root"
+
+          echo "Checking endpoint /eth/v2/debug/beacon/states/$finalized_state_root with accept header application/octet-stream..."
+          finalized_state=$(check_endpoint "/eth/v2/debug/beacon/states/$finalized_state_root" "application/octet-stream")
+          [[ $? -ne 0 ]] && continue
+          echo "Finalized state is available."
+
           echo "Fetching slot from /eth/v2/beacon/blocks/$finalized_root..."
-          finalized_slot=$(curl -s -H "accept: application/json" "localhost:5555/eth/v2/beacon/blocks/$finalized_root" | jq -r '.data.message.slot')
+          finalized_slot=$(echo $finalized_block | jq -r '.data.message.slot')
           if [[ -z "$finalized_slot" ]]; then
             echo "Failed to extract slot from the finalized block."
             continue
