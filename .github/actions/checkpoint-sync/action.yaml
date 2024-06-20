@@ -93,10 +93,11 @@ runs:
         check_endpoint() {
           local path=$1
           local accept_header=$2
-          local response=$(curl -s -H "accept: ${accept_header}" "localhost:5555${path}")
-          local http_code=$(curl -s -o /dev/null -w "%{http_code}" -H "accept: ${accept_header}" "localhost:5555${path}")
+          local response=$(curl -s -w "\n%{http_code}" -H "accept: ${accept_header}" "localhost:5555${path}")
+          local http_code=$(echo "$response" | tail -n1)
+          local json_response=$(echo "$response" | sed '$d')
           if [[ $http_code -ge 200 && $http_code -lt 300 ]]; then
-            echo $response
+            echo $json_response
             return 0
           else
             echo "Endpoint ${path} with accept header ${accept_header} is not available."
