@@ -46,7 +46,7 @@ runs:
         beacon:
           upstreams:
           - name: state-provider
-            address: https://checkpoint-sync.${{ inputs.network }}.ethpandaops.io
+            address: $beacon_node
             timeoutSeconds: 30
             dataProvider: true
         checkpointz:
