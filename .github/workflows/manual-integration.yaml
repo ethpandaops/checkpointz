@@ -11,7 +11,7 @@ on:
         description: 'Networks to use'    
         required: true
         type: string
-        default: ropsten, sepolia, goerli
+        default: mainnet, sepolia, holesky
 
 jobs:
   init:

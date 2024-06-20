@@ -28,6 +28,16 @@ runs:
     - name: Configure checkpointz
       shell: bash
       run: |
+        beacon_node=""
+        if [[ ${{ inputs.network }} == "mainnet" ]]; then
+          beacon_node="http://testing.mainnet.beacon-api.nimbus.team/"
+        elif [[ ${{ inputs.network }} == "holesky" ]]; then
+          beacon_node="http://testing.holesky.beacon-api.nimbus.team/"
+        else
+          echo "Unsupported network: ${{ inputs.network }}"
+          exit 1
+        fi
+
         cat <<EOF > checkpointz.yaml
         global:
           listenAddr: ":5555"
@@ -89,6 +99,7 @@ runs:
             return 0
           else
             echo "Endpoint ${path} with accept header ${accept_header} is not available."
+            echo "Response: ${response}"
             return 1
           fi
         }
