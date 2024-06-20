@@ -92,32 +92,32 @@ runs:
         check_endpoint() {
           local path=$1
           local accept_header=$2
-          echo "Checking endpoint ${path} with accept header ${accept_header}..."
           local response=$(curl -s -o /dev/null -w "%{http_code}" -H "accept: ${accept_header}" "localhost:5555${path}")
           if [[ $response -ge 200 && $response -lt 300 ]]; then
-            echo "Endpoint ${path} with accept header ${accept_header} is available."
             return 0
           else
             echo "Endpoint ${path} with accept header ${accept_header} is not available."
-            echo "Response: ${response}"
             return 1
           fi
         }
+        fails=0
 
         while true; do
-          sleep 1;
-          genesis_block=$(check_endpoint "/eth/v2/beacon/blocks/genesis" "application/json")
-          if [[ $? -ne 0 ]]; then
-            continue
+          if [[ $fails -gt 0 ]]; then
+            echo "Failed $fails times, retrying..."
+            sleep 1;
           fi
+          echo "Checking endpoint /eth/v2/beacon/blocks/genesis with accept header application/json..."
+          genesis_block=$(check_endpoint "/eth/v2/beacon/blocks/genesis" "application/json")
+          [[ $? -ne 0 ]] && continue
           echo "Genesis block is available."
 
+          echo "Checking endpoint /eth/v2/beacon/states/genesis with accept header application/octet-stream..."
           genesis_state=$(check_endpoint "/eth/v2/beacon/states/genesis" "application/octet-stream")
-          if [[ $? -ne 0 ]]; then
-            continue
-          fi
+          [[ $? -ne 0 ]] && continue
           echo "Genesis state is available."
 
+          echo "Checking endpoint /eth/v1/beacon/states/finalized/finality_checkpoints with accept header application/json..."
           finality_checkpoints=$(check_endpoint "/eth/v1/beacon/states/finalized/finality_checkpoints" "application/json")
           if [[ $? -ne 0 ]]; then
             echo "Finality checkpoints endpoint is not available."
@@ -125,24 +125,25 @@ runs:
           fi
           echo "Finality checkpoints endpoint is available."
 
-          finalized_root=$(echo $finality_checkpoints | jq -r '.data.finalized.root')
+          echo "Fetching finalized root from /eth/v1/beacon/states/finalized/finality_checkpoints..."
+          finalized_root=$(curl -s -H "accept: application/json" "localhost:5555/eth/v1/beacon/states/finalized/finality_checkpoints" | jq -r '.data.finalized.root')
+          if [[ -z "$finalized_root" ]]; then
+            echo "Failed to extract finalized root from the finality checkpoints."
+            continue
+          fi
           echo "Extracted finalized root: $finalized_root"
 
+          echo "Checking endpoint /eth/v2/beacon/states/$finalized_root with accept header application/octet-stream..."
           finalized_state=$(check_endpoint "/eth/v2/beacon/states/$finalized_root" "application/octet-stream")
-          if [[ $? -ne 0 ]]; then
-            echo "Finalized state endpoint is not available."
-            continue
-          fi
+          [[ $? -ne 0 ]] && continue
           echo "Finalized state is available."
 
+          echo "Checking endpoint /eth/v2/beacon/blocks/$finalized_root with accept header application/json..."
           finalized_block=$(check_endpoint "/eth/v2/beacon/blocks/$finalized_root" "application/json")
-          if [[ $? -ne 0 ]]; then
-            echo "Finalized block endpoint is not available."
-            continue
-          fi
+          [[ $? -ne 0 ]] && continue
           echo "Finalized block is available."
 
-          # Extract the slot from the finalized block
+          echo "Fetching slot from /eth/v2/beacon/blocks/$finalized_root..."
           finalized_slot=$(curl -s -H "accept: application/json" "localhost:5555/eth/v2/beacon/blocks/$finalized_root" | jq -r '.data.message.slot')
           if [[ -z "$finalized_slot" ]]; then
             echo "Failed to extract slot from the finalized block."
@@ -150,19 +151,14 @@ runs:
           fi
           echo "Extracted slot: $finalized_slot"
 
+          echo "Checking endpoint /eth/v2/beacon/blocks/$finalized_slot with accept header application/json..."
           block=$(check_endpoint "/eth/v2/beacon/blocks/$finalized_slot" "application/json")
-          if [[ $? -ne 0 ]]; then
-            echo "Block for finalized slot $finalized_slot is not available."
-            continue
-          fi
+          [[ $? -ne 0 ]] && continue
           echo "Block for finalized slot $finalized_slot is available."
 
-          # Check if we can fetch the block via 'finalized'
+          echo "Checking endpoint /eth/v2/beacon/blocks/finalized with accept header application/json..."
           finalized_block_via_finalized=$(check_endpoint "/eth/v2/beacon/blocks/finalized" "application/json")
-          if [[ $? -ne 0 ]]; then
-            echo "Finalized block via 'finalized' endpoint is not available."
-            continue
-          fi
+          [[ $? -ne 0 ]] && continue
           echo "Finalized block via 'finalized' endpoint is available."
 
           echo "All endpoints are available."
