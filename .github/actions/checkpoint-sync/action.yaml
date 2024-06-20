@@ -89,6 +89,7 @@ runs:
     - name: Manually check endpoints
       shell: bash
       run: |
+        set +e
         check_endpoint() {
           local path=$1
           local accept_header=$2
@@ -107,6 +108,8 @@ runs:
             echo "Failed $fails times, retrying..."
             sleep 1;
           fi
+          fails=$((fails+1))
+          
           echo "Checking endpoint /eth/v2/beacon/blocks/genesis with accept header application/json..."
           genesis_block=$(check_endpoint "/eth/v2/beacon/blocks/genesis" "application/json")
           [[ $? -ne 0 ]] && continue
