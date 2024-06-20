@@ -115,10 +115,15 @@ runs:
           [[ $? -ne 0 ]] && continue
           echo "Genesis block is available."
 
-          echo "Checking endpoint /eth/v2/beacon/states/genesis with accept header application/octet-stream..."
-          genesis_state=$(check_endpoint "/eth/v2/beacon/states/genesis" "application/octet-stream")
+          echo "Checking endpoint /eth/v2/debug/beacon/states/genesis with accept header application/octet-stream..."
+          genesis_state=$(check_endpoint "/eth/v2/debug/beacon/states/genesis" "application/octet-stream")
           [[ $? -ne 0 ]] && continue
           echo "Genesis state is available."
+
+          echo "Checking endpoint /eth/v2/debug/beacon/states/finalized with accept header application/octet-stream..."
+          finalized_state=$(check_endpoint "/eth/v2/debug/beacon/states/finalized" "application/octet-stream")
+          [[ $? -ne 0 ]] && continue
+          echo "Finalized state is available."
 
           echo "Checking endpoint /eth/v1/beacon/states/finalized/finality_checkpoints with accept header application/json..."
           finality_checkpoints=$(check_endpoint "/eth/v1/beacon/states/finalized/finality_checkpoints" "application/json")
@@ -128,16 +133,15 @@ runs:
           fi
           echo "Finality checkpoints endpoint is available."
 
-          echo "Fetching finalized root from /eth/v1/beacon/states/finalized/finality_checkpoints..."
-          finalized_root=$(curl -s -H "accept: application/json" "localhost:5555/eth/v1/beacon/states/finalized/finality_checkpoints" | jq -r '.data.finalized.root')
+          finalized_root=$(echo $finality_checkpoints | jq -r '.data.finalized.root')
           if [[ -z "$finalized_root" ]]; then
             echo "Failed to extract finalized root from the finality checkpoints."
             continue
           fi
           echo "Extracted finalized root: $finalized_root"
 
-          echo "Checking endpoint /eth/v2/beacon/states/$finalized_root with accept header application/octet-stream..."
-          finalized_state=$(check_endpoint "/eth/v2/beacon/states/$finalized_root" "application/octet-stream")
+          echo "Checking endpoint /eth/v2/debug/beacon/states/$finalized_root with accept header application/octet-stream..."
+          finalized_state=$(check_endpoint "/eth/v2/debug/beacon/states/$finalized_root" "application/octet-stream")
           [[ $? -ne 0 ]] && continue
           echo "Finalized state is available."
 
