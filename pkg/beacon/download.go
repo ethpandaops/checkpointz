@@ -357,7 +357,10 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 	}
 
-	d.log.WithField("root", eth.RootAsString(root)).Infof("Successfully fetched bundle from %s", upstream.Config.Name)
+	d.log.WithFields(logrus.Fields{
+		"block_root": eth.RootAsString(root),
+		"state_root": eth.RootAsString(stateRoot),
+	}).Infof("Successfully fetched bundle from %s", upstream.Config.Name)
 
 	return block, nil
 }
@@ -369,7 +372,7 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		return nil
 	}
 
-	beaconState, err := node.Beacon.FetchRawBeaconState(ctx, eth.SlotAsString(slot), "application/octet-stream")
+	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.SlotAsString(slot))
 	if err != nil {
 		return fmt.Errorf("failed to fetch beacon state: %w", err)
 	}
@@ -383,7 +386,7 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		expiresAt = time.Now().Add(999999 * time.Hour)
 	}
 
-	if err := d.states.Add(stateRoot, &beaconState, expiresAt, slot); err != nil {
+	if err := d.states.Add(stateRoot, beaconState, expiresAt, slot); err != nil {
 		return fmt.Errorf("failed to store beacon state: %w", err)
 	}
 

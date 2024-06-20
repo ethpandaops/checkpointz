@@ -613,7 +613,7 @@ func (d *Default) GetBlobSidecarsBySlot(ctx context.Context, slot phase0.Slot) (
 	return d.blobSidecars.GetBySlot(slot)
 }
 
-func (d *Default) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*[]byte, error) {
+func (d *Default) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*spec.VersionedBeaconState, error) {
 	block, err := d.GetBlockBySlot(ctx, slot)
 	if err != nil {
 		return nil, err
@@ -627,11 +627,11 @@ func (d *Default) GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*
 	return d.states.GetByStateRoot(stateRoot)
 }
 
-func (d *Default) GetBeaconStateByStateRoot(ctx context.Context, stateRoot phase0.Root) (*[]byte, error) {
+func (d *Default) GetBeaconStateByStateRoot(ctx context.Context, stateRoot phase0.Root) (*spec.VersionedBeaconState, error) {
 	return d.states.GetByStateRoot(stateRoot)
 }
 
-func (d *Default) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*[]byte, error) {
+func (d *Default) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*spec.VersionedBeaconState, error) {
 	block, err := d.GetBlockByRoot(ctx, root)
 	if err != nil {
 		return nil, err

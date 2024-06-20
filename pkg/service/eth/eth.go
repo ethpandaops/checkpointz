@@ -267,7 +267,7 @@ func (h *Handler) PeerCount(ctx context.Context) (uint64, error) {
 }
 
 // BeaconState returns the beacon state for the given state id.
-func (h *Handler) BeaconState(ctx context.Context, stateID StateIdentifier) (*[]byte, error) {
+func (h *Handler) BeaconState(ctx context.Context, stateID StateIdentifier) (*spec.VersionedBeaconState, error) {
 	var err error
 
 	const call = "beacon_state"
