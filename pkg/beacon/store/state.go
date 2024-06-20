@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/checkpointz/pkg/cache"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
@@ -30,7 +31,7 @@ func NewBeaconState(log logrus.FieldLogger, config Config, namespace string) *Be
 	return c
 }
 
-func (c *BeaconState) Add(stateRoot phase0.Root, state *[]byte, expiresAt time.Time, slot phase0.Slot) error {
+func (c *BeaconState) Add(stateRoot phase0.Root, state *spec.VersionedBeaconState, expiresAt time.Time, slot phase0.Slot) error {
 	invincible := false
 	if slot == 0 {
 		invincible = true
@@ -48,7 +49,7 @@ func (c *BeaconState) Add(stateRoot phase0.Root, state *[]byte, expiresAt time.T
 	return nil
 }
 
-func (c *BeaconState) GetByStateRoot(stateRoot phase0.Root) (*[]byte, error) {
+func (c *BeaconState) GetByStateRoot(stateRoot phase0.Root) (*spec.VersionedBeaconState, error) {
 	data, _, err := c.store.Get(eth.RootAsString(stateRoot))
 	if err != nil {
 		return nil, err
@@ -57,8 +58,8 @@ func (c *BeaconState) GetByStateRoot(stateRoot phase0.Root) (*[]byte, error) {
 	return c.parseState(data)
 }
 
-func (c *BeaconState) parseState(data interface{}) (*[]byte, error) {
-	state, ok := data.(*[]byte)
+func (c *BeaconState) parseState(data interface{}) (*spec.VersionedBeaconState, error) {
+	state, ok := data.(*spec.VersionedBeaconState)
 	if !ok {
 		return nil, errors.New("invalid state")
 	}

@@ -43,11 +43,11 @@ type FinalityProvider interface {
 	// GetBlockByStateRoot returns the block with the given root.
 	GetBlockByStateRoot(ctx context.Context, root phase0.Root) (*spec.VersionedSignedBeaconBlock, error)
 	// GetBeaconStateBySlot returns the beacon sate with the given slot.
-	GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*[]byte, error)
+	GetBeaconStateBySlot(ctx context.Context, slot phase0.Slot) (*spec.VersionedBeaconState, error)
 	// GetBeaconStateByStateRoot returns the beacon sate with the given state root.
-	GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
+	GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*spec.VersionedBeaconState, error)
 	// GetBeaconStateByRoot returns the beacon sate with the given root.
-	GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*[]byte, error)
+	GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*spec.VersionedBeaconState, error)
 	// GetBlobSidecarsBySlot returns the blob sidecars for the given slot.
 	GetBlobSidecarsBySlot(ctx context.Context, slot phase0.Slot) ([]*deneb.BlobSidecar, error)
 	// ListFinalizedSlots returns a slice of finalized slots.

@@ -369,7 +369,7 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		return nil
 	}
 
-	beaconState, err := node.Beacon.FetchRawBeaconState(ctx, eth.SlotAsString(slot), "application/octet-stream")
+	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.SlotAsString(slot))
 	if err != nil {
 		return fmt.Errorf("failed to fetch beacon state: %w", err)
 	}
@@ -383,7 +383,7 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		expiresAt = time.Now().Add(999999 * time.Hour)
 	}
 
-	if err := d.states.Add(stateRoot, &beaconState, expiresAt, slot); err != nil {
+	if err := d.states.Add(stateRoot, beaconState, expiresAt, slot); err != nil {
 		return fmt.Errorf("failed to store beacon state: %w", err)
 	}
 

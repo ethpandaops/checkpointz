@@ -76,6 +76,88 @@ runs:
         echo "Waiting for checkpointz to have the genesis block...";
         bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:5555/eth/v2/beacon/blocks/0)" != "200" ]]; do sleep 1; done';
         echo "Checkpointz has the genesis block.";
+    - name: Manually check endpoints
+      shell: bash
+      timeout: 10m
+      run: |
+        check_endpoint() {
+          local path=$1
+          local accept_header=$2
+          echo "Checking endpoint ${path} with accept header ${accept_header}..."
+          local response=$(curl -s -o /dev/null -w "%{http_code}" -H "accept: ${accept_header}" "localhost:5555${path}")
+          if [[ $response -ge 200 && $response -lt 300 ]]; then
+            echo "Endpoint ${path} with accept header ${accept_header} is available."
+            return 0
+          else
+            echo "Endpoint ${path} with accept header ${accept_header} is not available."
+            return 1
+          fi
+        }
+
+        while true; do
+          sleep 1;
+          genesis_block=$(check_endpoint "/eth/v2/beacon/blocks/genesis" "application/json")
+          if [[ $? -ne 0 ]]; then
+            continue
+          fi
+          echo "Genesis block is available."
+
+          genesis_state=$(check_endpoint "/eth/v2/beacon/states/genesis" "application/octet-stream")
+          if [[ $? -ne 0 ]]; then
+            continue
+          fi
+          echo "Genesis state is available."
+
+          finality_checkpoints=$(check_endpoint "/eth/v1/beacon/states/finalized/finality_checkpoints" "application/json")
+          if [[ $? -ne 0 ]]; then
+            echo "Finality checkpoints endpoint is not available."
+            continue
+          fi
+          echo "Finality checkpoints endpoint is available."
+
+          finalized_root=$(echo $finality_checkpoints | jq -r '.data.finalized.root')
+          echo "Extracted finalized root: $finalized_root"
+
+          finalized_state=$(check_endpoint "/eth/v2/beacon/states/$finalized_root" "application/octet-stream")
+          if [[ $? -ne 0 ]]; then
+            echo "Finalized state endpoint is not available."
+            continue
+          fi
+          echo "Finalized state is available."
+
+          finalized_block=$(check_endpoint "/eth/v2/beacon/blocks/$finalized_root" "application/json")
+          if [[ $? -ne 0 ]]; then
+            echo "Finalized block endpoint is not available."
+            continue
+          fi
+          echo "Finalized block is available."
+
+          # Extract the slot from the finalized block
+          finalized_slot=$(curl -s -H "accept: application/json" "localhost:5555/eth/v2/beacon/blocks/$finalized_root" | jq -r '.data.message.slot')
+          if [[ -z "$finalized_slot" ]]; then
+            echo "Failed to extract slot from the finalized block."
+            continue
+          fi
+          echo "Extracted slot: $finalized_slot"
+
+          block=$(check_endpoint "/eth/v2/beacon/blocks/$finalized_slot" "application/json")
+          if [[ $? -ne 0 ]]; then
+            echo "Block for finalized slot $finalized_slot is not available."
+            continue
+          fi
+          echo "Block for finalized slot $finalized_slot is available."
+
+          # Check if we can fetch the block via 'finalized'
+          finalized_block_via_finalized=$(check_endpoint "/eth/v2/beacon/blocks/finalized" "application/json")
+          if [[ $? -ne 0 ]]; then
+            echo "Finalized block via 'finalized' endpoint is not available."
+            continue
+          fi
+          echo "Finalized block via 'finalized' endpoint is available."
+
+          echo "All endpoints are available."
+          break;
+        done;
     - name: Run teku client
       shell: bash
       if:  ${{ inputs.consensus == 'teku' }}

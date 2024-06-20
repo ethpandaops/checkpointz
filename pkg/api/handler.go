@@ -224,27 +224,12 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 		return NewUnsupportedMediaTypeResponse(nil), err
 	}
 
-	blockID, err := eth.NewBlockIdentifier(p.ByName("state_id"))
+	id, err := eth.NewStateIdentifier(p.ByName("state_id"))
 	if err != nil {
 		return NewBadRequestResponse(nil), err
 	}
 
-	block, err := h.eth.BeaconBlock(ctx, blockID)
-	if err != nil {
-		return NewInternalServerErrorResponse(nil), err
-	}
-
-	slot, err := block.Slot()
-	if err != nil {
-		return NewInternalServerErrorResponse(nil), err
-	}
-
-	stateID, err := eth.NewStateIdentifier(fmt.Sprintf("%d", slot))
-	if err != nil {
-		return NewInternalServerErrorResponse(nil), err
-	}
-
-	state, err := h.eth.BeaconState(ctx, stateID)
+	state, err := h.eth.BeaconState(ctx, id)
 	if err != nil {
 		return NewInternalServerErrorResponse(nil), err
 	}
@@ -255,22 +240,35 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 
 	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeSSZ: func() ([]byte, error) {
-			return *state, nil
+			switch state.Version {
+			case spec.DataVersionPhase0:
+				return state.Phase0.MarshalSSZ()
+			case spec.DataVersionAltair:
+				return state.Altair.MarshalSSZ()
+			case spec.DataVersionBellatrix:
+				return state.Bellatrix.MarshalSSZ()
+			case spec.DataVersionCapella:
+				return state.Capella.MarshalSSZ()
+			case spec.DataVersionDeneb:
+				return state.Deneb.MarshalSSZ()
+			default:
+				return nil, fmt.Errorf("unknown state version: %s", state.Version.String())
+			}
 		},
 	})
 
-	switch blockID.Type() {
-	case eth.BlockIDRoot, eth.BlockIDGenesis, eth.BlockIDSlot:
-		// TODO(sam.calder-mason): This should be calculated using the Weak-Subjectivity period.
+	switch id.Type() {
+	case eth.StateIDSlot:
 		rsp.SetCacheControl("public, s-max-age=6000")
-	case eth.BlockIDFinalized:
-		// TODO(sam.calder-mason): This should be calculated using the Weak-Subjectivity period.
+	case eth.StateIDFinalized:
 		rsp.SetCacheControl("public, s-max-age=180")
-	case eth.BlockIDHead:
+	case eth.StateIDRoot:
+		rsp.SetCacheControl("public, s-max-age=6000")
+	case eth.StateIDHead:
 		rsp.SetCacheControl("public, s-max-age=30")
 	}
 
-	rsp.SetEthConsensusVersion(block.Version.String())
+	rsp.SetEthConsensusVersion(state.Version.String())
 
 	return rsp, nil
 }
