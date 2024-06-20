@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         consensus: [lighthouse, teku, prysm, nimbus, lodestar]
-        network: [sepolia]
+        network: [mainnet]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
