@@ -78,7 +78,6 @@ runs:
         echo "Checkpointz has the genesis block.";
     - name: Manually check endpoints
       shell: bash
-      timeout: 10m
       run: |
         check_endpoint() {
           local path=$1
