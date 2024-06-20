@@ -15,7 +15,7 @@ jobs:
         consensus: [lighthouse, teku, prysm, nimbus, lodestar]
         network: [mainnet]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v3
       - name: Print details
