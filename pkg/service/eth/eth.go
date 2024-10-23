@@ -599,12 +599,12 @@ func (h *Handler) LightClientBootstrap(ctx context.Context, root phase0.Root) (*
 		return nil, "", fmt.Errorf("version not found")
 	}
 
-	version, ok := v.(string)
+	ver, ok := v.(string)
 	if !ok {
 		return nil, "", fmt.Errorf("version is not a string")
 	}
 
-	return rsp.Data, version, nil
+	return rsp.Data, ver, nil
 }
 
 // LightClientFinalityUpdate returns the light client finality update.
@@ -631,12 +631,12 @@ func (h *Handler) LightClientFinalityUpdate(ctx context.Context) (*lightclient.F
 		return nil, "", fmt.Errorf("version not found")
 	}
 
-	version, ok := v.(string)
+	ver, ok := v.(string)
 	if !ok {
 		return nil, "", fmt.Errorf("version is not a string")
 	}
 
-	return rsp.Data, version, nil
+	return rsp.Data, ver, nil
 }
 
 // LightClientOptimisticUpdate returns the light client optimistic update.
@@ -663,12 +663,12 @@ func (h *Handler) LightClientOptimisticUpdate(ctx context.Context) (*lightclient
 		return nil, "", fmt.Errorf("version not found")
 	}
 
-	version, ok := v.(string)
+	ver, ok := v.(string)
 	if !ok {
 		return nil, "", fmt.Errorf("version is not a string")
 	}
 
-	return rsp.Data, version, nil
+	return rsp.Data, ver, nil
 }
 
 // LightClientUpdates returns the light client updates.
@@ -695,10 +695,10 @@ func (h *Handler) LightClientUpdates(ctx context.Context, startPeriod, count int
 		return nil, "", fmt.Errorf("version not found")
 	}
 
-	version, ok := v.(string)
+	ver, ok := v.(string)
 	if !ok {
 		return nil, "", fmt.Errorf("version is not a string")
 	}
 
-	return rsp.Data, version, nil
+	return rsp.Data, ver, nil
 }
