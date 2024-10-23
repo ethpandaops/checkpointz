@@ -565,7 +565,7 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		// Find the sidecar with the given index
 		for i, sidecar := range sidecars {
-			if index == int(sidecar.Index) {
+			if deneb.BlobIndex(index) == sidecar.Index {
 				filtered = append(filtered, sidecars[i])
 
 				break

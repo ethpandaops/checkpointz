@@ -83,7 +83,7 @@ func newBlockIdentifier(id BlockIDType, value string) BlockIdentifier {
 }
 
 func NewSlotFromString(id string) (phase0.Slot, error) {
-	slot, err := strconv.ParseInt(id, 10, 64)
+	slot, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return 0, err
 	}
