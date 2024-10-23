@@ -19,6 +19,9 @@ type Config struct {
 
 	// Cache holds configuration for the caches.
 	Frontend FrontendConfig `yaml:"frontend"`
+
+	// LightClient holds configuration for serving light client data.
+	LightClient LightClientConfig `yaml:"light_client"`
 }
 
 // Cache configuration holds configuration for the caches.
@@ -45,6 +48,13 @@ type FrontendConfig struct {
 
 	// BrandImageURL is the URL of the brand image to be displayed on the frontend
 	BrandImageURL string `yaml:"brand_image_url"`
+}
+
+type LightClientConfig struct {
+	// Enabled flag enables the light client data to be served
+	Enabled bool `yaml:"enabled" default:"false"`
+	// Mode sets the mode of operation for serving light client data.
+	Mode LightClientMode `yaml:"mode" default:"proxy"`
 }
 
 func (c *Config) Validate() error {
