@@ -19,7 +19,14 @@ checkpointz:
     brand_name: Brandname
     # public url where frontend will be served from (optional)
     public_url: https://www.domain.com
-
+  light_client:
+    # Enables light_client routes
+    enabled: false
+    # Proxy mode will proxy requests to the upstream beacon node
+    # WARNING: This will increase the load on the upstream beacon node
+    # AND EXPOSES YOUR BEACON NODE TO UNPREDICTABLE API LOAD.
+    # DO NOT USE THIS ON A VALIDATOR NODE.
+    mode: proxy
 
 beacon:
   upstreams:

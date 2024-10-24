@@ -45,7 +45,7 @@ Checkpointz simplifies the process of running an Ethereum Beacon Chain checkpoin
 - Resource reduction
   - Adds HTTP cache-control headers depending on the content
 - DOS protection
-  - Never routes an incoming request directly to an upstream beacon node
+  - Never routes an incoming request directly to an upstream beacon node unless `light_client.mode` is set to `proxy`
 - Support for multiple upstream beacon nodes
   - Only serves a new finalized epoch once 50%+ of upstream beacon nodes agree
 - Extensive Prometheus metrics
@@ -168,7 +168,14 @@ checkpointz:
     # brand_name: Brandname
     # The public URL of where the frontend will be served from (optional)
     # public_url: https://www.domain.com
-
+  light_client:
+    # Enables light_client routes
+    enabled: false
+    # Proxy mode will proxy requests to the upstream beacon node
+    # WARNING: This will increase the load on the upstream beacon node
+    # AND EXPOSES YOUR BEACON NODE TO UNPREDICTABLE API LOAD.
+    # DO NOT USE THIS ON A VALIDATOR NODE.
+    mode: proxy
 beacon:
   # Upstreams configures the upstream beacon nodes to use.
   upstreams:
