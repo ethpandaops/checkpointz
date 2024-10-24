@@ -744,7 +744,7 @@ func (h *Handler) handleEthV1BeaconLightClientUpdates(ctx context.Context, r *ht
 		return NewBadRequestResponse(nil), fmt.Errorf("invalid count: %w", err)
 	}
 
-	updates, version, err := h.eth.LightClientUpdates(ctx, startPeriodInt, countInt)
+	updates, _, err := h.eth.LightClientUpdates(ctx, startPeriodInt, countInt)
 	if err != nil {
 		return NewInternalServerErrorResponse(nil), err
 	}
@@ -755,7 +755,7 @@ func (h *Handler) handleEthV1BeaconLightClientUpdates(ctx context.Context, r *ht
 		},
 	})
 
-	rsp.ExtraData["version"] = version
+	rsp.IsMultipleResponses = true
 
 	return rsp, nil
 }

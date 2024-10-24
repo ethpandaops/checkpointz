@@ -10,10 +10,11 @@ type ContentTypeResolver func() ([]byte, error)
 type ContentTypeResolvers map[ContentType]ContentTypeResolver
 
 type HTTPResponse struct {
-	resolvers  ContentTypeResolvers
-	StatusCode int               `json:"status_code"`
-	Headers    map[string]string `json:"headers"`
-	ExtraData  map[string]interface{}
+	resolvers           ContentTypeResolvers
+	StatusCode          int               `json:"status_code"`
+	Headers             map[string]string `json:"headers"`
+	ExtraData           map[string]interface{}
+	IsMultipleResponses bool
 }
 type jsonResponse struct {
 	Data json.RawMessage `json:"data"`
@@ -22,6 +23,9 @@ type jsonResponse struct {
 	Version             string `json:"version,omitempty"`
 }
 
+// multipleJSONResponse is a wrapper for multiple json responses.
+type multipleJSONResponse []jsonResponse
+
 func (r HTTPResponse) MarshalAs(contentType ContentType) ([]byte, error) {
 	if _, exists := r.resolvers[contentType]; !exists {
 		return nil, fmt.Errorf("unsupported content-type: %s", contentType.String())
@@ -29,6 +33,10 @@ func (r HTTPResponse) MarshalAs(contentType ContentType) ([]byte, error) {
 
 	if contentType != ContentTypeJSON {
 		return r.resolvers[contentType]()
+	}
+
+	if r.IsMultipleResponses {
+		return r.buildWrappedJSONResponses()
 	}
 
 	return r.buildWrappedJSONResponse()
@@ -109,4 +117,13 @@ func (r *HTTPResponse) buildWrappedJSONResponse() ([]byte, error) {
 	}
 
 	return json.Marshal(rsp)
+}
+
+func (r *HTTPResponse) buildWrappedJSONResponses() ([]byte, error) {
+	data, err := r.resolvers[ContentTypeJSON]()
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

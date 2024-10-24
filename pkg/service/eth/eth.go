@@ -690,15 +690,5 @@ func (h *Handler) LightClientUpdates(ctx context.Context, startPeriod, count int
 		return nil, "", err
 	}
 
-	v, ok := rsp.Metadata["version"]
-	if !ok {
-		return nil, "", fmt.Errorf("version not found")
-	}
-
-	ver, ok := v.(string)
-	if !ok {
-		return nil, "", fmt.Errorf("version is not a string")
-	}
-
-	return rsp.Data, ver, nil
+	return rsp.Data, "", nil
 }
