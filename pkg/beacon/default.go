@@ -13,6 +13,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
 	"github.com/ethpandaops/beacon/pkg/beacon"
+	"github.com/ethpandaops/beacon/pkg/beacon/api"
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/checkpoints"
@@ -95,6 +96,10 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 
 func (d *Default) Start(ctx context.Context) error {
 	d.log.Infof("Starting Finality provider in %s mode", d.OperatingMode())
+
+	if d.config.LightClient.Enabled {
+		d.log.WithField("mode", d.config.LightClient.Mode).Info("Light client is enabled!")
+	}
 
 	d.metrics.ObserveOperatingMode(d.OperatingMode())
 
@@ -780,4 +785,85 @@ func (d *Default) GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTi
 
 func (d *Default) GetDepositSnapshot(ctx context.Context, epoch phase0.Epoch) (*types.DepositSnapshot, error) {
 	return d.depositSnapshots.GetByEpoch(epoch)
+}
+
+func (d *Default) LightClientMode() LightClientMode {
+	return d.config.LightClient.Mode
+}
+
+func (d *Default) LightClientEnabled() bool {
+	return d.config.LightClient.Enabled
+}
+
+func (d *Default) getLightClientNode(ctx context.Context) (*Node, error) {
+	if !d.LightClientEnabled() {
+		return nil, errors.New("light client is not enabled")
+	}
+
+	if d.LightClientMode() != LightClientModeProxy {
+		return nil, errors.New("light client mode is not supported")
+	}
+
+	nodes := d.nodes.Agents(ctx, types.AgentNimbus, types.AgentLodestar)
+	if len(nodes) == 0 {
+		return nil, errors.New("no nodes running nimbus or lodestar found")
+	}
+
+	nodes = nodes.Healthy(ctx)
+	if len(nodes) == 0 {
+		return nil, errors.New("no healthy nodes found")
+	}
+
+	nodes = nodes.NotSyncing(ctx)
+	if len(nodes) == 0 {
+		return nil, errors.New("no non-syncing nodes found")
+	}
+
+	nodes = nodes.DataProviders(ctx)
+	if len(nodes) == 0 {
+		return nil, errors.New("no data provider nodes found")
+	}
+
+	n, err := nodes.RandomNode(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get random node: %w", err)
+	}
+
+	return n, nil
+}
+
+func (d *Default) GetLightClientBootstrap(ctx context.Context, root phase0.Root) (*api.LightClientBootstrapResponse, error) {
+	n, err := d.getLightClientNode(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return n.Beacon.FetchLightClientBootstrap(ctx, root)
+}
+
+func (d *Default) GetLightClientFinalityUpdate(ctx context.Context) (*api.LightClientFinalityUpdateResponse, error) {
+	n, err := d.getLightClientNode(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return n.Beacon.FetchLightClientFinalityUpdate(ctx)
+}
+
+func (d *Default) GetLightClientOptimisticUpdate(ctx context.Context) (*api.LightClientOptimisticUpdateResponse, error) {
+	n, err := d.getLightClientNode(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return n.Beacon.FetchLightClientOptimisticUpdate(ctx)
+}
+
+func (d *Default) GetLightClientUpdates(ctx context.Context, startPeriod, count int) (*api.LightClientUpdatesResponse, error) {
+	n, err := d.getLightClientNode(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return n.Beacon.FetchLightClientUpdates(ctx, startPeriod, count)
 }

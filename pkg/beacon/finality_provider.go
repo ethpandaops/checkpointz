@@ -7,6 +7,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/deneb"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/ethpandaops/beacon/pkg/beacon/api"
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
@@ -60,4 +61,12 @@ type FinalityProvider interface {
 	GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTime, error)
 	// GetDepositSnapshot returns the deposit snapshot at the given epoch.
 	GetDepositSnapshot(ctx context.Context, epoch phase0.Epoch) (*types.DepositSnapshot, error)
+	// GetLightClientBootstrap returns the light client bootstrap for the given block root.
+	GetLightClientBootstrap(ctx context.Context, root phase0.Root) (*api.LightClientBootstrapResponse, error)
+	// GetLightClientUpdate returns the light client update for the given block root.
+	GetLightClientUpdates(ctx context.Context, startPeriod int, count int) (*api.LightClientUpdatesResponse, error)
+	// GetLightClientFinalityUpdate returns the light client finality update.
+	GetLightClientFinalityUpdate(ctx context.Context) (*api.LightClientFinalityUpdateResponse, error)
+	// GetLightClientOptimisticUpdate returns the light client optimistic update.
+	GetLightClientOptimisticUpdate(ctx context.Context) (*api.LightClientOptimisticUpdateResponse, error)
 }

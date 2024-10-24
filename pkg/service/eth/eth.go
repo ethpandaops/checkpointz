@@ -9,6 +9,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec/deneb"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
+	"github.com/ethpandaops/beacon/pkg/beacon/api/types/lightclient"
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
 	"github.com/ethpandaops/checkpointz/pkg/beacon"
 	"github.com/ethpandaops/checkpointz/pkg/version"
@@ -564,7 +565,7 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		// Find the sidecar with the given index
 		for i, sidecar := range sidecars {
-			if index == int(sidecar.Index) {
+			if deneb.BlobIndex(index) == sidecar.Index {
 				filtered = append(filtered, sidecars[i])
 
 				break
@@ -573,4 +574,121 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 	}
 
 	return filtered, nil
+}
+
+func (h *Handler) LightClientBootstrap(ctx context.Context, root phase0.Root) (*lightclient.Bootstrap, string, error) {
+	var err error
+
+	const call = "light_client_bootstrap"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	rsp, err := h.provider.GetLightClientBootstrap(ctx, root)
+	if err != nil {
+		return nil, "", err
+	}
+
+	v, ok := rsp.Metadata["version"]
+	if !ok {
+		return nil, "", fmt.Errorf("version not found")
+	}
+
+	ver, ok := v.(string)
+	if !ok {
+		return nil, "", fmt.Errorf("version is not a string")
+	}
+
+	return rsp.Data, ver, nil
+}
+
+// LightClientFinalityUpdate returns the light client finality update.
+func (h *Handler) LightClientFinalityUpdate(ctx context.Context) (*lightclient.FinalityUpdate, string, error) {
+	var err error
+
+	const call = "light_client_finality_update"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	rsp, err := h.provider.GetLightClientFinalityUpdate(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	v, ok := rsp.Metadata["version"]
+	if !ok {
+		return nil, "", fmt.Errorf("version not found")
+	}
+
+	ver, ok := v.(string)
+	if !ok {
+		return nil, "", fmt.Errorf("version is not a string")
+	}
+
+	return rsp.Data, ver, nil
+}
+
+// LightClientOptimisticUpdate returns the light client optimistic update.
+func (h *Handler) LightClientOptimisticUpdate(ctx context.Context) (*lightclient.OptimisticUpdate, string, error) {
+	var err error
+
+	const call = "light_client_optimistic_update"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	rsp, err := h.provider.GetLightClientOptimisticUpdate(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	v, ok := rsp.Metadata["version"]
+	if !ok {
+		return nil, "", fmt.Errorf("version not found")
+	}
+
+	ver, ok := v.(string)
+	if !ok {
+		return nil, "", fmt.Errorf("version is not a string")
+	}
+
+	return rsp.Data, ver, nil
+}
+
+// LightClientUpdates returns the light client updates.
+func (h *Handler) LightClientUpdates(ctx context.Context, startPeriod, count int) (*lightclient.Updates, string, error) {
+	var err error
+
+	const call = "light_client_updates"
+
+	h.metrics.ObserveCall(call, "")
+
+	defer func() {
+		if err != nil {
+			h.metrics.ObserveErrorCall(call, "")
+		}
+	}()
+
+	rsp, err := h.provider.GetLightClientUpdates(ctx, startPeriod, count)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return rsp.Data, "", nil
 }

@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"slices"
 	"strings"
 	"time"
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	sbeacon "github.com/ethpandaops/beacon/pkg/beacon"
+	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
 )
@@ -120,6 +122,24 @@ func (n Nodes) Ready(ctx context.Context) Nodes {
 	return n.
 		Healthy(ctx).
 		NotSyncing(ctx)
+}
+
+func (n Nodes) Agents(ctx context.Context, agents ...types.Agent) Nodes {
+	nodes := []*Node{}
+
+	for _, node := range n {
+		nodeVersion, err := node.Beacon.NodeVersion()
+		if err != nil {
+			continue
+		}
+
+		agent := types.AgentFromString(nodeVersion)
+		if slices.Contains(agents, agent) {
+			nodes = append(nodes, node)
+		}
+	}
+
+	return nodes
 }
 
 func (n Nodes) RandomNode(ctx context.Context) (*Node, error) {

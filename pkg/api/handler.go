@@ -54,6 +54,12 @@ func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error
 	router.GET("/eth/v1/beacon/deposit_snapshot", h.wrappedHandler(h.handleEthV1BeaconDepositSnapshot))
 	router.GET("/eth/v1/beacon/blob_sidecars/:block_id", h.wrappedHandler(h.handleEthV1BeaconBlobSidecars))
 
+	// Light client
+	router.GET("/eth/v1/beacon/light_client/bootstrap/:root", h.wrappedHandler(h.handleEthV1BeaconLightClientBootstrap))
+	router.GET("/eth/v1/beacon/light_client/finality_update", h.wrappedHandler(h.handleEthV1BeaconLightClientFinalityUpdate))
+	router.GET("/eth/v1/beacon/light_client/optimistic_update", h.wrappedHandler(h.handleEthV1BeaconLightClientOptimisticUpdate))
+	router.GET("/eth/v1/beacon/light_client/updates", h.wrappedHandler(h.handleEthV1BeaconLightClientUpdates))
+
 	router.GET("/eth/v1/config/spec", h.wrappedHandler(h.handleEthV1ConfigSpec))
 	router.GET("/eth/v1/config/deposit_contract", h.wrappedHandler(h.handleEthV1ConfigDepositContract))
 	router.GET("/eth/v1/config/fork_schedule", h.wrappedHandler(h.handleEthV1ConfigForkSchedule))
@@ -646,6 +652,110 @@ func (h *Handler) handleEthV1BeaconBlobSidecars(ctx context.Context, r *http.Req
 	default:
 		rsp.SetCacheControl("public, s-max-age=15")
 	}
+
+	return rsp, nil
+}
+
+// Light client
+func (h *Handler) handleEthV1BeaconLightClientBootstrap(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	root, err := eth.NewRootFromString(p.ByName("root"))
+	if err != nil {
+		return NewBadRequestResponse(nil), err
+	}
+
+	bootstrap, version, err := h.eth.LightClientBootstrap(ctx, root)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	rsp := NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: bootstrap.MarshalJSON,
+	})
+
+	rsp.ExtraData["version"] = version
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1BeaconLightClientFinalityUpdate(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	finality, version, err := h.eth.LightClientFinalityUpdate(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	rsp := NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: finality.MarshalJSON,
+	})
+
+	rsp.ExtraData["version"] = version
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1BeaconLightClientOptimisticUpdate(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	optimistic, version, err := h.eth.LightClientOptimisticUpdate(ctx)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	rsp := NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: optimistic.MarshalJSON,
+	})
+
+	rsp.ExtraData["version"] = version
+
+	return rsp, nil
+}
+
+func (h *Handler) handleEthV1BeaconLightClientUpdates(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
+		return NewUnsupportedMediaTypeResponse(nil), err
+	}
+
+	startPeriod := r.URL.Query().Get("start_period")
+	if startPeriod == "" {
+		return NewBadRequestResponse(nil), errors.New("start_period is required")
+	}
+
+	startPeriodInt, err := strconv.Atoi(startPeriod)
+	if err != nil {
+		return NewBadRequestResponse(nil), fmt.Errorf("invalid start_period: %w", err)
+	}
+
+	count := r.URL.Query().Get("count")
+	if count == "" {
+		return NewBadRequestResponse(nil), errors.New("count is required")
+	}
+
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		return NewBadRequestResponse(nil), fmt.Errorf("invalid count: %w", err)
+	}
+
+	updates, _, err := h.eth.LightClientUpdates(ctx, startPeriodInt, countInt)
+	if err != nil {
+		return NewInternalServerErrorResponse(nil), err
+	}
+
+	rsp := NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return json.Marshal(updates)
+		},
+	})
+
+	rsp.IsMultipleResponses = true
 
 	return rsp, nil
 }
