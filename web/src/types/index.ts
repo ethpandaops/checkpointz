@@ -42,7 +42,7 @@ export interface APIBeaconSlot {
   slot: number;
   block_root?: string;
   state_root?: string;
-  epoch?: number;
+  epoch?: string;
   time?: APISlotTime;
 }
 
