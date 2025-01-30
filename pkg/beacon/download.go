@@ -344,7 +344,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 	}
 
-	denebFork, err := sp.ForkEpochs.GetByName("DENEB")
+	denebFork, err := sp.ForkEpochs.GetByName("deneb")
 	if err == nil && denebFork != nil {
 		if denebFork.Active(epoch) {
 			// Download and store blob sidecars
