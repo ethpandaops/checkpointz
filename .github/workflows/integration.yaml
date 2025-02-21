@@ -26,6 +26,7 @@ jobs:
         id: run-test
         uses: ./.github/actions/checkpoint-sync
         with:
-          ## Variables
           consensus: ${{ matrix.consensus }}
           network: ${{ matrix.network }}
+          beacon_node_url: ${{ matrix.network == 'mainnet' && secrets.MAINNET_BEACON_API_URL || secrets.HOLESKY_BEACON_API_URL }}
+          

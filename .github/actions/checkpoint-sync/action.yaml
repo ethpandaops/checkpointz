@@ -1,4 +1,3 @@
-
 name: Run a checkpoint sync test
 description: Runs a consensus client and checkpoint syncs from the running checkpointz instance.
 
@@ -9,7 +8,9 @@ inputs:
   network:
     description: "The name of the network to run the test against (one of ropsten, sepolia, prater/goerli)."
     required: true
-
+  beacon_node_url:
+    description: "The beacon node API URL to use"
+    required: true
 
 runs:
   using: composite
@@ -27,21 +28,7 @@ runs:
         docker build . -t ethpandaops/checkpointz:local;
     - name: Configure checkpointz
       shell: bash
-      env:
-        MAINNET_BEACON_API_URL: "${{ secrets.MAINNET_BEACON_API_URL }}"
-        HOLESKY_BEACON_API_URL: "${{ secrets.HOLESKY_BEACON_API_URL }}"
-
       run: |
-        beacon_node=""
-        if [[ ${{ inputs.network }} == "mainnet" ]]; then
-          beacon_node="${{ env.MAINNET_BEACON_API_URL }}"
-        elif [[ ${{ inputs.network }} == "holesky" ]]; then
-          beacon_node="${{ env.HOLESKY_BEACON_API_URL }}"
-        else
-          echo "Unsupported network: ${{ inputs.network }}"
-          exit 1
-        fi
-
         cat <<EOF > checkpointz.yaml
         global:
           listenAddr: ":5555"
@@ -50,7 +37,7 @@ runs:
         beacon:
           upstreams:
           - name: state-provider
-            address: $beacon_node
+            address: ${{ inputs.beacon_node_url }}
             timeoutSeconds: 30
             dataProvider: true
         checkpointz:
