@@ -16,6 +16,9 @@ jobs:
         network: [mainnet]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      MAINNET_BEACON_API_URL: ${{ secrets.MAINNET_BEACON_API_URL }}
+      HOLESKY_BEACON_API_URL: ${{ secrets.HOLESKY_BEACON_API_URL }}
     steps:
       - uses: actions/checkout@v3
       - name: Print details
@@ -28,5 +31,4 @@ jobs:
         with:
           consensus: ${{ matrix.consensus }}
           network: ${{ matrix.network }}
-          beacon_node_url: ${{ matrix.network == 'mainnet' && secrets.MAINNET_BEACON_API_URL || secrets.HOLESKY_BEACON_API_URL }}
-          
+          beacon_node_url: ${{ matrix.network == 'mainnet' && env.MAINNET_BEACON_API_URL || env.HOLESKY_BEACON_API_URL }}
