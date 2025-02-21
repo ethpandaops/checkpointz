@@ -88,6 +88,7 @@ func NewSlotFromString(id string) (phase0.Slot, error) {
 		return 0, err
 	}
 
+	//nolint:gosec // This is not a security issue
 	return phase0.Slot(slot), nil
 }
 
