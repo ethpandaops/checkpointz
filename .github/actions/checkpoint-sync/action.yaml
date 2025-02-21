@@ -29,11 +29,12 @@ runs:
     - name: Configure checkpointz
       shell: bash
       run: |
-        # Strip trailing slash from the beacon node URL
-        beacon_node_url="${{ inputs.beacon_node_url }}"
-        if [[ "$beacon_node_url" == *"/" ]]; then
-          beacon_node_url="${beacon_node_url%/}"
+        # Check if beacon node url is valid
+        if [[ ! "${{ inputs.beacon_node_url }}" =~ ^https?:// ]]; then
+          echo "Invalid beacon node URL"
+          exit 1
         fi
+
         cat <<EOF > checkpointz.yaml
         global:
           listenAddr: ":5555"
@@ -42,7 +43,7 @@ runs:
         beacon:
           upstreams:
           - name: state-provider
-            address: "${beacon_node_url}"
+            address: "${{ inputs.beacon_node_url }}"
             timeoutSeconds: 30
             dataProvider: true
         checkpointz:
