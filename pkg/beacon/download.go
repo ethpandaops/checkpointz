@@ -28,10 +28,7 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 		return fmt.Errorf("failed to fetch spec: %w", err)
 	}
 
-	fork, err := sp.ForkEpochs.CurrentFork(
-		phase0.Slot(uint64(checkpoint.Finalized.Epoch)*uint64(sp.SlotsPerEpoch)),
-		sp.SlotsPerEpoch,
-	)
+	fork, err := sp.ForkEpochs.CurrentFork(checkpoint.Finalized.Epoch)
 	if err != nil {
 		return fmt.Errorf("failed to get current fork: %w", err)
 	}
@@ -175,8 +172,9 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	// Calculate the epoch boundaries we need to fetch
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
 	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
-	for i := uint64(1); i < uint64(d.config.HistoricalEpochCount); i++ {
-		slot := phase0.Slot(currentSlot - i*uint64(sp.SlotsPerEpoch))
+	for i := 1; i < d.config.HistoricalEpochCount; i++ {
+		//nolint:gosec // This is not a security issue
+		slot := phase0.Slot(currentSlot - uint64(i)*uint64(sp.SlotsPerEpoch))
 		slotsInScope[slot] = struct{}{}
 	}
 
@@ -332,9 +330,14 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 	}
 
-	if slot != phase0.Slot(0) {
-		epoch := phase0.Epoch(slot / d.spec.SlotsPerEpoch)
+	sp, err := d.Spec()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch spec: %w", err)
+	}
 
+	epoch := phase0.Epoch(slot / sp.SlotsPerEpoch)
+
+	if slot != phase0.Slot(0) {
 		// Download and store deposit snapshots
 		if err = d.downloadAndStoreDepositSnapshot(ctx, epoch, upstream); err != nil {
 			d.log.WithError(err).
@@ -342,14 +345,9 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		}
 	}
 
-	sp, err := d.Spec()
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch spec: %w", err)
-	}
-
-	denebFork, err := sp.ForkEpochs.GetByName("DENEB")
+	denebFork, err := sp.ForkEpochs.GetByName("deneb")
 	if err == nil && denebFork != nil {
-		if denebFork.Active(slot, sp.SlotsPerEpoch) {
+		if denebFork.Active(epoch) {
 			// Download and store blob sidecars
 			if err := d.downloadAndStoreBlobSidecars(ctx, slot, upstream); err != nil {
 				return nil, fmt.Errorf("failed to download and store blob sidecars: %w", err)

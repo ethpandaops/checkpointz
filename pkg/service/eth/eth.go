@@ -564,6 +564,7 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		// Find the sidecar with the given index
 		for i, sidecar := range sidecars {
+			//nolint:gosec // This is not a security issue
 			if index == int(sidecar.Index) {
 				filtered = append(filtered, sidecars[i])
 
