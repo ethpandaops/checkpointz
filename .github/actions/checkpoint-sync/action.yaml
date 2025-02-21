@@ -27,12 +27,16 @@ runs:
         docker build . -t ethpandaops/checkpointz:local;
     - name: Configure checkpointz
       shell: bash
+      env:
+        MAINNET_BEACON_API_URL: "${{ secrets.MAINNET_BEACON_API_URL }}"
+        HOLESKY_BEACON_API_URL: "${{ secrets.HOLESKY_BEACON_API_URL }}"
+
       run: |
         beacon_node=""
         if [[ ${{ inputs.network }} == "mainnet" ]]; then
-          beacon_node="{{ $secrets.MAINNET_BEACON_API_URL }}"
+          beacon_node="${{ env.MAINNET_BEACON_API_URL }}"
         elif [[ ${{ inputs.network }} == "holesky" ]]; then
-          beacon_node="{{ $secrets.HOLESKY_BEACON_API_URL }}"
+          beacon_node="${{ env.HOLESKY_BEACON_API_URL }}"
         else
           echo "Unsupported network: ${{ inputs.network }}"
           exit 1
