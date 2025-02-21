@@ -698,7 +698,6 @@ func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStat
 
 		rsp[node.Config.Name].Healthy = node.Beacon.Status().Healthy()
 
-		//nolint:gocritic // invalid
 		if spec, err := node.Beacon.Spec(); err == nil {
 			network := spec.ConfigName
 			if network == "" {
