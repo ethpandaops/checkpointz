@@ -30,9 +30,9 @@ runs:
       run: |
         beacon_node=""
         if [[ ${{ inputs.network }} == "mainnet" ]]; then
-          beacon_node="http://testing.mainnet.beacon-api.nimbus.team/"
+          beacon_node="{{ $secrets.MAINNET_BEACON_API_URL }}"
         elif [[ ${{ inputs.network }} == "holesky" ]]; then
-          beacon_node="http://testing.holesky.beacon-api.nimbus.team/"
+          beacon_node="{{ $secrets.HOLESKY_BEACON_API_URL }}"
         else
           echo "Unsupported network: ${{ inputs.network }}"
           exit 1
