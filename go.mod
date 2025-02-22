@@ -3,7 +3,7 @@ module github.com/ethpandaops/checkpointz
 go 1.22
 
 require (
-	github.com/attestantio/go-eth2-client v0.24.0
+	github.com/attestantio/go-eth2-client v0.24.1-0.20250219090147-b41ce952806c
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
 	github.com/creasty/defaults v1.6.0
 	github.com/ethpandaops/beacon v0.47.0
