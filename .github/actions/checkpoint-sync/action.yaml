@@ -190,7 +190,7 @@ runs:
       if:  ${{ inputs.consensus == 'lighthouse' }}
       run: |
         echo "Starting Lighthouse...";
-        docker run -p 5052:5052 --network eth -d --name beacon sigp/lighthouse:latest lighthouse bn --network=${{ inputs.network }} --datadir=/data --checkpoint-sync-url=http://checkpointz:5555 --http --http-address=0.0.0.0 --execution-endpoint=http://localhost:8545 --execution-jwt-secret-key=example-secret
+        docker run -p 5052:5052 --network eth -d --name beacon sigp/lighthouse:latest lighthouse bn --network=${{ inputs.network }} --datadir=/data --checkpoint-sync-url=http://checkpointz:5555 --http --http-address=0.0.0.0 --execution-endpoint=http://localhost:8545 --execution-jwt-secret-key=0xaaaaa
         echo "Lighthouse is running.";
     - name: Run prysm
       shell: bash
