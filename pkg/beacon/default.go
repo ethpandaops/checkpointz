@@ -25,6 +25,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const yoloMode = true
+
 type Default struct {
 	log logrus.FieldLogger
 
@@ -104,13 +106,27 @@ func (d *Default) Start(ctx context.Context) error {
 
 	go func() {
 		for {
-			// Wait until we have a single healthy node.
-			nd, err := d.nodes.Healthy(ctx).NotSyncing(ctx).RandomNode(ctx)
-			if err != nil {
-				d.log.WithError(err).Error("Waiting for a healthy, non-syncing node before beginning..")
-				time.Sleep(time.Second * 5)
+			var nd *Node
 
-				continue
+			var err error
+
+			if yoloMode {
+				nd, err = d.nodes.Healthy(ctx).RandomNode(ctx)
+				if err != nil {
+					d.log.WithError(err).Error("Waiting for a healthy, non-syncing node before beginning..")
+					time.Sleep(time.Second * 5)
+
+					continue
+				}
+			} else {
+				// Wait until we have a single healthy node.
+				nd, err = d.nodes.Healthy(ctx).NotSyncing(ctx).RandomNode(ctx)
+				if err != nil {
+					d.log.WithError(err).Error("Waiting for a healthy, non-syncing node before beginning..")
+					time.Sleep(time.Second * 5)
+
+					continue
+				}
 			}
 
 			nd.Beacon.Wallclock().OnEpochChanged(func(epoch ethwallclock.Epoch) {

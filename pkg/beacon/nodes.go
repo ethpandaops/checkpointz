@@ -136,6 +136,10 @@ func (n Nodes) NotOptimisticEL(ctx context.Context) Nodes {
 }
 
 func (n Nodes) Ready(ctx context.Context) Nodes {
+	if yoloMode {
+		return n.Healthy(ctx)
+	}
+
 	return n.
 		Healthy(ctx).
 		NotSyncing(ctx).
