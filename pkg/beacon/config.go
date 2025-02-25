@@ -4,8 +4,27 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/store"
 )
+
+type YoloMode struct {
+	Enabled bool `yaml:"enabled" default:"false"`
+
+	RootStr string       `yaml:"root"`
+	Epoch   phase0.Epoch `yaml:"epoch"`
+}
+
+func (y *YoloMode) Root() phase0.Root {
+	var root phase0.Root
+
+	err := root.UnmarshalJSON([]byte(fmt.Sprintf(`"%s"`, y.RootStr)))
+	if err != nil {
+		return phase0.Root{}
+	}
+
+	return root
+}
 
 // Config holds configuration for running a FinalityProvider config
 type Config struct {
@@ -19,6 +38,9 @@ type Config struct {
 
 	// Cache holds configuration for the caches.
 	Frontend FrontendConfig `yaml:"frontend"`
+
+	// YoloMode enables a mode where we don't check for syncing nodes, we just use the first healthy node.
+	YoloMode YoloMode `yaml:"yolo_mode"`
 }
 
 // Cache configuration holds configuration for the caches.
@@ -62,6 +84,14 @@ func (c *Config) Validate() error {
 
 	if c.HistoricalEpochCount > 200 {
 		return fmt.Errorf("historical_epoch_count (%d) cannot be higher than 200", c.HistoricalEpochCount)
+	}
+
+	if c.YoloMode.Enabled && c.YoloMode.Epoch == 0 {
+		return errors.New("yolo mode enabled but no epoch provided")
+	}
+
+	if c.YoloMode.Enabled && c.YoloMode.RootStr == "" {
+		return errors.New("yolo mode enabled but no root provided")
 	}
 
 	return nil

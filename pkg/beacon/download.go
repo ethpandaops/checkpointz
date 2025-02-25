@@ -15,12 +15,16 @@ import (
 )
 
 func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.Finality) error {
-	if checkpoint == nil {
-		return errors.New("checkpoint is nil")
+	root := checkpoint.Finalized.Root
+	epoch := checkpoint.Finalized.Epoch
+
+	if d.config.YoloMode.Enabled {
+		epoch = d.config.YoloMode.Epoch
+		root = d.config.YoloMode.Root()
 	}
 
-	if checkpoint.Finalized == nil {
-		return errors.New("finalized checkpoint is nil")
+	if epoch == 0 || root == (phase0.Root{}) {
+		return errors.New("invalid epoch or root")
 	}
 
 	sp, err := d.Spec()
@@ -28,48 +32,53 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 		return fmt.Errorf("failed to fetch spec: %w", err)
 	}
 
-	fork, err := sp.ForkEpochs.CurrentFork(checkpoint.Finalized.Epoch)
+	fork, err := sp.ForkEpochs.CurrentFork(epoch)
 	if err != nil {
 		return fmt.Errorf("failed to get current fork: %w", err)
 	}
 
 	d.log.
-		WithField("epoch", checkpoint.Finalized.Epoch).
+		WithField("epoch", epoch).
 		WithField("fork_name", fork.Name).
 		Info("Downloading serving checkpoint")
 
-	upstream, err := d.nodes.
-		Ready(ctx).
-		DataProviders(ctx).
-		PastFinalizedCheckpoint(ctx, checkpoint). // Ensure we attempt to fetch the bundle from a node that knows about the checkpoint.
-		RandomNode(ctx)
+	nodes := d.nodes.
+		DataProviders(ctx)
+
+	if !d.config.YoloMode.Enabled {
+		nodes = nodes.PastFinalizedCheckpoint(ctx, checkpoint)
+	}
+
+	upstream, err := nodes.RandomNode(ctx)
 	if err != nil {
 		return perrors.Wrap(err, "no data provider node available")
 	}
 
-	block, err := d.fetchBundle(ctx, checkpoint.Finalized.Root, upstream)
+	block, err := d.fetchBundle(ctx, root, upstream)
 	if err != nil {
 		return perrors.Wrap(err, "failed to fetch bundle")
 	}
 
-	// Validate that everything is ok to serve.
-	// Lighthouse ref: https://lighthouse-book.sigmaprime.io/checkpoint-sync.html#alignment-requirements
-	blockSlot, err := block.Slot()
-	if err != nil {
-		return fmt.Errorf("failed to get slot from block: %w", err)
-	}
+	if !d.config.YoloMode.Enabled {
+		// Validate that everything is ok to serve.
+		// Lighthouse ref: https://lighthouse-book.sigmaprime.io/checkpoint-sync.html#alignment-requirements
+		blockSlot, err := block.Slot()
+		if err != nil {
+			return fmt.Errorf("failed to get slot from block: %w", err)
+		}
 
-	if blockSlot%sp.SlotsPerEpoch != 0 {
-		return fmt.Errorf("block slot is not aligned from an epoch boundary: %d", blockSlot)
+		if blockSlot%sp.SlotsPerEpoch != 0 {
+			return fmt.Errorf("block slot is not aligned from an epoch boundary: %d", blockSlot)
+		}
 	}
 
 	d.servingBundle = checkpoint
-	d.metrics.ObserveServingEpoch(checkpoint.Finalized.Epoch)
+	d.metrics.ObserveServingEpoch(epoch)
 
 	d.log.WithFields(
 		logrus.Fields{
-			"epoch": checkpoint.Finalized.Epoch,
-			"root":  fmt.Sprintf("%#x", checkpoint.Finalized.Root),
+			"epoch": epoch,
+			"root":  fmt.Sprintf("%#x", root),
 		},
 	).Info("Serving a new finalized checkpoint bundle")
 
@@ -95,7 +104,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 
 	d.log.Debug("Fetching genesis state")
 
-	readyNodes := d.nodes.Ready(ctx)
+	readyNodes := d.nodes.Healthy(ctx)
 	if len(readyNodes) == 0 {
 		return errors.New("no nodes ready")
 	}
@@ -120,7 +129,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 		return err
 	}
 
-	upstream, err := d.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
+	upstream, err := d.nodes.DataProviders(ctx).RandomNode(ctx)
 	if err != nil {
 		return err
 	}
@@ -138,6 +147,12 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 }
 
 func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1.Finality) error {
+	if d.config.YoloMode.Enabled {
+		d.log.Info("Yolo mode enabled, skipping historical checkpoint fetching")
+
+		return nil
+	}
+
 	d.historicalMutex.Lock()
 	defer d.historicalMutex.Unlock()
 

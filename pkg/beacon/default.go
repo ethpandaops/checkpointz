@@ -25,8 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const yoloMode = true
-
 type Default struct {
 	log logrus.FieldLogger
 
@@ -104,16 +102,53 @@ func (d *Default) Start(ctx context.Context) error {
 		return err
 	}
 
+	if d.config.YoloMode.Enabled {
+		if d.config.YoloMode.Epoch == 0 {
+			return errors.New("yolo mode enabled but no epoch provided")
+		}
+
+		if d.config.YoloMode.RootStr == "" {
+			return errors.New("yolo mode enabled but no root provided")
+		}
+
+		d.head = &v1.Finality{
+			Finalized: &phase0.Checkpoint{
+				Epoch: d.config.YoloMode.Epoch,
+				Root:  d.config.YoloMode.Root(),
+			},
+		}
+
+		d.log.WithFields(logrus.Fields{
+			"epoch": d.config.YoloMode.Epoch,
+			"root":  eth.RootAsString(d.config.YoloMode.Root()),
+		}).Info("Yolo mode enabled, skipping health checks and serving a static beacon state. Good luck soldier.")
+	}
+
 	go func() {
 		for {
 			var nd *Node
 
 			var err error
 
-			if yoloMode {
+			if d.config.YoloMode.Enabled {
+				healthy, err := d.Healthy(ctx)
+				if err != nil {
+					d.log.WithError(err).Error("Waiting for a healthy node before beginning..")
+					time.Sleep(time.Second * 5)
+
+					continue
+				}
+
+				if !healthy {
+					d.log.Error("No healthy nodes found, waiting for a healthy node before beginning..")
+					time.Sleep(time.Second * 5)
+
+					continue
+				}
+
 				nd, err = d.nodes.Healthy(ctx).RandomNode(ctx)
 				if err != nil {
-					d.log.WithError(err).Error("Waiting for a healthy, non-syncing node before beginning..")
+					d.log.WithError(err).Error("Waiting for a healthy node before beginning..")
 					time.Sleep(time.Second * 5)
 
 					continue
@@ -165,6 +200,12 @@ func (d *Default) Start(ctx context.Context) error {
 		})
 
 		n.Beacon.OnFinalityCheckpointUpdated(ctx, func(ctx context.Context, event *beacon.FinalityCheckpointUpdated) error {
+			if d.config.YoloMode.Enabled {
+				logCtx.Info("Yolo mode enabled, skipping finality checkpoint updated")
+
+				return nil
+			}
+
 			logCtx.WithFields(logrus.Fields{
 				"epoch": event.Finality.Finalized.Epoch,
 				"root":  fmt.Sprintf("%#x", event.Finality.Finalized.Root),
@@ -479,6 +520,10 @@ func (d *Default) shouldDownloadStates() bool {
 }
 
 func (d *Default) checkFinality(ctx context.Context) error {
+	if d.config.YoloMode.Enabled {
+		return nil
+	}
+
 	d.majorityMutex.Lock()
 	defer d.majorityMutex.Unlock()
 
@@ -520,7 +565,7 @@ func (d *Default) checkFinality(ctx context.Context) error {
 func (d *Default) refreshSpec(ctx context.Context) error {
 	d.log.Debug("Fetching beacon spec")
 
-	upstream, err := d.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
+	upstream, err := d.nodes.DataProviders(ctx).RandomNode(ctx)
 	if err != nil {
 		return err
 	}
@@ -556,7 +601,26 @@ func (d *Default) checkGenesisTime(ctx context.Context) error {
 
 	d.log.Debug("Fetching genesis time")
 
-	upstream, err := d.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
+	if d.config.YoloMode.Enabled {
+		upstream, err := d.nodes.DataProviders(ctx).RandomNode(ctx)
+		if err != nil {
+			return err
+		}
+
+		g, err := upstream.Beacon.Genesis()
+		if err != nil {
+			return err
+		}
+
+		// store the genesis time
+		d.genesis = g
+
+		d.log.Info("Fetched genesis time")
+
+		return nil
+	}
+
+	upstream, err := d.nodes.Healthy(ctx).DataProviders(ctx).RandomNode(ctx)
 	if err != nil {
 		return err
 	}
