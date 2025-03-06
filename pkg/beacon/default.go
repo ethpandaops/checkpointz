@@ -56,6 +56,9 @@ type Default struct {
 	majorityMutex   sync.Mutex
 
 	metrics *Metrics
+
+	dynSsz      *dynssz.DynSsz
+	dynSszMutex sync.Mutex
 }
 
 var _ FinalityProvider = (*Default)(nil)
@@ -445,6 +448,13 @@ func (d *Default) setSpec(s *state.Spec) {
 	d.spec = s
 }
 
+func (d *Default) setDynSsz(dynSsz *dynssz.DynSsz) {
+	d.dynSszMutex.Lock()
+	defer d.dynSszMutex.Unlock()
+
+	d.dynSsz = dynSsz
+}
+
 func (d *Default) Spec() (*state.Spec, error) {
 	d.specMutex.Lock()
 	defer d.specMutex.Unlock()
@@ -458,24 +468,43 @@ func (d *Default) Spec() (*state.Spec, error) {
 	return &copied, nil
 }
 
-func (d *Default) DynSSZ() (*dynssz.DynSsz, error) {
-	ctx, _ := context.WithCancel(context.Background())
-	client, err := http.New(ctx, http.WithAddress(d.nodeConfigs[0].Address), http.WithLogLevel(zerolog.Disabled))
-	if err != nil {
-		return nil, err
+func (d *Default) NewDynSsz() (*dynssz.DynSsz, error) {
+	ctx := context.Background()
+
+	for _, node := range d.nodes {
+		if !node.Beacon.Status().Healthy() {
+			continue
+		}
+
+		client, err := http.New(ctx, http.WithAddress(node.Config.Address), http.WithLogLevel(zerolog.Disabled))
+		if err != nil {
+			continue
+		}
+
+		spec, err := client.(*http.Service).Spec(ctx, &api.SpecOpts{})
+		if err != nil {
+			continue
+		}
+
+		return dynssz.NewDynSsz(spec.Data), nil
 	}
 
-	httpClient := client.(*http.Service)
-	spec, err := httpClient.Spec(ctx, &api.SpecOpts{})
-	if err != nil {
-		return nil, err
+	return nil, errors.New("no healthy nodes")
+}
+
+func (d *Default) DynSsz() (*dynssz.DynSsz, error) {
+	d.dynSszMutex.Lock()
+	defer d.dynSszMutex.Unlock()
+
+	if d.dynSsz == nil {
+		return nil, errors.New("DynSsz spec not yet available")
 	}
 
-	return dynssz.NewDynSsz(spec.Data), nil
+	return d.dynSsz, nil
 }
 
 func (d *Default) HashTreeRoot(block *spec.VersionedSignedBeaconBlock) ([32]byte, error) {
-	ssz, err := d.DynSSZ()
+	ssz, err := d.DynSsz()
 	if err != nil {
 		return [32]byte{}, err
 	}
@@ -558,8 +587,14 @@ func (d *Default) refreshSpec(ctx context.Context) error {
 		return err
 	}
 
+	dynSsz, err := d.NewDynSsz()
+	if err != nil {
+		return err
+	}
+
 	// store the beacon state spec
 	d.setSpec(s)
+	d.setDynSsz(dynSsz)
 
 	d.log.Debug("Fetched beacon spec")
 
