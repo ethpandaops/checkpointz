@@ -298,7 +298,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		return nil, fmt.Errorf("failed to get state root from block: %w", err)
 	}
 
-	blockRoot, err := block.Root()
+	blockRoot, err := d.HashTreeRoot(block)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get block root from block: %w", err)
 	}

@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/attestantio/go-eth2-client/api"
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
+	"github.com/attestantio/go-eth2-client/http"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/deneb"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
@@ -21,7 +23,9 @@ import (
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 	"github.com/ethpandaops/ethwallclock"
 	"github.com/go-co-op/gocron"
+	dynssz "github.com/pk910/dynamic-ssz"
 	perrors "github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 )
 
@@ -454,6 +458,46 @@ func (d *Default) Spec() (*state.Spec, error) {
 	return &copied, nil
 }
 
+func (d *Default) DynSSZ() (*dynssz.DynSsz, error) {
+	ctx, _ := context.WithCancel(context.Background())
+	client, err := http.New(ctx, http.WithAddress(d.nodeConfigs[0].Address), http.WithLogLevel(zerolog.Disabled))
+	if err != nil {
+		return nil, err
+	}
+
+	httpClient := client.(*http.Service)
+	spec, err := httpClient.Spec(ctx, &api.SpecOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	return dynssz.NewDynSsz(spec.Data), nil
+}
+
+func (d *Default) HashTreeRoot(block *spec.VersionedSignedBeaconBlock) ([32]byte, error) {
+	ssz, err := d.DynSSZ()
+	if err != nil {
+		return [32]byte{}, err
+	}
+
+	switch block.Version {
+	case spec.DataVersionPhase0:
+		return ssz.HashTreeRoot(block.Phase0.Message)
+	case spec.DataVersionAltair:
+		return ssz.HashTreeRoot(block.Altair.Message)
+	case spec.DataVersionBellatrix:
+		return ssz.HashTreeRoot(block.Bellatrix.Message)
+	case spec.DataVersionCapella:
+		return ssz.HashTreeRoot(block.Capella.Message)
+	case spec.DataVersionDeneb:
+		return ssz.HashTreeRoot(block.Deneb.Message)
+	case spec.DataVersionElectra:
+		return ssz.HashTreeRoot(block.Electra.Message)
+	default:
+		return [32]byte{}, errors.New("unknown version")
+	}
+}
+
 func (d *Default) OperatingMode() OperatingMode {
 	return d.config.Mode
 }
@@ -646,11 +690,6 @@ func (d *Default) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*
 }
 
 func (d *Default) storeBlock(_ context.Context, block *spec.VersionedSignedBeaconBlock) error {
-	_, err := d.Spec()
-	if err != nil {
-		return err
-	}
-
 	if d.genesis == nil {
 		return errors.New("genesis time is unknown")
 	}
@@ -659,7 +698,7 @@ func (d *Default) storeBlock(_ context.Context, block *spec.VersionedSignedBeaco
 		return errors.New("block is nil")
 	}
 
-	root, err := block.Root()
+	root, err := d.HashTreeRoot(block)
 	if err != nil {
 		return err
 	}
