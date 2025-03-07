@@ -45,7 +45,7 @@ func NewServer(log *logrus.Logger, conf *Config) *Server {
 		Cfg: *conf,
 		log: log,
 
-		http: api.NewHandler(log, provider, &conf.Checkpointz),
+		http: api.NewHandler(log, provider, &conf.Checkpointz, provider.HashTreeRoot),
 
 		provider: provider,
 	}

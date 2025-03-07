@@ -33,11 +33,11 @@ type Handler struct {
 	metrics Metrics
 }
 
-func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, config *beacon.Config) *Handler {
+func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, config *beacon.Config, hashTreeRoot func(block *spec.VersionedSignedBeaconBlock) ([32]byte, error)) *Handler {
 	return &Handler{
 		log: log.WithField("module", "api"),
 
-		eth:           eth.NewHandler(log, beac, "checkpointz"),
+		eth:           eth.NewHandler(log, beac, "checkpointz", hashTreeRoot),
 		checkpointz:   checkpointz.NewHandler(log, beac),
 		publicURL:     config.Frontend.PublicURL,
 		brandName:     config.Frontend.BrandName,

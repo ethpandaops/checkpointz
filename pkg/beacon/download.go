@@ -115,7 +115,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 		return errors.New("invalid genesis block")
 	}
 
-	genesisBlockRoot, err := genesisBlock.Root()
+	genesisBlockRoot, err := d.HashTreeRoot(genesisBlock)
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (d *Default) downloadBlock(ctx context.Context, slot phase0.Slot, upstream 
 		return nil, err
 	}
 
-	root, err := block.Root()
+	root, err := d.HashTreeRoot(block)
 	if err != nil {
 		return nil, err
 	}

@@ -73,7 +73,7 @@ const (
 	FinalityHaltedServingPeriod = 14 * 24 * time.Hour
 )
 
-func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, config *Config) FinalityProvider {
+func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, config *Config) *Default {
 	return &Default{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/default"),
@@ -754,7 +754,7 @@ func (d *Default) storeBlock(_ context.Context, block *spec.VersionedSignedBeaco
 		expiresAt = time.Now().Add(999999 * time.Hour)
 	}
 
-	if err := d.blocks.Add(block, expiresAt); err != nil {
+	if err := d.blocks.Add(block, expiresAt, root); err != nil {
 		return err
 	}
 
