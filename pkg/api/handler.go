@@ -38,7 +38,7 @@ func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, config *be
 		log: log.WithField("module", "api"),
 
 		eth:           eth.NewHandler(log, beac, "checkpointz", hashTreeRoot),
-		checkpointz:   checkpointz.NewHandler(log, beac),
+		checkpointz:   checkpointz.NewHandler(log, beac, hashTreeRoot),
 		publicURL:     config.Frontend.PublicURL,
 		brandName:     config.Frontend.BrandName,
 		brandImageURL: config.Frontend.BrandImageURL,
