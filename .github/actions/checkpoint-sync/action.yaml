@@ -15,7 +15,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
     - name: Prepare environment
       shell: bash
       run: |
@@ -225,12 +225,12 @@ runs:
           fi
           sleep 1;
         done;
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
       if: ${{ always() }}
       with:
         name: ${{ inputs.network }}-${{ inputs.consensus }}-checkpointz.log
         path: logs/checkpointz.log
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
       if: ${{ always() }}
       with:
         name: ${{ inputs.network }}-${{ inputs.consensus }}-consensus.log
