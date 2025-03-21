@@ -3,6 +3,7 @@ package checkpointz
 import (
 	"context"
 
+	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/ethpandaops/checkpointz/pkg/beacon"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 	"github.com/ethpandaops/checkpointz/pkg/version"
@@ -14,13 +15,16 @@ import (
 type Handler struct {
 	log      logrus.FieldLogger
 	provider beacon.FinalityProvider
+
+	hashTreeRoot func(block *spec.VersionedSignedBeaconBlock) ([32]byte, error)
 }
 
 // NewHandler returns a new Handler instance.
-func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider) *Handler {
+func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, hashTreeRoot func(block *spec.VersionedSignedBeaconBlock) ([32]byte, error)) *Handler {
 	return &Handler{
-		log:      log.WithField("module", "api/checkpointz"),
-		provider: beac,
+		log:          log.WithField("module", "api/checkpointz"),
+		provider:     beac,
+		hashTreeRoot: hashTreeRoot,
 	}
 }
 
@@ -72,7 +76,7 @@ func (h *Handler) V1BeaconSlots(ctx context.Context, req *BeaconSlotsRequest) (*
 		}
 
 		if block, err := h.provider.GetBlockBySlot(ctx, slot.Slot); err == nil {
-			if blockRoot, err := block.Root(); err == nil {
+			if blockRoot, err := h.hashTreeRoot(block); err == nil {
 				slot.BlockRoot = eth.RootAsString(blockRoot)
 			}
 
