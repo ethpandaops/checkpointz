@@ -456,7 +456,6 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 	switch blockID.Type() {
 	case BlockIDGenesis:
-		//nolint:govet // False positive
 		block, err := h.provider.GetBlockBySlot(ctx, phase0.Slot(0))
 		if err != nil {
 			return nil, err
@@ -473,7 +472,6 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		slot = sl
 	case BlockIDSlot:
-		//nolint:govet // False positive
 		sslot, err := NewSlotFromString(blockID.Value())
 		if err != nil {
 			return nil, err
@@ -495,7 +493,6 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		slot = sl
 	case BlockIDRoot:
-		//nolint:govet // False positive
 		root, err := blockID.AsRoot()
 		if err != nil {
 			return nil, err
@@ -517,7 +514,6 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		slot = sl
 	case BlockIDFinalized:
-		//nolint:govet // False positive
 		finality, err := h.provider.Finalized(ctx)
 		if err != nil {
 			return nil, err
