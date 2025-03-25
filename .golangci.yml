@@ -12,7 +12,7 @@ linters-settings:
       - performance
       - style
   govet:
-    check-shadowing: true
+    shadow: true
   nolintlint:
     require-explanation: true
     require-specific: true
