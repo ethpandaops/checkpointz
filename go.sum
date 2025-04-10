@@ -1,5 +1,3 @@
-github.com/attestantio/go-eth2-client v0.24.1-0.20250219090147-b41ce952806c h1:i1p3AyXvNfUffEKAnnnoJVfDBYLRPLa/BQ8q5Mf+kY0=
-github.com/attestantio/go-eth2-client v0.24.1-0.20250219090147-b41ce952806c/go.mod h1:/KTLN3WuH1xrJL7ZZrpBoWM1xCCihnFbzequD5L+83o=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/btcsuite/btcd/btcec/v2 v2.3.4 h1:3EJjcN70HCu/mwqlUsGK8GcNVyLVxFDlWurTXGPFfiQ=
@@ -157,6 +155,8 @@ github.com/onsi/gomega v1.10.1 h1:o0+MgICZLuZ7xjH7Vx6zS/zcu93/BEp1VwkIW1mEXCE=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
 github.com/pk910/dynamic-ssz v0.0.4 h1:DT29+1055tCEPCaR4V/ez+MOKW7BzBsmjyFvBRqx0ME=
 github.com/pk910/dynamic-ssz v0.0.4/go.mod h1:b6CrLaB2X7pYA+OSEEbkgXDEcRnjLOZIxZTsMuO/Y9c=
+github.com/pk910/go-eth2-client v0.0.0-20250207131221-7db107ca35a6 h1:BV+ckGR3dTxc8l3mO1+VSIHIMSaFVEdIynA1MRFfD1c=
+github.com/pk910/go-eth2-client v0.0.0-20250207131221-7db107ca35a6/go.mod h1:/KTLN3WuH1xrJL7ZZrpBoWM1xCCihnFbzequD5L+83o=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
