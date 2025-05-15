@@ -206,8 +206,8 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 		})
 	case "fulu":
 		rsp = NewSuccessResponse(ContentTypeResolvers{
-			ContentTypeJSON: block.Electra.MarshalJSON,
-			ContentTypeSSZ:  block.Electra.MarshalSSZ,
+			ContentTypeJSON: block.Fulu.MarshalJSON,
+			ContentTypeSSZ:  block.Fulu.MarshalSSZ,
 		})
 	default:
 		return NewInternalServerErrorResponse(nil), errors.New("unknown block version")
@@ -264,7 +264,7 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 			case spec.DataVersionElectra.String():
 				return state.Electra.MarshalSSZ()
 			case "fulu":
-				return state.Electra.MarshalSSZ()
+				return state.Fulu.MarshalSSZ()
 			default:
 				return nil, fmt.Errorf("unknown state version: %s", state.Version.String())
 			}
