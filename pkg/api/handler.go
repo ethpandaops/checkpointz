@@ -209,7 +209,7 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 	}
 
 	rsp.AddExtraData("version", block.Version.String())
-	rsp.AddExtraData("execution_optimistic", "false")
+	rsp.AddExtraData("execution_optimistic", false)
 	rsp.AddExtraData("finalized", true) // We only serve finalized data
 
 	switch blockID.Type() {
@@ -651,7 +651,7 @@ func (h *Handler) handleEthV1BeaconBlobSidecars(ctx context.Context, r *http.Req
 	rsp.SetEthConsensusVersion(strings.ToLower(dataVersion.String()))
 
 	rsp.AddExtraData("version", strings.ToLower(dataVersion.String()))
-	rsp.AddExtraData("execution_optimistic", "false")
+	rsp.AddExtraData("execution_optimistic", false)
 	rsp.AddExtraData("finalized", true) // We only serve finalized data
 
 	switch id.Type() {
