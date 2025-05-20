@@ -32,10 +32,7 @@ func NewBeaconState(log logrus.FieldLogger, config Config, namespace string) *Be
 }
 
 func (c *BeaconState) Add(stateRoot phase0.Root, state *spec.VersionedBeaconState, expiresAt time.Time, slot phase0.Slot) error {
-	invincible := false
-	if slot == 0 {
-		invincible = true
-	}
+	invincible := slot == 0
 
 	c.store.Add(eth.RootAsString(stateRoot), state, expiresAt, invincible)
 
