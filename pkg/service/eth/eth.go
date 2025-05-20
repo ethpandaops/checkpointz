@@ -453,6 +453,7 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 	}()
 
 	slot := phase0.Slot(0)
+
 	var (
 		dataVersion spec.DataVersion
 	)
