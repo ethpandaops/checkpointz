@@ -636,7 +636,7 @@ func (h *Handler) handleEthV1BeaconBlobSidecars(ctx context.Context, r *http.Req
 		indices = append(indices, converted)
 	}
 
-	sidecars, err := h.eth.BlobSidecars(ctx, id, indices)
+	sidecars, dataVersion, err := h.eth.BlobSidecars(ctx, id, indices)
 	if err != nil {
 		return NewInternalServerErrorResponse(nil), err
 	}
@@ -646,6 +646,8 @@ func (h *Handler) handleEthV1BeaconBlobSidecars(ctx context.Context, r *http.Req
 			return json.Marshal(sidecars)
 		},
 	})
+
+	rsp.SetEthConsensusVersion(strings.ToLower(dataVersion.String()))
 
 	switch id.Type() {
 	case eth.BlockIDFinalized, eth.BlockIDRoot:
