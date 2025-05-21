@@ -64,11 +64,7 @@ func (c *Block) Add(block *spec.VersionedSignedBeaconBlock, expiresAt time.Time)
 		return err
 	}
 
-	invincible := false
-	if slot == 0 {
-		// Store the genesis block forever.
-		invincible = true
-	}
+	invincible := slot == 0 // Store the genesis block forever.
 
 	c.store.Add(eth.RootAsString(root), block, expiresAt, invincible)
 

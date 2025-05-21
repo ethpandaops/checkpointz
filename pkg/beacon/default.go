@@ -698,11 +698,11 @@ func (d *Default) UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStat
 
 		rsp[node.Config.Name].Healthy = node.Beacon.Status().Healthy()
 
-		if spec, err := node.Beacon.Spec(); err == nil {
-			network := spec.ConfigName
+		if nodeSpec, err := node.Beacon.Spec(); err == nil {
+			network := nodeSpec.ConfigName
 			if network == "" {
 				// Fall back to our static map.
-				network = eth.GetNetworkName(spec.DepositChainID)
+				network = eth.GetNetworkName(nodeSpec.DepositChainID)
 			}
 
 			rsp[node.Config.Name].NetworkName = network

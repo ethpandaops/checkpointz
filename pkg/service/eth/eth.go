@@ -439,7 +439,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 }
 
 // BlobSidecars returns the blob sidecars for the given block ID.
-func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, indices []int) ([]*deneb.BlobSidecar, error) {
+func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, indices []int) ([]*deneb.BlobSidecar, spec.DataVersion, error) {
 	var err error
 
 	const call = "blob_sidecars"
@@ -454,108 +454,120 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 	slot := phase0.Slot(0)
 
+	var (
+		dataVersion spec.DataVersion
+	)
+
 	switch blockID.Type() {
 	case BlockIDGenesis:
 		block, err := h.provider.GetBlockBySlot(ctx, phase0.Slot(0))
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
 
 		if block == nil {
-			return nil, fmt.Errorf("no genesis block")
+			return nil, dataVersion, fmt.Errorf("no genesis block")
 		}
 
 		sl, err := block.Slot()
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
+
+		dataVersion = block.Version
 
 		slot = sl
 	case BlockIDSlot:
 		sslot, err := NewSlotFromString(blockID.Value())
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
 
 		block, err := h.provider.GetBlockBySlot(ctx, sslot)
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
 
 		if block == nil {
-			return nil, fmt.Errorf("no block for slot %v", sslot)
+			return nil, dataVersion, fmt.Errorf("no block for slot %v", sslot)
 		}
 
 		sl, err := block.Slot()
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
+
+		dataVersion = block.Version
 
 		slot = sl
 	case BlockIDRoot:
 		root, err := blockID.AsRoot()
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
 
 		block, err := h.provider.GetBlockByRoot(ctx, root)
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
 
 		if block == nil {
-			return nil, fmt.Errorf("no block for root %v", root)
+			return nil, dataVersion, fmt.Errorf("no block for root %v", root)
 		}
 
 		sl, err := block.Slot()
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
+
+		dataVersion = block.Version
 
 		slot = sl
 	case BlockIDFinalized:
 		finality, err := h.provider.Finalized(ctx)
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
 
 		if finality == nil || finality.Finalized == nil {
-			return nil, fmt.Errorf("no finality")
+			return nil, dataVersion, fmt.Errorf("no finality")
 		}
 
 		block, err := h.provider.GetBlockByRoot(ctx, finality.Finalized.Root)
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
 
 		if block == nil {
-			return nil, fmt.Errorf("no block for finalized root %v", finality.Finalized.Root)
+			return nil, dataVersion, fmt.Errorf("no block for finalized root %v", finality.Finalized.Root)
 		}
 
 		sl, err := block.Slot()
 		if err != nil {
-			return nil, err
+			return nil, dataVersion, err
 		}
+
+		dataVersion = block.Version
 
 		slot = sl
 	default:
-		return nil, fmt.Errorf("invalid block id: %v", blockID.String())
+		return nil, dataVersion, fmt.Errorf("invalid block id: %v", blockID.String())
 	}
 
 	sidecars, err := h.provider.GetBlobSidecarsBySlot(ctx, slot)
 	if err != nil {
-		return nil, err
+		return nil, dataVersion, err
 	}
 
 	if len(indices) == 0 {
-		return sidecars, nil
+		return sidecars, dataVersion, nil
 	}
 
 	filtered := make([]*deneb.BlobSidecar, 0, len(indices))
 
 	for _, index := range indices {
 		if index < 0 {
-			return nil, fmt.Errorf("invalid index %v", index)
+			return nil, dataVersion, fmt.Errorf("invalid index %v", index)
 		}
 
 		// Find the sidecar with the given index
@@ -569,5 +581,5 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 		}
 	}
 
-	return filtered, nil
+	return filtered, dataVersion, nil
 }
