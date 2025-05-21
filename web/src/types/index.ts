@@ -76,13 +76,14 @@ export interface APIBeaconBlockMessage {
 }
 
 export interface APIBeaconBlock {
-  Version: 'BELLATRIX' | 'ALTAIR' | 'PHASE0' | 'CAPELLA' | 'DENEB' | 'ELECTRA';
+  Version: 'BELLATRIX' | 'ALTAIR' | 'PHASE0' | 'CAPELLA' | 'DENEB' | 'ELECTRA' | 'FULU';
   Altair?: APIBeaconBlockMessage;
   Bellatrix?: APIBeaconBlockMessage;
   Capella?: APIBeaconBlockMessage;
   Deneb?: APIBeaconBlockMessage;
   Phase0?: APIBeaconBlockMessage;
   Electra?: APIBeaconBlockMessage;
+  Fulu?: APIBeaconBlockMessage;
 }
 
 export interface APIBeaconSlotBlock {
