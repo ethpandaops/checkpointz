@@ -7,7 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/attestantio/go-eth2-client/api"
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
+	"github.com/attestantio/go-eth2-client/http"
 	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/attestantio/go-eth2-client/spec/deneb"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
@@ -21,7 +23,9 @@ import (
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 	"github.com/ethpandaops/ethwallclock"
 	"github.com/go-co-op/gocron"
+	dynssz "github.com/pk910/dynamic-ssz"
 	perrors "github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/sirupsen/logrus"
 )
 
@@ -52,6 +56,9 @@ type Default struct {
 	majorityMutex   sync.Mutex
 
 	metrics *Metrics
+
+	dynSsz      *dynssz.DynSsz
+	dynSszMutex sync.Mutex
 }
 
 var _ FinalityProvider = (*Default)(nil)
@@ -66,7 +73,7 @@ const (
 	FinalityHaltedServingPeriod = 14 * 24 * time.Hour
 )
 
-func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, config *Config) FinalityProvider {
+func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.Config, config *Config) *Default {
 	return &Default{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/default"),
@@ -441,6 +448,13 @@ func (d *Default) setSpec(s *state.Spec) {
 	d.spec = s
 }
 
+func (d *Default) setDynSsz(dynSsz *dynssz.DynSsz) {
+	d.dynSszMutex.Lock()
+	defer d.dynSszMutex.Unlock()
+
+	d.dynSsz = dynSsz
+}
+
 func (d *Default) Spec() (*state.Spec, error) {
 	d.specMutex.Lock()
 	defer d.specMutex.Unlock()
@@ -452,6 +466,65 @@ func (d *Default) Spec() (*state.Spec, error) {
 	copied := *d.spec
 
 	return &copied, nil
+}
+
+func (d *Default) NewDynSsz() (*dynssz.DynSsz, error) {
+	ctx := context.Background()
+
+	for _, node := range d.nodes {
+		if !node.Beacon.Status().Healthy() {
+			continue
+		}
+
+		client, err := http.New(ctx, http.WithAddress(node.Config.Address), http.WithLogLevel(zerolog.Disabled))
+		if err != nil {
+			continue
+		}
+
+		spec, err := client.(*http.Service).Spec(ctx, &api.SpecOpts{})
+		if err != nil {
+			continue
+		}
+
+		return dynssz.NewDynSsz(spec.Data), nil
+	}
+
+	return nil, errors.New("no healthy nodes")
+}
+
+func (d *Default) DynSsz() (*dynssz.DynSsz, error) {
+	d.dynSszMutex.Lock()
+	defer d.dynSszMutex.Unlock()
+
+	if d.dynSsz == nil {
+		return nil, errors.New("DynSsz spec not yet available")
+	}
+
+	return d.dynSsz, nil
+}
+
+func (d *Default) HashTreeRoot(block *spec.VersionedSignedBeaconBlock) ([32]byte, error) {
+	ssz, err := d.DynSsz()
+	if err != nil {
+		return [32]byte{}, err
+	}
+
+	switch block.Version {
+	case spec.DataVersionPhase0:
+		return ssz.HashTreeRoot(block.Phase0.Message)
+	case spec.DataVersionAltair:
+		return ssz.HashTreeRoot(block.Altair.Message)
+	case spec.DataVersionBellatrix:
+		return ssz.HashTreeRoot(block.Bellatrix.Message)
+	case spec.DataVersionCapella:
+		return ssz.HashTreeRoot(block.Capella.Message)
+	case spec.DataVersionDeneb:
+		return ssz.HashTreeRoot(block.Deneb.Message)
+	case spec.DataVersionElectra:
+		return ssz.HashTreeRoot(block.Electra.Message)
+	default:
+		return [32]byte{}, errors.New("unknown version")
+	}
 }
 
 func (d *Default) OperatingMode() OperatingMode {
@@ -514,8 +587,14 @@ func (d *Default) refreshSpec(ctx context.Context) error {
 		return err
 	}
 
+	dynSsz, err := d.NewDynSsz()
+	if err != nil {
+		return err
+	}
+
 	// store the beacon state spec
 	d.setSpec(s)
+	d.setDynSsz(dynSsz)
 
 	d.log.Debug("Fetched beacon spec")
 
@@ -646,11 +725,6 @@ func (d *Default) GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*
 }
 
 func (d *Default) storeBlock(_ context.Context, block *spec.VersionedSignedBeaconBlock) error {
-	_, err := d.Spec()
-	if err != nil {
-		return err
-	}
-
 	if d.genesis == nil {
 		return errors.New("genesis time is unknown")
 	}
@@ -659,7 +733,7 @@ func (d *Default) storeBlock(_ context.Context, block *spec.VersionedSignedBeaco
 		return errors.New("block is nil")
 	}
 
-	root, err := block.Root()
+	root, err := d.HashTreeRoot(block)
 	if err != nil {
 		return err
 	}
@@ -680,7 +754,7 @@ func (d *Default) storeBlock(_ context.Context, block *spec.VersionedSignedBeaco
 		expiresAt = time.Now().Add(999999 * time.Hour)
 	}
 
-	if err := d.blocks.Add(block, expiresAt); err != nil {
+	if err := d.blocks.Add(block, expiresAt, root); err != nil {
 		return err
 	}
 

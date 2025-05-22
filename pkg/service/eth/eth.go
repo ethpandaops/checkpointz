@@ -22,15 +22,19 @@ type Handler struct {
 	provider beacon.FinalityProvider
 
 	metrics *Metrics
+
+	hashTreeRoot func(block *spec.VersionedSignedBeaconBlock) ([32]byte, error)
 }
 
 // NewHandler returns a new Handler instance.
-func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, namespace string) *Handler {
+func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, namespace string, hashTreeRoot func(block *spec.VersionedSignedBeaconBlock) ([32]byte, error)) *Handler {
 	return &Handler{
 		log:      log.WithField("module", "service/eth"),
 		provider: beac,
 
 		metrics: NewMetrics(namespace),
+
+		hashTreeRoot: hashTreeRoot,
 	}
 }
 
@@ -380,7 +384,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, fmt.Errorf("no genesis block")
 		}
 
-		return block.Root()
+		return h.hashTreeRoot(block)
 	case BlockIDSlot:
 		slot, err := NewSlotFromString(blockID.Value())
 		if err != nil {
@@ -396,7 +400,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, fmt.Errorf("no block for slot %v", slot)
 		}
 
-		return block.Root()
+		return h.hashTreeRoot(block)
 	case BlockIDRoot:
 		root, err := blockID.AsRoot()
 		if err != nil {
@@ -412,7 +416,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, fmt.Errorf("no block for root %v", root)
 		}
 
-		return block.Root()
+		return h.hashTreeRoot(block)
 	case BlockIDFinalized:
 		finality, err := h.provider.Finalized(ctx)
 		if err != nil {
@@ -432,7 +436,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, fmt.Errorf("no block for finalized root %v", finality.Finalized.Root)
 		}
 
-		return block.Root()
+		return h.hashTreeRoot(block)
 	default:
 		return phase0.Root{}, fmt.Errorf("invalid block id: %v", blockID.String())
 	}
