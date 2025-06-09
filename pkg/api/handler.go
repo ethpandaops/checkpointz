@@ -204,7 +204,7 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 			ContentTypeJSON: block.Electra.MarshalJSON,
 			ContentTypeSSZ:  block.Electra.MarshalSSZ,
 		})
-	case "fulu":
+	case spec.DataVersionFulu.String():
 		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Fulu.MarshalJSON,
 			ContentTypeSSZ:  block.Fulu.MarshalSSZ,
