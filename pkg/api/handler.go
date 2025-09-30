@@ -173,36 +173,41 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 
 	var rsp = &HTTPResponse{}
 
-	switch block.Version {
-	case spec.DataVersionPhase0:
+	switch strings.ToLower(block.Version.String()) {
+	case spec.DataVersionPhase0.String():
 		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Phase0.MarshalJSON,
 			ContentTypeSSZ:  block.Phase0.MarshalSSZ,
 		})
-	case spec.DataVersionAltair:
+	case spec.DataVersionAltair.String():
 		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Altair.MarshalJSON,
 			ContentTypeSSZ:  block.Altair.MarshalSSZ,
 		})
-	case spec.DataVersionBellatrix:
+	case spec.DataVersionBellatrix.String():
 		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Bellatrix.MarshalJSON,
 			ContentTypeSSZ:  block.Bellatrix.MarshalSSZ,
 		})
-	case spec.DataVersionCapella:
+	case spec.DataVersionCapella.String():
 		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Capella.MarshalJSON,
 			ContentTypeSSZ:  block.Capella.MarshalSSZ,
 		})
-	case spec.DataVersionDeneb:
+	case spec.DataVersionDeneb.String():
 		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Deneb.MarshalJSON,
 			ContentTypeSSZ:  block.Deneb.MarshalSSZ,
 		})
-	case spec.DataVersionElectra:
+	case spec.DataVersionElectra.String():
 		rsp = NewSuccessResponse(ContentTypeResolvers{
 			ContentTypeJSON: block.Electra.MarshalJSON,
 			ContentTypeSSZ:  block.Electra.MarshalSSZ,
+		})
+	case spec.DataVersionFulu.String():
+		rsp = NewSuccessResponse(ContentTypeResolvers{
+			ContentTypeJSON: block.Fulu.MarshalJSON,
+			ContentTypeSSZ:  block.Fulu.MarshalSSZ,
 		})
 	default:
 		return NewInternalServerErrorResponse(nil), errors.New("unknown block version")
@@ -246,19 +251,21 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 
 	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeSSZ: func() ([]byte, error) {
-			switch state.Version {
-			case spec.DataVersionPhase0:
+			switch strings.ToLower(state.Version.String()) {
+			case spec.DataVersionPhase0.String():
 				return state.Phase0.MarshalSSZ()
-			case spec.DataVersionAltair:
+			case spec.DataVersionAltair.String():
 				return state.Altair.MarshalSSZ()
-			case spec.DataVersionBellatrix:
+			case spec.DataVersionBellatrix.String():
 				return state.Bellatrix.MarshalSSZ()
-			case spec.DataVersionCapella:
+			case spec.DataVersionCapella.String():
 				return state.Capella.MarshalSSZ()
-			case spec.DataVersionDeneb:
+			case spec.DataVersionDeneb.String():
 				return state.Deneb.MarshalSSZ()
-			case spec.DataVersionElectra:
+			case spec.DataVersionElectra.String():
 				return state.Electra.MarshalSSZ()
+			case "fulu":
+				return state.Fulu.MarshalSSZ()
 			default:
 				return nil, fmt.Errorf("unknown state version: %s", state.Version.String())
 			}
