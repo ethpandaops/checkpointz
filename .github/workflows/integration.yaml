@@ -22,10 +22,18 @@ jobs:
         run: |
           echo "Consensus: ${{ matrix.consensus }}"
           echo "Network: ${{ matrix.network }}"
+      - name: Set beacon node URL
+        id: set-url
+        run: |
+          if [ "${{ matrix.network }}" = "mainnet" ]; then
+            echo "beacon_node_url=${{ secrets.MAINNET_BEACON_NODE_URL }}" >> $GITHUB_OUTPUT
+          else
+            echo "beacon_node_url=${{ secrets.HOLESKY_BEACON_NODE_URL }}" >> $GITHUB_OUTPUT
+          fi
       - name: Run ${{ matrix.network }}-${{ matrix.consensus }}
         id: run-test
         uses: ./.github/actions/checkpoint-sync
         with:
           consensus: ${{ matrix.consensus }}
           network: ${{ matrix.network }}
-          beacon_node_url: ${{ matrix.network == 'mainnet' && secrets.MAINNET_BEACON_NODE_URL || secrets.HOLESKY_BEACON_NODE_URL }}
+          beacon_node_url: ${{ steps.set-url.outputs.beacon_node_url }}
