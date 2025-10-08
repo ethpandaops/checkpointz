@@ -13,6 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         consensus: [lighthouse, teku, prysm, nimbus, lodestar]
+        network: [mainnet, holesky]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -20,10 +21,11 @@ jobs:
       - name: Print details
         run: |
           echo "Consensus: ${{ matrix.consensus }}"
-      - name: Run mainnet-${{ matrix.consensus }}
+          echo "Network: ${{ matrix.network }}"
+      - name: Run ${{ matrix.network }}-${{ matrix.consensus }}
         id: run-test
         uses: ./.github/actions/checkpoint-sync
         with:
           consensus: ${{ matrix.consensus }}
-          network: 'mainnet'
-          beacon_node_url: ${{ secrets.MAINNET_BEACON_NODE_URL }}
+          network: ${{ matrix.network }}
+          beacon_node_url: ${{ matrix.network == 'mainnet' && secrets.MAINNET_BEACON_NODE_URL || secrets.HOLESKY_BEACON_NODE_URL }}
