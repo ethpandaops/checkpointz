@@ -19,12 +19,12 @@ jobs:
           - {consensus: prysm, network: mainnet, image: 'gcr.io/prysmaticlabs/prysm/beacon-chain:latest'}
           - {consensus: nimbus, network: mainnet, image: 'statusim/nimbus-eth2:amd64-latest'}
           - {consensus: lodestar, network: mainnet, image: 'chainsafe/lodestar:latest'}
-          # Holesky
-          - {consensus: lighthouse, network: holesky, image: 'sigp/lighthouse:v8.0.0-rc.0'}
-          - {consensus: teku, network: holesky, image: 'consensys/teku:25.9.3'}
-          - {consensus: prysm, network: holesky, image: 'gcr.io/prysmaticlabs/prysm/beacon-chain:v6.1.1'}
-          - {consensus: nimbus, network: holesky, image: 'statusim/nimbus-eth2:amd64-v25.9.2'}
-          - {consensus: lodestar, network: holesky, image: 'chainsafe/lodestar:v1.35.0-rc.1'}
+          # Hoodi
+          - {consensus: lighthouse, network: hoodi, image: 'sigp/lighthouse:v8.0.0'}
+          - {consensus: teku, network: hoodi, image: 'consensys/teku:25.11.0'}
+          - {consensus: prysm, network: hoodi, image: 'gcr.io/prysmaticlabs/prysm/beacon-chain:v6.1.1'}
+          - {consensus: nimbus, network: hoodi, image: 'statusim/nimbus-eth2:amd64-v25.11.0'}
+          - {consensus: lodestar, network: hoodi, image: 'chainsafe/lodestar:v1.36.0'}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
