@@ -40,7 +40,7 @@ jobs:
           if [ "${{ matrix.network }}" = "mainnet" ]; then
             echo "beacon_node_url=${{ secrets.MAINNET_BEACON_NODE_URL }}" >> $GITHUB_OUTPUT
           else
-            echo "beacon_node_url=${{ secrets.HOLESKY_BEACON_NODE_URL }}" >> $GITHUB_OUTPUT
+            echo "beacon_node_url=${{ secrets.HOODI_BEACON_NODE_URL }}" >> $GITHUB_OUTPUT
           fi
       - name: Run ${{ matrix.network }}-${{ matrix.consensus }}
         id: run-test
