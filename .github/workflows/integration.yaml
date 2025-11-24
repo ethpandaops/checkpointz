@@ -12,7 +12,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        consensus: [lighthouse, teku, prysm, nimbus, lodestar]
+        include:
+          # Mainnet
+          - {consensus: lighthouse, network: mainnet, image: 'sigp/lighthouse:v8.0.1'}
+          - {consensus: teku, network: mainnet, image: 'consensys/teku:25.11.0'}
+          - {consensus: prysm, network: mainnet, image: 'gcr.io/prysmaticlabs/prysm/beacon-chain:v7.0.0'}
+          - {consensus: nimbus, network: mainnet, image: 'statusim/nimbus-eth2:amd64-v25.11.0'}
+          - {consensus: lodestar, network: mainnet, image: 'chainsafe/lodestar:v1.36.0'}
+          # Hoodi
+          - {consensus: lighthouse, network: hoodi, image: 'sigp/lighthouse:v8.0.1'}
+          - {consensus: teku, network: hoodi, image: 'consensys/teku:25.11.0'}
+          - {consensus: prysm, network: hoodi, image: 'gcr.io/prysmaticlabs/prysm/beacon-chain:v7.0.0'}
+          - {consensus: nimbus, network: hoodi, image: 'statusim/nimbus-eth2:amd64-v25.11.0'}
+          - {consensus: lodestar, network: hoodi, image: 'chainsafe/lodestar:v1.36.0'}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -20,10 +32,21 @@ jobs:
       - name: Print details
         run: |
           echo "Consensus: ${{ matrix.consensus }}"
-      - name: Run mainnet-${{ matrix.consensus }}
+          echo "Network: ${{ matrix.network }}"
+          echo "Image: ${{ matrix.image }}"
+      - name: Set beacon node URL
+        id: set-url
+        run: |
+          if [ "${{ matrix.network }}" = "mainnet" ]; then
+            echo "beacon_node_url=${{ secrets.MAINNET_BEACON_NODE_URL }}" >> $GITHUB_OUTPUT
+          else
+            echo "beacon_node_url=${{ secrets.HOODI_BEACON_NODE_URL }}" >> $GITHUB_OUTPUT
+          fi
+      - name: Run ${{ matrix.network }}-${{ matrix.consensus }}
         id: run-test
         uses: ./.github/actions/checkpoint-sync
         with:
           consensus: ${{ matrix.consensus }}
-          network: 'mainnet'
-          beacon_node_url: ${{ secrets.MAINNET_BEACON_NODE_URL }}
+          network: ${{ matrix.network }}
+          beacon_node_url: ${{ steps.set-url.outputs.beacon_node_url }}
+          consensus_image: ${{ matrix.image }}

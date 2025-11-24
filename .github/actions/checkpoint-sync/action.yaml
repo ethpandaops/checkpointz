@@ -11,6 +11,9 @@ inputs:
   beacon_node_url:
     description: "The beacon node API URL to use"
     required: true
+  consensus_image:
+    description: "The docker image to use for the consensus client"
+    required: true
 
 runs:
   using: composite
@@ -183,35 +186,35 @@ runs:
       if:  ${{ inputs.consensus == 'teku' }}
       run: |
         echo "Starting Teku...";
-        docker run -p 5052:5052 -d --name beacon --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 consensys/teku:latest --rest-api-port=5052 --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
+        docker run -p 5052:5052 -d --name beacon --network eth -e TEKU_REST_API_ENABLED=true -e TEKU_P2P_PORT=9000 ${{ inputs.consensus_image }} --rest-api-port=5052 --network=${{ inputs.network }} --log-destination=CONSOLE --initial-state=http://checkpointz:5555/eth/v2/debug/beacon/states/finalized --ee-endpoint=http://102.10.10.1:8545
         echo "Teku is running.";
     - name: Run lighthouse client
       shell: bash
       if:  ${{ inputs.consensus == 'lighthouse' }}
       run: |
         echo "Starting Lighthouse...";
-        docker run -p 5052:5052 --network eth -d --name beacon sigp/lighthouse:latest lighthouse bn --network=${{ inputs.network }} --datadir=/data --checkpoint-sync-url=http://checkpointz:5555 --http --http-address=0.0.0.0 --execution-endpoint=http://localhost:8545 --execution-jwt-secret-key=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        docker run -p 5052:5052 --network eth -d --name beacon ${{ inputs.consensus_image }} lighthouse bn --network=${{ inputs.network }} --datadir=/data --checkpoint-sync-url=http://checkpointz:5555 --http --http-address=0.0.0.0 --execution-endpoint=http://localhost:8545 --execution-jwt-secret-key=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         echo "Lighthouse is running.";
     - name: Run prysm
       shell: bash
       if:  ${{ inputs.consensus == 'prysm' }}
       run: |
         echo "Starting prysm...";
-        docker run -d --name beacon --network eth -p 5052:5052 gcr.io/prysmaticlabs/prysm/beacon-chain:latest --datadir=/data --accept-terms-of-use --${{ inputs.network }} --clear-db --grpc-gateway-port=5052 --grpc-gateway-host=0.0.0.0 --execution-endpoint=http://localhost:8545 --force-clear-db --checkpoint-sync-url=http://checkpointz:5555 --genesis-beacon-api-url=http://checkpointz:5555 --grpc-gateway-port=5052
+        docker run -d --name beacon --network eth -p 5052:5052 ${{ inputs.consensus_image }} --datadir=/data --accept-terms-of-use --${{ inputs.network }} --clear-db --grpc-gateway-port=5052 --grpc-gateway-host=0.0.0.0 --execution-endpoint=http://localhost:8545 --force-clear-db --checkpoint-sync-url=http://checkpointz:5555 --genesis-beacon-api-url=http://checkpointz:5555 --grpc-gateway-port=5052
         echo "Prysm is running.";
     - name: Run nimbus
       shell: bash
       if:  ${{ inputs.consensus == 'nimbus' }}
       run: |
         echo "Starting nimbus...";
-        docker run --name beacon --network eth statusim/nimbus-eth2:amd64-latest trustedNodeSync --network=${{ inputs.network }} --trusted-node-url=http://checkpointz:5555 --backfill=false
+        docker run --name beacon --network eth ${{ inputs.consensus_image }} trustedNodeSync --network=${{ inputs.network }} --trusted-node-url=http://checkpointz:5555 --backfill=false
         echo "Nimbus is running.";
     - name: Run lodestar
       shell: bash
       if:  ${{ inputs.consensus == 'lodestar' }}
       run: |
         echo "Starting lodestar...";
-        docker run --name beacon -d --network eth -p 5052:5052 chainsafe/lodestar beacon --dataDir /data --network ${{ inputs.network }} --checkpointSyncUrl=http://checkpointz:5555  --rest --rest.address 0.0.0.0  --rest.port=5052
+        docker run --name beacon -d --network eth -p 5052:5052 ${{ inputs.consensus_image }} beacon --dataDir /data --network ${{ inputs.network }} --checkpointSyncUrl=http://checkpointz:5555  --rest --rest.address 0.0.0.0  --rest.port=5052
         echo "Lodestar is running.";
     - name: Wait for consensus client to have checkpoint synced
       shell: bash
