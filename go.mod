@@ -1,9 +1,9 @@
 module github.com/ethpandaops/checkpointz
 
-go 1.22
+go 1.25
 
 require (
-	github.com/attestantio/go-eth2-client v0.27.1
+	github.com/attestantio/go-eth2-client v0.27.2
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
 	github.com/creasty/defaults v1.6.0
 	github.com/ethpandaops/beacon v0.64.0
