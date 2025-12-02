@@ -21,8 +21,10 @@ import (
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 	"github.com/ethpandaops/ethwallclock"
 	"github.com/go-co-op/gocron"
+	dynssz "github.com/pk910/dynamic-ssz"
 	perrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 type Default struct {
@@ -43,6 +45,7 @@ type Default struct {
 
 	specMutex sync.Mutex
 	spec      *state.Spec
+	dynSsz    *dynssz.DynSsz
 	genesis   *v1.Genesis
 
 	historicalSlotFailures map[phase0.Slot]int
@@ -454,6 +457,24 @@ func (d *Default) Spec() (*state.Spec, error) {
 	return &copied, nil
 }
 
+func (d *Default) setDynSsz(dynSsz *dynssz.DynSsz) {
+	d.specMutex.Lock()
+	defer d.specMutex.Unlock()
+
+	d.dynSsz = dynSsz
+}
+
+func (d *Default) DynSsz() (*dynssz.DynSsz, error) {
+	d.specMutex.Lock()
+	defer d.specMutex.Unlock()
+
+	if d.dynSsz == nil {
+		return nil, errors.New("dynamic SSZ encoder not yet available")
+	}
+
+	return d.dynSsz, nil
+}
+
 func (d *Default) OperatingMode() OperatingMode {
 	return d.config.Mode
 }
@@ -514,8 +535,23 @@ func (d *Default) refreshSpec(ctx context.Context) error {
 		return err
 	}
 
-	// store the beacon state spec
+	// Initialize dynamic SSZ encoder following dora's approach
+	staticSpec := map[string]any{}
+
+	specYaml, err := yaml.Marshal(s)
+	if err == nil {
+		if err := yaml.Unmarshal(specYaml, &staticSpec); err != nil {
+			d.log.WithError(err).Warn("Failed to unmarshal spec for dynamic SSZ, using empty spec")
+		}
+	}
+
+	dynSsz := dynssz.NewDynSsz(staticSpec)
+
+	// store the beacon state spec and dynamic SSZ encoder
 	d.setSpec(s)
+	d.setDynSsz(dynSsz)
+
+	d.log.WithField("preset", s.PresetBase).Info("Initialized dynamic SSZ encoder with preset")
 
 	d.log.Debug("Fetched beacon spec")
 

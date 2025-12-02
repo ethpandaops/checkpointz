@@ -10,6 +10,7 @@ import (
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
+	dynssz "github.com/pk910/dynamic-ssz"
 )
 
 // FinalityProvider is a provider of finality information.
@@ -34,6 +35,8 @@ type FinalityProvider interface {
 	Genesis(ctx context.Context) (*v1.Genesis, error)
 	// Spec returns the chain spec.
 	Spec() (*state.Spec, error)
+	// DynSsz returns the dynamic SSZ encoder initialized with the chain spec.
+	DynSsz() (*dynssz.DynSsz, error)
 	// UpstreamsStatus returns the status of all the upstreams.
 	UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error)
 	// GetBlockBySlot returns the block at the given slot.
