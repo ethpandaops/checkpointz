@@ -308,7 +308,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 	}
 
 	if blockRoot != root {
-		return nil, errors.New("block root does not match")
+		return nil, fmt.Errorf("block root does not match: %#x != %#x", blockRoot, root)
 	}
 
 	slot, err := block.Slot()

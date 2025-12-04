@@ -46,19 +46,19 @@ func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (phase0.R
 	var blockObj any
 	switch block.Version {
 	case spec.DataVersionPhase0:
-		blockObj = block.Phase0
+		blockObj = block.Phase0.Message
 	case spec.DataVersionAltair:
-		blockObj = block.Altair
+		blockObj = block.Altair.Message
 	case spec.DataVersionBellatrix:
-		blockObj = block.Bellatrix
+		blockObj = block.Bellatrix.Message
 	case spec.DataVersionCapella:
-		blockObj = block.Capella
+		blockObj = block.Capella.Message
 	case spec.DataVersionDeneb:
-		blockObj = block.Deneb
+		blockObj = block.Deneb.Message
 	case spec.DataVersionElectra:
-		blockObj = block.Electra
+		blockObj = block.Electra.Message
 	case spec.DataVersionFulu:
-		blockObj = block.Fulu
+		blockObj = block.Fulu.Message
 	default:
 		return phase0.Root{}, errors.New("unknown block version")
 	}
