@@ -32,16 +32,16 @@ func (e *Encoder) getDynamicSSZ() *dynssz.DynSsz {
 	return e.dynssz
 }
 
-func (e *Encoder) SetSpec(spec *state.Spec) {
+func (e *Encoder) SetSpec(newSpec *state.Spec) {
 	e.specMtx.Lock()
 	defer e.specMtx.Unlock()
 
-	e.spec = spec.FullSpec
+	e.spec = newSpec.FullSpec
 	e.dynssz = nil
 }
 
 func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (phase0.Root, error) {
-	dynssz := e.getDynamicSSZ()
+	ds := e.getDynamicSSZ()
 
 	var blockObj any
 	switch block.Version {
@@ -63,7 +63,7 @@ func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (phase0.R
 		return phase0.Root{}, errors.New("unknown block version")
 	}
 
-	root, err := dynssz.HashTreeRoot(blockObj)
+	root, err := ds.HashTreeRoot(blockObj)
 	if err != nil {
 		return phase0.Root{}, err
 	}
@@ -72,7 +72,7 @@ func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (phase0.R
 }
 
 func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) ([]byte, error) {
-	dynssz := e.getDynamicSSZ()
+	ds := e.getDynamicSSZ()
 
 	var blockObj any
 	switch block.Version {
@@ -94,7 +94,7 @@ func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) ([]byte
 		return nil, errors.New("unknown block version")
 	}
 
-	ssz, err := dynssz.MarshalSSZ(blockObj)
+	ssz, err := ds.MarshalSSZ(blockObj)
 	if err != nil {
 		return nil, err
 	}
@@ -135,30 +135,30 @@ func (e *Encoder) EncodeBlockJSON(block *spec.VersionedSignedBeaconBlock) ([]byt
 	return ssz, nil
 }
 
-func (e *Encoder) GetStateRoot(state *spec.VersionedBeaconState) (phase0.Root, error) {
-	dynssz := e.getDynamicSSZ()
+func (e *Encoder) GetStateRoot(beaconState *spec.VersionedBeaconState) (phase0.Root, error) {
+	ds := e.getDynamicSSZ()
 
 	var stateObj any
-	switch state.Version {
+	switch beaconState.Version {
 	case spec.DataVersionPhase0:
-		stateObj = state.Phase0
+		stateObj = beaconState.Phase0
 	case spec.DataVersionAltair:
-		stateObj = state.Altair
+		stateObj = beaconState.Altair
 	case spec.DataVersionBellatrix:
-		stateObj = state.Bellatrix
+		stateObj = beaconState.Bellatrix
 	case spec.DataVersionCapella:
-		stateObj = state.Capella
+		stateObj = beaconState.Capella
 	case spec.DataVersionDeneb:
-		stateObj = state.Deneb
+		stateObj = beaconState.Deneb
 	case spec.DataVersionElectra:
-		stateObj = state.Electra
+		stateObj = beaconState.Electra
 	case spec.DataVersionFulu:
-		stateObj = state.Fulu
+		stateObj = beaconState.Fulu
 	default:
 		return phase0.Root{}, errors.New("unknown state version")
 	}
 
-	root, err := dynssz.HashTreeRoot(stateObj)
+	root, err := ds.HashTreeRoot(stateObj)
 	if err != nil {
 		return phase0.Root{}, err
 	}
@@ -166,30 +166,30 @@ func (e *Encoder) GetStateRoot(state *spec.VersionedBeaconState) (phase0.Root, e
 	return root, nil
 }
 
-func (e *Encoder) EncodeStateSSZ(state *spec.VersionedBeaconState) ([]byte, error) {
-	dynssz := e.getDynamicSSZ()
+func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) ([]byte, error) {
+	ds := e.getDynamicSSZ()
 
 	var stateObj any
-	switch state.Version {
+	switch beaconState.Version {
 	case spec.DataVersionPhase0:
-		stateObj = state.Phase0
+		stateObj = beaconState.Phase0
 	case spec.DataVersionAltair:
-		stateObj = state.Altair
+		stateObj = beaconState.Altair
 	case spec.DataVersionBellatrix:
-		stateObj = state.Bellatrix
+		stateObj = beaconState.Bellatrix
 	case spec.DataVersionCapella:
-		stateObj = state.Capella
+		stateObj = beaconState.Capella
 	case spec.DataVersionDeneb:
-		stateObj = state.Deneb
+		stateObj = beaconState.Deneb
 	case spec.DataVersionElectra:
-		stateObj = state.Electra
+		stateObj = beaconState.Electra
 	case spec.DataVersionFulu:
-		stateObj = state.Fulu
+		stateObj = beaconState.Fulu
 	default:
 		return nil, errors.New("unknown state version")
 	}
 
-	ssz, err := dynssz.MarshalSSZ(stateObj)
+	ssz, err := ds.MarshalSSZ(stateObj)
 	if err != nil {
 		return nil, err
 	}
