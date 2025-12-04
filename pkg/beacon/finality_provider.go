@@ -9,6 +9,7 @@ import (
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/ssz"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 )
 
@@ -34,6 +35,8 @@ type FinalityProvider interface {
 	Genesis(ctx context.Context) (*v1.Genesis, error)
 	// Spec returns the chain spec.
 	Spec() (*state.Spec, error)
+	// SSZEncoder returns the SSZ encoder for the provider.
+	SSZEncoder() *ssz.Encoder
 	// UpstreamsStatus returns the status of all the upstreams.
 	UpstreamsStatus(ctx context.Context) (map[string]*UpstreamStatus, error)
 	// GetBlockBySlot returns the block at the given slot.

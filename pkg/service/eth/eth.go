@@ -380,7 +380,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, fmt.Errorf("no genesis block")
 		}
 
-		return block.Root()
+		return h.provider.SSZEncoder().GetBlockRoot(block)
 	case BlockIDSlot:
 		slot, err := NewSlotFromString(blockID.Value())
 		if err != nil {
@@ -396,7 +396,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, fmt.Errorf("no block for slot %v", slot)
 		}
 
-		return block.Root()
+		return h.provider.SSZEncoder().GetBlockRoot(block)
 	case BlockIDRoot:
 		root, err := blockID.AsRoot()
 		if err != nil {
@@ -412,7 +412,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, fmt.Errorf("no block for root %v", root)
 		}
 
-		return block.Root()
+		return h.provider.SSZEncoder().GetBlockRoot(block)
 	case BlockIDFinalized:
 		finality, err := h.provider.Finalized(ctx)
 		if err != nil {
@@ -432,7 +432,7 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 			return phase0.Root{}, fmt.Errorf("no block for finalized root %v", finality.Finalized.Root)
 		}
 
-		return block.Root()
+		return h.provider.SSZEncoder().GetBlockRoot(block)
 	default:
 		return phase0.Root{}, fmt.Errorf("invalid block id: %v", blockID.String())
 	}

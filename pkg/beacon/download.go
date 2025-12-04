@@ -115,7 +115,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 		return errors.New("invalid genesis block")
 	}
 
-	genesisBlockRoot, err := genesisBlock.Root()
+	genesisBlockRoot, err := d.sszEncoder.GetBlockRoot(genesisBlock)
 	if err != nil {
 		return err
 	}
@@ -260,7 +260,7 @@ func (d *Default) downloadBlock(ctx context.Context, slot phase0.Slot, upstream 
 		return nil, err
 	}
 
-	root, err := block.Root()
+	root, err := d.sszEncoder.GetBlockRoot(block)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +302,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		return nil, fmt.Errorf("failed to get state root from block: %w", err)
 	}
 
-	blockRoot, err := block.Root()
+	blockRoot, err := d.sszEncoder.GetBlockRoot(block)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get block root from block: %w", err)
 	}

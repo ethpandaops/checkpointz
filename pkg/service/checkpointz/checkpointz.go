@@ -72,7 +72,7 @@ func (h *Handler) V1BeaconSlots(ctx context.Context, req *BeaconSlotsRequest) (*
 		}
 
 		if block, err := h.provider.GetBlockBySlot(ctx, slot.Slot); err == nil {
-			if blockRoot, err := block.Root(); err == nil {
+			if blockRoot, err := h.provider.SSZEncoder().GetBlockRoot(block); err == nil {
 				slot.BlockRoot = eth.RootAsString(blockRoot)
 			}
 
