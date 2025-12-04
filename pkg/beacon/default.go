@@ -72,7 +72,7 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 	return &Default{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/default"),
-		nodes:       NewNodesFromConfig(log, nodes, namespace),
+		nodes:       NewNodesFromConfig(log, nodes, namespace, config.CustomPreset),
 		config:      config,
 
 		head:          &v1.Finality{},

@@ -21,7 +21,7 @@ type Node struct {
 
 type Nodes []*Node
 
-func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace string) Nodes {
+func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace string, customPreset bool) Nodes {
 	nodes := make(Nodes, len(configs))
 
 	for i, config := range configs {
@@ -35,7 +35,10 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace
 
 		opts.HealthCheck.Interval.Duration = time.Second * 5
 		opts.HealthCheck.SuccessfulResponses = 2
-		opts.GoEth2ClientParams = append(opts.GoEth2ClientParams, ehttp.WithCustomSpecSupport(true))
+
+		if customPreset {
+			opts.GoEth2ClientParams = append(opts.GoEth2ClientParams, ehttp.WithCustomSpecSupport(true))
+		}
 
 		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, opts)
 
