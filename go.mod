@@ -6,7 +6,7 @@ require (
 	github.com/attestantio/go-eth2-client v0.27.2
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
 	github.com/creasty/defaults v1.6.0
-	github.com/ethpandaops/beacon v0.65.0
+	github.com/ethpandaops/beacon v0.66.0
 	github.com/ethpandaops/ethwallclock v0.2.0
 	github.com/go-co-op/gocron v1.18.0
 	github.com/julienschmidt/httprouter v1.3.0
@@ -83,5 +83,3 @@ require (
 	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/ethpandaops/beacon => github.com/ethpandaops/beacon v0.65.1-0.20251204024030-639105ffe6c2

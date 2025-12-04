@@ -30,6 +30,8 @@ github.com/ethpandaops/beacon v0.65.0 h1:ssnab73uiuzhmhtU56q9D3ecVrEYv5n+tuqrXRK
 github.com/ethpandaops/beacon v0.65.0/go.mod h1:lgzrJjQVV77wZ+PJymsY3bQbAK4jrtP8n3WOwMf1Pcs=
 github.com/ethpandaops/beacon v0.65.1-0.20251204024030-639105ffe6c2 h1:WU40omAqHrPF/Mfovc9+eMCrTAl8Km/KOanyYqr3SBg=
 github.com/ethpandaops/beacon v0.65.1-0.20251204024030-639105ffe6c2/go.mod h1:lgzrJjQVV77wZ+PJymsY3bQbAK4jrtP8n3WOwMf1Pcs=
+github.com/ethpandaops/beacon v0.66.0 h1:BRnf4yTEzkZwHW6sTp1x+mBoO5pwbQOX6wtLt3Nh1Y4=
+github.com/ethpandaops/beacon v0.66.0/go.mod h1:lgzrJjQVV77wZ+PJymsY3bQbAK4jrtP8n3WOwMf1Pcs=
 github.com/ethpandaops/ethwallclock v0.2.0 h1:EeFKtZ7v6TAdn/oAh0xaPujD7N4amjBxrWIByraUfLM=
 github.com/ethpandaops/ethwallclock v0.2.0/go.mod h1:y0Cu+mhGLlem19vnAV2x0hpFS5KZ7oOi2SWYayv9l24=
 github.com/fatih/color v1.10.0/go.mod h1:ELkj/draVOlAH/xkhN6mQ50Qd0MPOk5AAr3maGEBuJM=
