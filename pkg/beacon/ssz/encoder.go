@@ -44,6 +44,7 @@ func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (phase0.R
 	ds := e.getDynamicSSZ()
 
 	var blockObj any
+
 	switch block.Version {
 	case spec.DataVersionPhase0:
 		blockObj = block.Phase0.Message
@@ -75,6 +76,7 @@ func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) ([]byte
 	ds := e.getDynamicSSZ()
 
 	var blockObj any
+
 	switch block.Version {
 	case spec.DataVersionPhase0:
 		blockObj = block.Phase0
