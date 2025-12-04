@@ -149,6 +149,7 @@ global:
 
 checkpointz:
   mode: light
+  custom_preset: false # Enable this for non-mainnet presets
   caches:
     blocks:
       # Controls the amount of "block" items that can be stored by Checkpointz (minimum 3)
