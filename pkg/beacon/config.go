@@ -11,6 +11,8 @@ import (
 type Config struct {
 	// Mode sets the operational mode of the provider.
 	Mode OperatingMode `yaml:"mode" default:"light"`
+	// CustomPreset enables the use of a custom preset for the provider.
+	CustomPreset bool `yaml:"custom_preset" default:"false"`
 	// Cache holds configuration for the caches.
 	Caches CacheConfig `yaml:"caches"`
 

@@ -1,6 +1,7 @@
 package ssz
 
 import (
+	"encoding/json"
 	"errors"
 	"sync"
 
@@ -9,16 +10,20 @@ import (
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
 
 	dynssz "github.com/pk910/dynamic-ssz"
+	"github.com/pk910/dynamic-ssz/sszutils"
 )
 
 type Encoder struct {
-	dynssz  *dynssz.DynSsz
-	spec    map[string]any
-	specMtx sync.Mutex
+	customPreset bool
+	dynssz       *dynssz.DynSsz
+	spec         map[string]any
+	specMtx      sync.Mutex
 }
 
-func NewEncoder() *Encoder {
-	return &Encoder{}
+func NewEncoder(customPreset bool) *Encoder {
+	return &Encoder{
+		customPreset: customPreset,
+	}
 }
 
 func (e *Encoder) getDynamicSSZ() *dynssz.DynSsz {
@@ -40,10 +45,8 @@ func (e *Encoder) SetSpec(newSpec *state.Spec) {
 	e.dynssz = nil
 }
 
-func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (phase0.Root, error) {
-	ds := e.getDynamicSSZ()
-
-	var blockObj any
+func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (root phase0.Root, err error) {
+	var blockObj sszutils.FastsszHashRoot
 
 	switch block.Version {
 	case spec.DataVersionPhase0:
@@ -64,7 +67,12 @@ func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (phase0.R
 		return phase0.Root{}, errors.New("unknown block version")
 	}
 
-	root, err := ds.HashTreeRoot(blockObj)
+	if e.customPreset {
+		root, err = e.getDynamicSSZ().HashTreeRoot(blockObj)
+	} else {
+		root, err = blockObj.HashTreeRoot()
+	}
+
 	if err != nil {
 		return phase0.Root{}, err
 	}
@@ -72,10 +80,8 @@ func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (phase0.R
 	return root, nil
 }
 
-func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) ([]byte, error) {
-	ds := e.getDynamicSSZ()
-
-	var blockObj any
+func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) (ssz []byte, err error) {
+	var blockObj sszutils.FastsszMarshaler
 
 	switch block.Version {
 	case spec.DataVersionPhase0:
@@ -96,7 +102,12 @@ func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) ([]byte
 		return nil, errors.New("unknown block version")
 	}
 
-	ssz, err := ds.MarshalSSZ(blockObj)
+	if e.customPreset {
+		ssz, err = e.getDynamicSSZ().MarshalSSZ(blockObj)
+	} else {
+		ssz, err = blockObj.MarshalSSZ()
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -104,12 +115,8 @@ func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) ([]byte
 	return ssz, nil
 }
 
-type blockJsonWriter interface {
-	MarshalJSON() ([]byte, error)
-}
-
 func (e *Encoder) EncodeBlockJSON(block *spec.VersionedSignedBeaconBlock) ([]byte, error) {
-	var blockObj blockJsonWriter
+	var blockObj json.Marshaler
 
 	switch block.Version {
 	case spec.DataVersionPhase0:
@@ -138,10 +145,8 @@ func (e *Encoder) EncodeBlockJSON(block *spec.VersionedSignedBeaconBlock) ([]byt
 	return ssz, nil
 }
 
-func (e *Encoder) GetStateRoot(beaconState *spec.VersionedBeaconState) (phase0.Root, error) {
-	ds := e.getDynamicSSZ()
-
-	var stateObj any
+func (e *Encoder) GetStateRoot(beaconState *spec.VersionedBeaconState) (root phase0.Root, err error) {
+	var stateObj sszutils.FastsszHashRoot
 
 	switch beaconState.Version {
 	case spec.DataVersionPhase0:
@@ -162,18 +167,20 @@ func (e *Encoder) GetStateRoot(beaconState *spec.VersionedBeaconState) (phase0.R
 		return phase0.Root{}, errors.New("unknown state version")
 	}
 
-	root, err := ds.HashTreeRoot(stateObj)
+	if e.customPreset {
+		root, err = e.getDynamicSSZ().HashTreeRoot(stateObj)
+	} else {
+		root, err = stateObj.HashTreeRoot()
+	}
+
 	if err != nil {
 		return phase0.Root{}, err
 	}
 
 	return root, nil
 }
-
-func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) ([]byte, error) {
-	ds := e.getDynamicSSZ()
-
-	var stateObj any
+func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) (ssz []byte, err error) {
+	var stateObj sszutils.FastsszMarshaler
 
 	switch beaconState.Version {
 	case spec.DataVersionPhase0:
@@ -194,7 +201,12 @@ func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) ([]byte
 		return nil, errors.New("unknown state version")
 	}
 
-	ssz, err := ds.MarshalSSZ(stateObj)
+	if e.customPreset {
+		ssz, err = e.getDynamicSSZ().MarshalSSZ(stateObj)
+	} else {
+		ssz, err = stateObj.MarshalSSZ()
+	}
+
 	if err != nil {
 		return nil, err
 	}
