@@ -108,6 +108,7 @@ type blockJsonWriter interface {
 
 func (e *Encoder) EncodeBlockJSON(block *spec.VersionedSignedBeaconBlock) ([]byte, error) {
 	var blockObj blockJsonWriter
+
 	switch block.Version {
 	case spec.DataVersionPhase0:
 		blockObj = block.Phase0
@@ -139,6 +140,7 @@ func (e *Encoder) GetStateRoot(beaconState *spec.VersionedBeaconState) (phase0.R
 	ds := e.getDynamicSSZ()
 
 	var stateObj any
+
 	switch beaconState.Version {
 	case spec.DataVersionPhase0:
 		stateObj = beaconState.Phase0
@@ -170,6 +172,7 @@ func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) ([]byte
 	ds := e.getDynamicSSZ()
 
 	var stateObj any
+
 	switch beaconState.Version {
 	case spec.DataVersionPhase0:
 		stateObj = beaconState.Phase0

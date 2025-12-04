@@ -14,7 +14,6 @@ type SlotTime struct {
 }
 
 func CalculateSlotTime(slot phase0.Slot, genesisTime time.Time, durationPerSlot time.Duration) SlotTime {
-	//nolint:gosec // This is not a security issue
 	slotStartTime := genesisTime.Add(time.Duration(slot) * durationPerSlot).UTC()
 
 	return SlotTime{
