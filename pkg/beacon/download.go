@@ -176,7 +176,9 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 		if uint64(i)*uint64(sp.SlotsPerEpoch) > currentSlot {
 			break
 		}
+
 		slot := phase0.Slot(currentSlot - uint64(i)*uint64(sp.SlotsPerEpoch))
+
 		slotsInScope[slot] = struct{}{}
 	}
 
