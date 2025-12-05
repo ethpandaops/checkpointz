@@ -17,6 +17,7 @@ import (
 	"github.com/ethpandaops/beacon/pkg/beacon/state"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/checkpoints"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/ssz"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/store"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 	"github.com/ethpandaops/ethwallclock"
@@ -32,6 +33,7 @@ type Default struct {
 	nodeConfigs []node.Config
 	nodes       Nodes
 	broker      *emission.Emitter
+	sszEncoder  *ssz.Encoder
 
 	head          *v1.Finality
 	servingBundle *v1.Finality
@@ -70,7 +72,7 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 	return &Default{
 		nodeConfigs: nodes,
 		log:         log.WithField("module", "beacon/default"),
-		nodes:       NewNodesFromConfig(log, nodes, namespace),
+		nodes:       NewNodesFromConfig(log, nodes, namespace, config.CustomPreset),
 		config:      config,
 
 		head:          &v1.Finality{},
@@ -79,6 +81,7 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 		historicalSlotFailures: make(map[phase0.Slot]int),
 
 		broker:           emission.NewEmitter(),
+		sszEncoder:       ssz.NewEncoder(config.CustomPreset),
 		blocks:           store.NewBlock(log, config.Caches.Blocks, namespace),
 		states:           store.NewBeaconState(log, config.Caches.States, namespace),
 		depositSnapshots: store.NewDepositSnapshot(log, config.Caches.DepositSnapshots, namespace),
@@ -439,6 +442,7 @@ func (d *Default) setSpec(s *state.Spec) {
 	defer d.specMutex.Unlock()
 
 	d.spec = s
+	d.sszEncoder.SetSpec(s)
 }
 
 func (d *Default) Spec() (*state.Spec, error) {
@@ -452,6 +456,10 @@ func (d *Default) Spec() (*state.Spec, error) {
 	copied := *d.spec
 
 	return &copied, nil
+}
+
+func (d *Default) SSZEncoder() *ssz.Encoder {
+	return d.sszEncoder
 }
 
 func (d *Default) OperatingMode() OperatingMode {
@@ -659,7 +667,7 @@ func (d *Default) storeBlock(_ context.Context, block *spec.VersionedSignedBeaco
 		return errors.New("block is nil")
 	}
 
-	root, err := block.Root()
+	root, err := d.sszEncoder.GetBlockRoot(block)
 	if err != nil {
 		return err
 	}
@@ -680,7 +688,7 @@ func (d *Default) storeBlock(_ context.Context, block *spec.VersionedSignedBeaco
 		expiresAt = time.Now().Add(999999 * time.Hour)
 	}
 
-	if err := d.blocks.Add(block, expiresAt); err != nil {
+	if err := d.blocks.Add(root, block, expiresAt); err != nil {
 		return err
 	}
 
@@ -742,7 +750,6 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 
 	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(sp.SlotsPerEpoch))
 
-	//nolint:gosec // This is not a security issue
 	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(sp.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(sp.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))
 	}

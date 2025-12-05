@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/attestantio/go-eth2-client/spec"
 	"github.com/ethpandaops/checkpointz/pkg/beacon"
+	"github.com/ethpandaops/checkpointz/pkg/beacon/ssz"
 	"github.com/ethpandaops/checkpointz/pkg/service/checkpointz"
 	"github.com/ethpandaops/checkpointz/pkg/service/eth"
 	"github.com/julienschmidt/httprouter"
@@ -26,6 +26,7 @@ type Handler struct {
 
 	eth           *eth.Handler
 	checkpointz   *checkpointz.Handler
+	sszEncoder    *ssz.Encoder
 	publicURL     string
 	brandName     string
 	brandImageURL string
@@ -39,6 +40,7 @@ func NewHandler(log logrus.FieldLogger, beac beacon.FinalityProvider, config *be
 
 		eth:           eth.NewHandler(log, beac, "checkpointz"),
 		checkpointz:   checkpointz.NewHandler(log, beac),
+		sszEncoder:    beac.SSZEncoder(),
 		publicURL:     config.Frontend.PublicURL,
 		brandName:     config.Frontend.BrandName,
 		brandImageURL: config.Frontend.BrandImageURL,
@@ -171,47 +173,14 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 		return NewInternalServerErrorResponse(nil), err
 	}
 
-	var rsp = &HTTPResponse{}
-
-	switch strings.ToLower(block.Version.String()) {
-	case spec.DataVersionPhase0.String():
-		rsp = NewSuccessResponse(ContentTypeResolvers{
-			ContentTypeJSON: block.Phase0.MarshalJSON,
-			ContentTypeSSZ:  block.Phase0.MarshalSSZ,
-		})
-	case spec.DataVersionAltair.String():
-		rsp = NewSuccessResponse(ContentTypeResolvers{
-			ContentTypeJSON: block.Altair.MarshalJSON,
-			ContentTypeSSZ:  block.Altair.MarshalSSZ,
-		})
-	case spec.DataVersionBellatrix.String():
-		rsp = NewSuccessResponse(ContentTypeResolvers{
-			ContentTypeJSON: block.Bellatrix.MarshalJSON,
-			ContentTypeSSZ:  block.Bellatrix.MarshalSSZ,
-		})
-	case spec.DataVersionCapella.String():
-		rsp = NewSuccessResponse(ContentTypeResolvers{
-			ContentTypeJSON: block.Capella.MarshalJSON,
-			ContentTypeSSZ:  block.Capella.MarshalSSZ,
-		})
-	case spec.DataVersionDeneb.String():
-		rsp = NewSuccessResponse(ContentTypeResolvers{
-			ContentTypeJSON: block.Deneb.MarshalJSON,
-			ContentTypeSSZ:  block.Deneb.MarshalSSZ,
-		})
-	case spec.DataVersionElectra.String():
-		rsp = NewSuccessResponse(ContentTypeResolvers{
-			ContentTypeJSON: block.Electra.MarshalJSON,
-			ContentTypeSSZ:  block.Electra.MarshalSSZ,
-		})
-	case spec.DataVersionFulu.String():
-		rsp = NewSuccessResponse(ContentTypeResolvers{
-			ContentTypeJSON: block.Fulu.MarshalJSON,
-			ContentTypeSSZ:  block.Fulu.MarshalSSZ,
-		})
-	default:
-		return NewInternalServerErrorResponse(nil), errors.New("unknown block version")
-	}
+	rsp := NewSuccessResponse(ContentTypeResolvers{
+		ContentTypeJSON: func() ([]byte, error) {
+			return h.sszEncoder.EncodeBlockJSON(block)
+		},
+		ContentTypeSSZ: func() ([]byte, error) {
+			return h.sszEncoder.EncodeBlockSSZ(block)
+		},
+	})
 
 	rsp.AddExtraData("version", block.Version.String())
 	rsp.AddExtraData("execution_optimistic", false)
@@ -251,24 +220,7 @@ func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Requ
 
 	rsp := NewSuccessResponse(ContentTypeResolvers{
 		ContentTypeSSZ: func() ([]byte, error) {
-			switch strings.ToLower(state.Version.String()) {
-			case spec.DataVersionPhase0.String():
-				return state.Phase0.MarshalSSZ()
-			case spec.DataVersionAltair.String():
-				return state.Altair.MarshalSSZ()
-			case spec.DataVersionBellatrix.String():
-				return state.Bellatrix.MarshalSSZ()
-			case spec.DataVersionCapella.String():
-				return state.Capella.MarshalSSZ()
-			case spec.DataVersionDeneb.String():
-				return state.Deneb.MarshalSSZ()
-			case spec.DataVersionElectra.String():
-				return state.Electra.MarshalSSZ()
-			case "fulu":
-				return state.Fulu.MarshalSSZ()
-			default:
-				return nil, fmt.Errorf("unknown state version: %s", state.Version.String())
-			}
+			return h.sszEncoder.EncodeStateSSZ(state)
 		},
 	})
 

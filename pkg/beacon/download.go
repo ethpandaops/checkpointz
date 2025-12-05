@@ -115,7 +115,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 		return errors.New("invalid genesis block")
 	}
 
-	genesisBlockRoot, err := genesisBlock.Root()
+	genesisBlockRoot, err := d.sszEncoder.GetBlockRoot(genesisBlock)
 	if err != nil {
 		return err
 	}
@@ -173,12 +173,12 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
 	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
 	for i := 1; i < d.config.HistoricalEpochCount; i++ {
-		//nolint:gosec // This is not a security issue
 		if uint64(i)*uint64(sp.SlotsPerEpoch) > currentSlot {
 			break
 		}
-		//nolint:gosec // This is not a security issue
+
 		slot := phase0.Slot(currentSlot - uint64(i)*uint64(sp.SlotsPerEpoch))
+
 		slotsInScope[slot] = struct{}{}
 	}
 
@@ -260,7 +260,7 @@ func (d *Default) downloadBlock(ctx context.Context, slot phase0.Slot, upstream 
 		return nil, err
 	}
 
-	root, err := block.Root()
+	root, err := d.sszEncoder.GetBlockRoot(block)
 	if err != nil {
 		return nil, err
 	}
@@ -302,13 +302,13 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		return nil, fmt.Errorf("failed to get state root from block: %w", err)
 	}
 
-	blockRoot, err := block.Root()
+	blockRoot, err := d.sszEncoder.GetBlockRoot(block)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get block root from block: %w", err)
 	}
 
 	if blockRoot != root {
-		return nil, errors.New("block root does not match")
+		return nil, fmt.Errorf("block root does not match: %#x != %#x", blockRoot, root)
 	}
 
 	slot, err := block.Slot()

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
+	ehttp "github.com/attestantio/go-eth2-client/http"
 	sbeacon "github.com/ethpandaops/beacon/pkg/beacon"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
 	"github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ type Node struct {
 
 type Nodes []*Node
 
-func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace string) Nodes {
+func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace string, customPreset bool) Nodes {
 	nodes := make(Nodes, len(configs))
 
 	for i, config := range configs {
@@ -34,6 +35,10 @@ func NewNodesFromConfig(log logrus.FieldLogger, configs []node.Config, namespace
 
 		opts.HealthCheck.Interval.Duration = time.Second * 5
 		opts.HealthCheck.SuccessfulResponses = 2
+
+		if customPreset {
+			opts.GoEth2ClientParams = append(opts.GoEth2ClientParams, ehttp.WithCustomSpecSupport(true))
+		}
 
 		snode := sbeacon.NewNode(log.WithField("upstream", config.Name), sconfig, namespace, opts)
 

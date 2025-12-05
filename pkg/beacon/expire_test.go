@@ -13,12 +13,10 @@ var (
 )
 
 func CalculateSlotExpiration(slot phase0.Slot, slotsOfHistory int) phase0.Slot {
-	//nolint:gosec // This is not a security issue
 	return slot + phase0.Slot(slotsOfHistory)
 }
 
 func GetSlotTime(slot phase0.Slot, secondsPerSlot time.Duration, genesis time.Time) time.Time {
-	//nolint:gosec // This is not a security issue
 	return genesis.Add(time.Duration(slot) * secondsPerSlot)
 }
 

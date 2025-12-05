@@ -48,12 +48,7 @@ func NewBlock(log logrus.FieldLogger, config Config, namespace string) *Block {
 	return c
 }
 
-func (c *Block) Add(block *spec.VersionedSignedBeaconBlock, expiresAt time.Time) error {
-	root, err := block.Root()
-	if err != nil {
-		return err
-	}
-
+func (c *Block) Add(root phase0.Root, block *spec.VersionedSignedBeaconBlock, expiresAt time.Time) error {
 	slot, err := block.Slot()
 	if err != nil {
 		return err
