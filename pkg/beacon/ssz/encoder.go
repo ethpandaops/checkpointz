@@ -39,7 +39,7 @@ type Encoder struct {
 
 // NewEncoder creates a new SSZ encoder.
 // If memoryBudget is > 0, limits concurrent SSZ encoding to that many bytes.
-// If memoryBudget is <= 0, no limit is applied (original behavior).
+// If memoryBudget is <= 0, no limit is applied.
 func NewEncoder(customPreset bool, memoryBudget int64) *Encoder {
 	var sem *semaphore.Weighted
 	if memoryBudget > 0 {

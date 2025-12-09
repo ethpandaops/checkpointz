@@ -89,7 +89,6 @@ func (c *Block) cleanupBlock(block *spec.VersionedSignedBeaconBlock) error {
 		return err
 	}
 
-	// Keys must match the types used in Add(): slot (phase0.Slot) and stateRoot (phase0.Root)
 	c.slotToBlockRoot.Delete(slot)
 	c.stateRootToBlockRoot.Delete(stateRoot)
 
