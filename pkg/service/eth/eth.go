@@ -572,6 +572,7 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		// Find the sidecar with the given index
 		for i, sidecar := range sidecars {
+			//nolint:gosec // G115: blob indices are small values (max 6), safe to convert
 			if index == int(sidecar.Index) {
 				filtered = append(filtered, sidecars[i])
 
