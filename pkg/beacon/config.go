@@ -19,6 +19,11 @@ type Config struct {
 	// HistoricalEpochCount determines how many historical epochs the provider will cache.
 	HistoricalEpochCount int `yaml:"historical_epoch_count" default:"20"`
 
+	// SSZEncodingMemoryBudgetBytes limits the total memory used for concurrent SSZ encoding
+	// operations (e.g., serving beacon states). Set to 0 to disable limiting (default).
+	// Example: 17179869184 (16GB) allows ~53 concurrent mainnet state encodings.
+	SSZEncodingMemoryBudgetBytes int64 `yaml:"ssz_encoding_memory_budget_bytes" default:"0"`
+
 	// Cache holds configuration for the caches.
 	Frontend FrontendConfig `yaml:"frontend"`
 }

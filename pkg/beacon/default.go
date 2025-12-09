@@ -81,7 +81,7 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 		historicalSlotFailures: make(map[phase0.Slot]int),
 
 		broker:           emission.NewEmitter(),
-		sszEncoder:       ssz.NewEncoder(config.CustomPreset),
+		sszEncoder:       ssz.NewEncoder(config.CustomPreset, config.SSZEncodingMemoryBudgetBytes),
 		blocks:           store.NewBlock(log, config.Caches.Blocks, namespace),
 		states:           store.NewBeaconState(log, config.Caches.States, namespace),
 		depositSnapshots: store.NewDepositSnapshot(log, config.Caches.DepositSnapshots, namespace),
@@ -750,6 +750,7 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 
 	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(sp.SlotsPerEpoch))
 
+	//nolint:gosec // G115: HistoricalEpochCount is a small positive config value, safe to convert
 	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(sp.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(sp.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))
 	}

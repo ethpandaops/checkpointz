@@ -89,8 +89,8 @@ func (c *Block) cleanupBlock(block *spec.VersionedSignedBeaconBlock) error {
 		return err
 	}
 
-	c.slotToBlockRoot.Delete(eth.SlotAsString(slot))
-	c.stateRootToBlockRoot.Delete(eth.RootAsString(stateRoot))
+	c.slotToBlockRoot.Delete(slot)
+	c.stateRootToBlockRoot.Delete(stateRoot)
 
 	return nil
 }

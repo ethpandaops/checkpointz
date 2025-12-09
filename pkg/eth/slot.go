@@ -14,6 +14,7 @@ type SlotTime struct {
 }
 
 func CalculateSlotTime(slot phase0.Slot, genesisTime time.Time, durationPerSlot time.Duration) SlotTime {
+	//nolint:gosec // G115: slot values are bounded by beacon chain limits, safe for duration
 	slotStartTime := genesisTime.Add(time.Duration(slot) * durationPerSlot).UTC()
 
 	return SlotTime{

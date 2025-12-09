@@ -13,10 +13,12 @@ var (
 )
 
 func CalculateSlotExpiration(slot phase0.Slot, slotsOfHistory int) phase0.Slot {
+	//nolint:gosec // G115: slotsOfHistory is a small positive test value
 	return slot + phase0.Slot(slotsOfHistory)
 }
 
 func GetSlotTime(slot phase0.Slot, secondsPerSlot time.Duration, genesis time.Time) time.Time {
+	//nolint:gosec // G115: slot values are bounded by beacon chain limits, safe for duration
 	return genesis.Add(time.Duration(slot) * secondsPerSlot)
 }
 

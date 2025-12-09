@@ -88,6 +88,10 @@ func NewSlotFromString(id string) (phase0.Slot, error) {
 		return 0, err
 	}
 
+	if slot < 0 {
+		return 0, errors.New("slot cannot be negative")
+	}
+
 	return phase0.Slot(slot), nil
 }
 
