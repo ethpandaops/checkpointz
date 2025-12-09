@@ -81,7 +81,7 @@ func NewDefaultProvider(namespace string, log logrus.FieldLogger, nodes []node.C
 		historicalSlotFailures: make(map[phase0.Slot]int),
 
 		broker:           emission.NewEmitter(),
-		sszEncoder:       ssz.NewEncoder(config.CustomPreset),
+		sszEncoder:       ssz.NewEncoder(config.CustomPreset, config.SSZEncodingMemoryBudgetBytes),
 		blocks:           store.NewBlock(log, config.Caches.Blocks, namespace),
 		states:           store.NewBeaconState(log, config.Caches.States, namespace),
 		depositSnapshots: store.NewDepositSnapshot(log, config.Caches.DepositSnapshots, namespace),

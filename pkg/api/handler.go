@@ -67,7 +67,8 @@ func (h *Handler) Register(ctx context.Context, router *httprouter.Router) error
 
 	router.GET("/eth/v2/beacon/blocks/:block_id", h.wrappedHandler(h.handleEthV2BeaconBlocks))
 
-	router.GET("/eth/v2/debug/beacon/states/:state_id", h.wrappedHandler(h.handleEthV2DebugBeaconStates))
+	// Use streaming handler for states - they can be 100s of MB and we don't want to buffer them
+	router.GET("/eth/v2/debug/beacon/states/:state_id", h.wrappedStreamingHandler(h.handleEthV2DebugBeaconStatesStreaming))
 
 	router.GET("/checkpointz/v1/status", h.wrappedHandler(h.handleCheckpointzStatus))
 	router.GET("/checkpointz/v1/beacon/slots", h.wrappedHandler(h.handleCheckpointzBeaconSlots))
@@ -139,6 +140,43 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 	}
 }
 
+// StreamingHandler is a handler that writes directly to the ResponseWriter for large responses.
+// This avoids buffering the entire response in memory, which is important for beacon states (~100s MB).
+type StreamingHandler func(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params, contentType ContentType) error
+
+func (h *Handler) wrappedStreamingHandler(handler StreamingHandler) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		start := time.Now()
+
+		contentType := NewContentTypeFromRequest(r)
+		ctx := r.Context()
+		registeredPath := deriveRegisteredPath(r, p)
+
+		h.log.WithFields(logrus.Fields{
+			"method":       r.Method,
+			"path":         r.URL.Path,
+			"content_type": contentType,
+			"accept":       r.Header.Get("Accept"),
+		}).Trace("Handling streaming request")
+
+		h.metrics.ObserveRequest(r.Method, registeredPath)
+
+		statusCode := http.StatusOK
+
+		defer func() {
+			h.metrics.ObserveResponse(r.Method, registeredPath, fmt.Sprintf("%v", statusCode), contentType.String(), time.Since(start))
+		}()
+
+		if err := handler(ctx, w, r, p, contentType); err != nil {
+			statusCode = http.StatusInternalServerError
+
+			if writeErr := WriteErrorResponse(w, err.Error(), statusCode); writeErr != nil {
+				h.log.WithError(writeErr).Error("Failed to write error response")
+			}
+		}
+	}
+}
+
 func (h *Handler) handleEthV1BeaconGenesis(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
 	if err := ValidateContentType(contentType, []ContentType{ContentTypeJSON}); err != nil {
 		return NewUnsupportedMediaTypeResponse(nil), err
@@ -199,45 +237,60 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 	return rsp, nil
 }
 
-func (h *Handler) handleEthV2DebugBeaconStates(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
+// handleEthV2DebugBeaconStatesStreaming streams beacon states directly to the ResponseWriter.
+// This avoids buffering the entire state (~100s of MB) in memory before writing.
+func (h *Handler) handleEthV2DebugBeaconStatesStreaming(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params, contentType ContentType) error {
 	if err := ValidateContentType(contentType, []ContentType{ContentTypeSSZ}); err != nil {
-		return NewUnsupportedMediaTypeResponse(nil), err
+		w.WriteHeader(http.StatusNotAcceptable)
+
+		return err
 	}
 
 	id, err := eth.NewStateIdentifier(p.ByName("state_id"))
 	if err != nil {
-		return NewBadRequestResponse(nil), err
+		w.WriteHeader(http.StatusBadRequest)
+
+		return err
 	}
 
 	state, err := h.eth.BeaconState(ctx, id)
 	if err != nil {
-		return NewInternalServerErrorResponse(nil), err
+		w.WriteHeader(http.StatusInternalServerError)
+
+		return err
 	}
 
 	if state == nil {
-		return NewInternalServerErrorResponse(nil), errors.New("state not found")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		return errors.New("state not found")
 	}
 
-	rsp := NewSuccessResponse(ContentTypeResolvers{
-		ContentTypeSSZ: func() ([]byte, error) {
-			return h.sszEncoder.EncodeStateSSZ(state)
-		},
-	})
+	// Set headers before streaming
+	w.Header().Set("Content-Type", ContentTypeSSZ.String())
+	w.Header().Set("Eth-Consensus-Version", state.Version.String())
 
 	switch id.Type() {
 	case eth.StateIDSlot:
-		rsp.SetCacheControl("public, s-max-age=6000")
+		w.Header().Set("Cache-Control", "public, s-max-age=6000")
 	case eth.StateIDFinalized:
-		rsp.SetCacheControl("public, s-max-age=180")
+		w.Header().Set("Cache-Control", "public, s-max-age=180")
 	case eth.StateIDRoot:
-		rsp.SetCacheControl("public, s-max-age=6000")
+		w.Header().Set("Cache-Control", "public, s-max-age=6000")
 	case eth.StateIDHead:
-		rsp.SetCacheControl("public, s-max-age=30")
+		w.Header().Set("Cache-Control", "public, s-max-age=30")
 	}
 
-	rsp.SetEthConsensusVersion(state.Version.String())
+	// Get size for Content-Length header (enables efficient HTTP handling)
+	size, err := h.sszEncoder.StateSizeSSZ(state)
+	if err == nil {
+		w.Header().Set("Content-Length", strconv.Itoa(size))
+	}
 
-	return rsp, nil
+	// Stream the SSZ-encoded state directly to the ResponseWriter
+	_, err = h.sszEncoder.WriteStateSSZ(ctx, w, state)
+
+	return err
 }
 
 func (h *Handler) handleEthV1ConfigSpec(ctx context.Context, r *http.Request, p httprouter.Params, contentType ContentType) (*HTTPResponse, error) {
