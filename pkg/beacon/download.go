@@ -352,10 +352,13 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 	denebFork, err := sp.ForkEpochs.GetByName("deneb")
 	if err == nil && denebFork != nil {
 		if denebFork.Active(epoch) {
-			// Check if Fulu is active - if so, don't fetch blobs as they're no longer in blocks
+			// Check if Fulu or Gloas is active - if so, don't fetch blobs as they're no longer in blocks
 			fuluFork, fuluErr := sp.ForkEpochs.GetByName("fulu")
-			if fuluErr == nil && fuluFork != nil && fuluFork.Active(epoch) {
-				d.log.WithField("epoch", epoch).Debug("Skipping blob sidecar download - Fulu fork active")
+			gloasFork, gloasErr := sp.ForkEpochs.GetByName("gloas")
+			fuluActive := fuluErr == nil && fuluFork != nil && fuluFork.Active(epoch)
+			gloasActive := gloasErr == nil && gloasFork != nil && gloasFork.Active(epoch)
+			if fuluActive || gloasActive {
+				d.log.WithField("epoch", epoch).Debug("Skipping blob sidecar download - Fulu/Gloas fork active")
 			} else {
 				// Download and store blob sidecars
 				if err := d.downloadAndStoreBlobSidecars(ctx, slot, upstream); err != nil {

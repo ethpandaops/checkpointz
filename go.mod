@@ -2,6 +2,8 @@ module github.com/ethpandaops/checkpointz
 
 go 1.25.1
 
+replace github.com/attestantio/go-eth2-client => github.com/pk910/go-eth2-client v0.0.0-20250925114125-8cac04566494
+
 require (
 	github.com/attestantio/go-eth2-client v0.27.2
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
@@ -79,7 +81,6 @@ require (
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
-	gopkg.in/Knetic/govaluate.v3 v3.0.0 // indirect
 	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
