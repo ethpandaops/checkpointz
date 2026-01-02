@@ -2,7 +2,7 @@ module github.com/ethpandaops/checkpointz
 
 go 1.25.1
 
-replace github.com/attestantio/go-eth2-client => github.com/qu0b/go-eth2-client v0.0.0-20260102140736-77debf2f2683
+replace github.com/attestantio/go-eth2-client => github.com/qu0b/go-eth2-client v0.0.0-20260102153939-0b2d1b9fcb7e
 
 require (
 	github.com/attestantio/go-eth2-client v0.27.2
