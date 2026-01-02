@@ -14,6 +14,7 @@ type SlotTime struct {
 }
 
 func CalculateSlotTime(slot phase0.Slot, genesisTime time.Time, durationPerSlot time.Duration) SlotTime {
+	//nolint:gosec // slot values are within safe range for time.Duration
 	slotStartTime := genesisTime.Add(time.Duration(slot) * durationPerSlot).UTC()
 
 	return SlotTime{

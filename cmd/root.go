@@ -54,7 +54,6 @@ func loadConfigFromFile(file string) (*checkpointz.Config, error) {
 	}
 
 	yamlFile, err := os.ReadFile(file)
-
 	if err != nil {
 		return nil, err
 	}
