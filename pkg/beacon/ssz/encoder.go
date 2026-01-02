@@ -45,6 +45,25 @@ func (e *Encoder) SetSpec(newSpec *state.Spec) {
 	e.dynssz = nil
 }
 
+func (e *Encoder) marshalSSZ(obj sszutils.FastsszMarshaler) ([]byte, error) {
+	var (
+		ssz []byte
+		err error
+	)
+
+	if e.customPreset {
+		ssz, err = e.getDynamicSSZ().MarshalSSZ(obj)
+	} else {
+		ssz, err = obj.MarshalSSZ()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return ssz, nil
+}
+
 func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (root phase0.Root, err error) {
 	var blockObj sszutils.FastsszHashRoot
 
@@ -82,7 +101,7 @@ func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (root pha
 	return root, nil
 }
 
-func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) (ssz []byte, err error) {
+func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) ([]byte, error) {
 	var blockObj sszutils.FastsszMarshaler
 
 	switch block.Version {
@@ -106,17 +125,7 @@ func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) (ssz []
 		return nil, errors.New("unknown block version")
 	}
 
-	if e.customPreset {
-		ssz, err = e.getDynamicSSZ().MarshalSSZ(blockObj)
-	} else {
-		ssz, err = blockObj.MarshalSSZ()
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return ssz, nil
+	return e.marshalSSZ(blockObj)
 }
 
 func (e *Encoder) EncodeBlockJSON(block *spec.VersionedSignedBeaconBlock) ([]byte, error) {
@@ -187,7 +196,7 @@ func (e *Encoder) GetStateRoot(beaconState *spec.VersionedBeaconState) (root pha
 
 	return root, nil
 }
-func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) (ssz []byte, err error) {
+func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) ([]byte, error) {
 	var stateObj sszutils.FastsszMarshaler
 
 	switch beaconState.Version {
@@ -211,15 +220,5 @@ func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) (ssz []
 		return nil, errors.New("unknown state version")
 	}
 
-	if e.customPreset {
-		ssz, err = e.getDynamicSSZ().MarshalSSZ(stateObj)
-	} else {
-		ssz, err = stateObj.MarshalSSZ()
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return ssz, nil
+	return e.marshalSSZ(stateObj)
 }
