@@ -357,6 +357,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 			gloasFork, gloasErr := sp.ForkEpochs.GetByName("gloas")
 			fuluActive := fuluErr == nil && fuluFork != nil && fuluFork.Active(epoch)
 			gloasActive := gloasErr == nil && gloasFork != nil && gloasFork.Active(epoch)
+
 			if fuluActive || gloasActive {
 				d.log.WithField("epoch", epoch).Debug("Skipping blob sidecar download - Fulu/Gloas fork active")
 			} else {
