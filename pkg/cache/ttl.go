@@ -175,7 +175,7 @@ func (m *TTLMap) Get(k string) (interface{}, time.Time, error) {
 		return nil, time.Now(), err
 	}
 
-	return itv, expires, err
+	return itv, expires, nil
 }
 
 func (m *TTLMap) get(k string) (interface{}, time.Time, error) {
