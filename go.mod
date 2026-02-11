@@ -2,7 +2,7 @@ module github.com/ethpandaops/checkpointz
 
 go 1.25.1
 
-replace github.com/attestantio/go-eth2-client => github.com/qu0b/go-eth2-client v0.0.0-20260211134817-89b1d064a7e5
+replace github.com/attestantio/go-eth2-client => github.com/pk910/go-eth2-client v0.0.0-20260211135810-4d8cc413fd3b
 
 require (
 	github.com/attestantio/go-eth2-client v0.27.2
@@ -23,6 +23,7 @@ require (
 )
 
 require (
+	github.com/OffchainLabs/go-bitfield v0.0.0-20251031151322-f427d04d8506 // indirect
 	github.com/OffchainLabs/hashtree v0.2.1-0.20250530191054-577f0b75c7f7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/casbin/govaluate v1.8.0 // indirect
