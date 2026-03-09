@@ -176,14 +176,17 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	// Calculate the epoch boundaries we need to fetch
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
 	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
-	for i := 1; i < d.config.HistoricalEpochCount; i++ {
-		if uint64(i)*uint64(sp.SlotsPerEpoch) > currentSlot {
+	delta := uint64(sp.SlotsPerEpoch)
+
+	for offset := 1; offset < d.config.HistoricalEpochCount; offset++ {
+		if delta > currentSlot {
 			break
 		}
 
-		slot := phase0.Slot(currentSlot - uint64(i)*uint64(sp.SlotsPerEpoch))
+		slot := phase0.Slot(currentSlot - delta)
 
 		slotsInScope[slot] = struct{}{}
+		delta += uint64(sp.SlotsPerEpoch)
 	}
 
 	for slot := range slotsInScope {
