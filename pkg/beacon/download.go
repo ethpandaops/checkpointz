@@ -14,6 +14,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type beaconStateFetcher interface {
+	FetchBeaconState(ctx context.Context, stateID string) (*spec.VersionedBeaconState, error)
+}
+
 func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.Finality) error {
 	if checkpoint == nil {
 		return errors.New("checkpoint is nil")
@@ -172,14 +176,17 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 	// Calculate the epoch boundaries we need to fetch
 	// We'll derive the current finalized slot and then work back in intervals of SLOTS_PER_EPOCH.
 	currentSlot := uint64(checkpoint.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
-	for i := 1; i < d.config.HistoricalEpochCount; i++ {
-		if uint64(i)*uint64(sp.SlotsPerEpoch) > currentSlot {
+	delta := uint64(sp.SlotsPerEpoch)
+
+	for offset := 1; offset < d.config.HistoricalEpochCount; offset++ {
+		if delta > currentSlot {
 			break
 		}
 
-		slot := phase0.Slot(currentSlot - uint64(i)*uint64(sp.SlotsPerEpoch))
+		slot := phase0.Slot(currentSlot - delta)
 
 		slotsInScope[slot] = struct{}{}
+		delta += uint64(sp.SlotsPerEpoch)
 	}
 
 	for slot := range slotsInScope {
@@ -329,7 +336,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 
 	if d.shouldDownloadStates() {
 		// Download and store beacon state
-		if err = d.downloadAndStoreBeaconState(ctx, stateRoot, slot, upstream); err != nil {
+		if err = d.downloadAndStoreBeaconState(ctx, stateRoot, slot, upstream.Beacon); err != nil {
 			return nil, fmt.Errorf("failed to download and store beacon state: %w", err)
 		}
 	}
@@ -373,20 +380,29 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 	return block, nil
 }
 
-func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot phase0.Root, slot phase0.Slot, node *Node) error {
+func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot phase0.Root, slot phase0.Slot, fetcher beaconStateFetcher) error {
 	// If the state already exists, don't bother downloading it again.
 	existingState, err := d.states.GetByStateRoot(stateRoot)
 	if err == nil && existingState != nil {
 		return nil
 	}
 
-	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.SlotAsString(slot))
+	beaconState, err := fetcher.FetchBeaconState(ctx, eth.RootAsString(stateRoot))
 	if err != nil {
 		return fmt.Errorf("failed to fetch beacon state: %w", err)
 	}
 
 	if beaconState == nil {
 		return errors.New("beacon state is nil")
+	}
+
+	computedStateRoot, err := d.sszEncoder.GetStateRoot(beaconState)
+	if err != nil {
+		return fmt.Errorf("failed to compute beacon state root: %w", err)
+	}
+
+	if computedStateRoot != stateRoot {
+		return fmt.Errorf("beacon state root does not match: %#x != %#x", computedStateRoot, stateRoot)
 	}
 
 	expiresAt := time.Now().Add(FinalityHaltedServingPeriod)

@@ -373,7 +373,7 @@ func (d *Default) Healthy(ctx context.Context) (bool, error) {
 }
 
 func (d *Default) Peers(ctx context.Context) (types.Peers, error) {
-	peers := types.Peers{}
+	peers := make(types.Peers, 0, len(d.nodes))
 
 	for _, node := range d.nodes {
 		status := "connected"
@@ -749,9 +749,16 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 	}
 
 	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(sp.SlotsPerEpoch))
+	slotsPerEpoch := uint64(sp.SlotsPerEpoch)
+	delta := uint64(0)
 
-	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(sp.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(sp.SlotsPerEpoch) {
-		slots = append(slots, phase0.Slot(i))
+	for count := 0; count < d.config.HistoricalEpochCount; count++ {
+		if delta > uint64(latestSlot) {
+			break
+		}
+
+		slots = append(slots, phase0.Slot(uint64(latestSlot)-delta))
+		delta += slotsPerEpoch
 	}
 
 	return slots, nil

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/ethpandaops/checkpointz/pkg/eth"
 )
 
 var (
@@ -13,11 +14,15 @@ var (
 )
 
 func CalculateSlotExpiration(slot phase0.Slot, slotsOfHistory int) phase0.Slot {
-	return slot + phase0.Slot(slotsOfHistory)
+	if slotsOfHistory < 0 {
+		return slot
+	}
+
+	return slot + phase0.Slot(uint64(slotsOfHistory))
 }
 
 func GetSlotTime(slot phase0.Slot, secondsPerSlot time.Duration, genesis time.Time) time.Time {
-	return genesis.Add(time.Duration(slot) * secondsPerSlot)
+	return eth.CalculateSlotTime(slot, genesis, secondsPerSlot).StartTime
 }
 
 func TestExpiresAtSlot(t *testing.T) {

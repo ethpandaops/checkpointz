@@ -3,6 +3,7 @@ package eth
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
@@ -572,7 +573,12 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		// Find the sidecar with the given index
 		for i, sidecar := range sidecars {
-			if index == int(sidecar.Index) {
+			sidecarIndex, err := strconv.Atoi(strconv.FormatUint(uint64(sidecar.Index), 10))
+			if err != nil {
+				continue
+			}
+
+			if index == sidecarIndex {
 				filtered = append(filtered, sidecars[i])
 
 				break
