@@ -5,5 +5,6 @@ RUN apt-get update && apt-get -y upgrade && apt-get install -y --no-install-reco
   curl \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
-COPY checkpointz* /checkpointz
+ARG TARGETPLATFORM
+COPY $TARGETPLATFORM/checkpointz* /checkpointz
 ENTRYPOINT ["/checkpointz"]
