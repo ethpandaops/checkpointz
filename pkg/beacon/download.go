@@ -177,9 +177,7 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 			break
 		}
 
-		slot := phase0.Slot(currentSlot - uint64(i)*uint64(sp.SlotsPerEpoch))
-
-		slotsInScope[slot] = struct{}{}
+		slotsInScope[phase0.Slot(currentSlot-uint64(i)*uint64(sp.SlotsPerEpoch))] = struct{}{}
 	}
 
 	for slot := range slotsInScope {
@@ -354,7 +352,9 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 		if denebFork.Active(epoch) {
 			// Check if Fulu is active - if so, don't fetch blobs as they're no longer in blocks
 			fuluFork, fuluErr := sp.ForkEpochs.GetByName("fulu")
-			if fuluErr == nil && fuluFork != nil && fuluFork.Active(epoch) {
+			fuluActive := fuluErr == nil && fuluFork != nil && fuluFork.Active(epoch)
+
+			if fuluActive {
 				d.log.WithField("epoch", epoch).Debug("Skipping blob sidecar download - Fulu fork active")
 			} else {
 				// Download and store blob sidecars
