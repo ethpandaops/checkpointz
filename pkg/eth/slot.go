@@ -14,7 +14,7 @@ type SlotTime struct {
 }
 
 func CalculateSlotTime(slot phase0.Slot, genesisTime time.Time, durationPerSlot time.Duration) SlotTime {
-	slotStartTime := genesisTime.Add(time.Duration(slot) * durationPerSlot).UTC()
+	slotStartTime := genesisTime.Add(time.Duration(int64(slot)) * durationPerSlot).UTC() //nolint:gosec // slot fits in int64
 
 	return SlotTime{
 		StartTime: slotStartTime,
