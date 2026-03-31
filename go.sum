@@ -146,10 +146,10 @@ github.com/onsi/ginkgo v1.14.0/go.mod h1:iSB4RoI2tjJc9BBv4NKIKWKya62Rps+oPG/Lv9k
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.1 h1:o0+MgICZLuZ7xjH7Vx6zS/zcu93/BEp1VwkIW1mEXCE=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
-github.com/pk910/dynamic-ssz v1.2.1 h1:84eNMiiOYDiNC2Y1m5A/UtIPs6u/9SsvG4RVSBRGE5U=
-github.com/pk910/dynamic-ssz v1.2.1/go.mod h1:HXRWLNcgj3DL65Kznrb+RdL3DEKw2JBZ/6crooqGoII=
-github.com/pk910/go-eth2-client v0.0.0-20260225144847-75b86704f554 h1:FmusNWzB2XDzRQK1OoLo9XUH/PBatWPkztJOX/Ther4=
-github.com/pk910/go-eth2-client v0.0.0-20260225144847-75b86704f554/go.mod h1:8fpxrIBBVbOcVG3vcHe5ubOHIeqW3N5t7kS4oU5EeJU=
+github.com/pk910/dynamic-ssz v1.2.2 h1:dyvewnBFKGJQUVQjGhS0+LdX95xhFRh7+d7hIq3OnvQ=
+github.com/pk910/dynamic-ssz v1.2.2/go.mod h1:HXRWLNcgj3DL65Kznrb+RdL3DEKw2JBZ/6crooqGoII=
+github.com/pk910/go-eth2-client v0.0.0-20260331085057-05aefaa5ce81 h1:mHgrerDiro/np9FCoJ19EYsCyl/CXMHFi34o+j3T+rE=
+github.com/pk910/go-eth2-client v0.0.0-20260331085057-05aefaa5ce81/go.mod h1:lwj0l8l51hIjqdQpODPea01JfE33nyM++1VGjBZau08=
 github.com/pk910/hashtree-bindings v0.0.1 h1:Sw+UlPlrBle4LUg04kqLFybVQcfmamwKL1QsrR3GU0g=
 github.com/pk910/hashtree-bindings v0.0.1/go.mod h1:eayIpxMFkWzMsydESu/5bV8wglZzSE/c9mq6DQdn204=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
