@@ -24,10 +24,4 @@ jobs:
           go-version: ${{ matrix.go_version }}
 
       - name: run tests
-        run: go test -json ./... > test.json
-
-      - name: Annotate tests
-        if: always()
-        uses: guyarb/golang-test-annotations@2941118d7ef622b1b3771d1ff6eae9e90659eb26 # v0.8.0
-        with:
-          test-results: test.json
+        run: go test ./...
