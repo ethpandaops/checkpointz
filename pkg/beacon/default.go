@@ -373,7 +373,7 @@ func (d *Default) Healthy(ctx context.Context) (bool, error) {
 }
 
 func (d *Default) Peers(ctx context.Context) (types.Peers, error) {
-	peers := types.Peers{}
+	peers := make(types.Peers, 0, len(d.nodes))
 
 	for _, node := range d.nodes {
 		status := "connected"
