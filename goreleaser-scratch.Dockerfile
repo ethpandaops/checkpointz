@@ -1,3 +1,4 @@
 FROM gcr.io/distroless/static-debian11:latest
-COPY checkpointz* /checkpointz
+ARG TARGETPLATFORM
+COPY $TARGETPLATFORM/checkpointz* /checkpointz
 ENTRYPOINT ["/checkpointz"]
