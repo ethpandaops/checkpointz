@@ -2,7 +2,7 @@ module github.com/ethpandaops/checkpointz
 
 go 1.26.1
 
-replace github.com/attestantio/go-eth2-client => github.com/pk910/go-eth2-client v0.0.0-20260225144847-75b86704f554
+replace github.com/attestantio/go-eth2-client => github.com/pk910/go-eth2-client v0.0.0-20260331085057-05aefaa5ce81
 
 require (
 	github.com/attestantio/go-eth2-client v0.28.0
@@ -13,7 +13,7 @@ require (
 	github.com/go-co-op/gocron v1.18.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/nanmu42/gzip v1.2.0
-	github.com/pk910/dynamic-ssz v1.2.1
+	github.com/pk910/dynamic-ssz v1.2.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sirupsen/logrus v1.9.3
