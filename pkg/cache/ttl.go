@@ -40,6 +40,7 @@ func NewTTLMap(maxItems int, name, namespace string) (m *TTLMap) {
 	go func() {
 		for now := range time.Tick(time.Second * 1) {
 			m.l.Lock()
+
 			for k, v := range m.m {
 				if v.invincible {
 					continue
@@ -49,6 +50,7 @@ func NewTTLMap(maxItems int, name, namespace string) (m *TTLMap) {
 					m.delete(k, v.value, v.expiresAt)
 				}
 			}
+
 			m.l.Unlock()
 		}
 	}()

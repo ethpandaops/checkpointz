@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/ethpandaops/go-eth2-client/spec/phase0"
 	"github.com/pkg/errors"
 )
 
@@ -88,7 +88,11 @@ func NewSlotFromString(id string) (phase0.Slot, error) {
 		return 0, err
 	}
 
-	return phase0.Slot(uint64(slot)), nil //nolint:gosec // slot parsed from string is validated
+	if slot < 0 {
+		return 0, errors.New("slot cannot be negative")
+	}
+
+	return phase0.Slot(slot), nil
 }
 
 func NewRootFromString(id string) (phase0.Root, error) {

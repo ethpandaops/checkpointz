@@ -7,10 +7,6 @@ import (
 	"sync"
 	"time"
 
-	v1 "github.com/attestantio/go-eth2-client/api/v1"
-	"github.com/attestantio/go-eth2-client/spec"
-	"github.com/attestantio/go-eth2-client/spec/deneb"
-	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/chuckpreslar/emission"
 	"github.com/ethpandaops/beacon/pkg/beacon"
 	"github.com/ethpandaops/beacon/pkg/beacon/api/types"
@@ -21,6 +17,10 @@ import (
 	"github.com/ethpandaops/checkpointz/pkg/beacon/store"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 	"github.com/ethpandaops/ethwallclock"
+	v1 "github.com/ethpandaops/go-eth2-client/api/v1"
+	"github.com/ethpandaops/go-eth2-client/spec"
+	"github.com/ethpandaops/go-eth2-client/spec/deneb"
+	"github.com/ethpandaops/go-eth2-client/spec/phase0"
 	"github.com/go-co-op/gocron"
 	perrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -750,7 +750,8 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 
 	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(sp.SlotsPerEpoch))
 
-	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(sp.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(sp.SlotsPerEpoch) { //nolint:gosec // values are always positive
+	//nolint:gosec // HistoricalEpochCount is validated as positive in config.
+	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(sp.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(sp.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))
 	}
 
