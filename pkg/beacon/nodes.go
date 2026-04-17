@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	v1 "github.com/attestantio/go-eth2-client/api/v1"
-	ehttp "github.com/attestantio/go-eth2-client/http"
 	sbeacon "github.com/ethpandaops/beacon/pkg/beacon"
 	"github.com/ethpandaops/checkpointz/pkg/beacon/node"
+	v1 "github.com/ethpandaops/go-eth2-client/api/v1"
+	ehttp "github.com/ethpandaops/go-eth2-client/http"
 	"github.com/sirupsen/logrus"
 )
 
