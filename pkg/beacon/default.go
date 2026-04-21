@@ -748,9 +748,18 @@ func (d *Default) ListFinalizedSlots(ctx context.Context) ([]phase0.Slot, error)
 		return slots, errors.New("no finalized checkpoint available")
 	}
 
-	latestSlot := phase0.Slot(uint64(finality.Finalized.Epoch) * uint64(sp.SlotsPerEpoch))
+	latestSlot := uint64(finality.Finalized.Epoch) * uint64(sp.SlotsPerEpoch)
+	//nolint:gosec // HistoricalEpochCount is validated as positive in config.
+	lookback := uint64(sp.SlotsPerEpoch) * uint64(d.config.HistoricalEpochCount)
 
-	for i, val := uint64(latestSlot), uint64(latestSlot)-uint64(sp.SlotsPerEpoch)*uint64(d.config.HistoricalEpochCount); i > val; i -= uint64(sp.SlotsPerEpoch) { //nolint:gosec // values are always positive
+	// Clamp the lower bound at 0 so short-lived chains (finalized epoch <
+	// HistoricalEpochCount) don't underflow uint64 and skip the loop entirely.
+	var earliest uint64
+	if latestSlot > lookback {
+		earliest = latestSlot - lookback
+	}
+
+	for i := latestSlot; i > earliest; i -= uint64(sp.SlotsPerEpoch) {
 		slots = append(slots, phase0.Slot(i))
 	}
 
