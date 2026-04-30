@@ -28,8 +28,8 @@ github.com/ethpandaops/beacon v0.67.1-0.20260414085454-4de46d12471e h1:SVNjoOoy1
 github.com/ethpandaops/beacon v0.67.1-0.20260414085454-4de46d12471e/go.mod h1:huTiadnAh+6EfLqDu+HhI72Zfr2alJh4tjTt5Rt7C2g=
 github.com/ethpandaops/ethwallclock v0.2.0 h1:EeFKtZ7v6TAdn/oAh0xaPujD7N4amjBxrWIByraUfLM=
 github.com/ethpandaops/ethwallclock v0.2.0/go.mod h1:y0Cu+mhGLlem19vnAV2x0hpFS5KZ7oOi2SWYayv9l24=
-github.com/ethpandaops/go-eth2-client v0.1.0 h1:migUQIIL3fcWWMmIwF4Rh05rvJPuj+LOgDJkIWZ+gIE=
-github.com/ethpandaops/go-eth2-client v0.1.0/go.mod h1:9BBd/XIw1egZTkxtFGMvgXnsxX6ypKHKNKD7itqjmNQ=
+github.com/ethpandaops/go-eth2-client v0.1.1 h1:+uaGtPiyjp8sb2K9cjeZpbHrRCu6yjHtlx4J8+bbA8U=
+github.com/ethpandaops/go-eth2-client v0.1.1/go.mod h1:qoj9ZVKydI99IuIyWt4EvGq4rGgMYfOy6q8zTtwYdy4=
 github.com/fatih/color v1.10.0/go.mod h1:ELkj/draVOlAH/xkhN6mQ50Qd0MPOk5AAr3maGEBuJM=
 github.com/fatih/color v1.18.0 h1:S8gINlzdQ840/4pfAwic/ZE0djQEH3wM94VfqLTZcOM=
 github.com/fatih/color v1.18.0/go.mod h1:4FelSpRwEGDpQ12mAdzqdOukCy4u8WUtOY6lkT/6HfU=
@@ -150,8 +150,8 @@ github.com/onsi/ginkgo v1.14.0/go.mod h1:iSB4RoI2tjJc9BBv4NKIKWKya62Rps+oPG/Lv9k
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.1 h1:o0+MgICZLuZ7xjH7Vx6zS/zcu93/BEp1VwkIW1mEXCE=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
-github.com/pk910/dynamic-ssz v1.3.0 h1:b6v5v3HWAmdxSVKWk4GS7Y/lhURZPAHRQ7EEMUparQk=
-github.com/pk910/dynamic-ssz v1.3.0/go.mod h1:NmeFF4jxzVwWC8cnEhUB7xMI++8hd/0OZvZHFrUvFfs=
+github.com/pk910/dynamic-ssz v1.3.1 h1:S/no7kRA5FSORmfybG4Cs49CjPgP94fePKPxt8uKkdI=
+github.com/pk910/dynamic-ssz v1.3.1/go.mod h1:ARK5qDyrJ/MHpaZHGJYvCKElvaMYTE9pXOQbvPDeE0U=
 github.com/pk910/hashtree-bindings v0.1.0 h1:w7NyRWFi2OaYEFvo9ADcE/QU6PMuVLl3hBgx92KiH9c=
 github.com/pk910/hashtree-bindings v0.1.0/go.mod h1:zrWt88783JmhBfcgni6kkIMYRdXTZi/FL//OyI5T/l4=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
