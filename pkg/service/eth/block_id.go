@@ -17,6 +17,7 @@ const (
 	BlockIDHead
 	BlockIDGenesis
 	BlockIDFinalized
+	BlockIDCheckpoint
 	BlockIDSlot
 	BlockIDRoot
 )
@@ -62,6 +63,8 @@ func NewBlockIdentifier(id string) (BlockIdentifier, error) {
 		return newBlockIdentifier(BlockIDGenesis, id), nil
 	case string(IDFinalized):
 		return newBlockIdentifier(BlockIDFinalized, id), nil
+	case string(IDCheckpoint):
+		return newBlockIdentifier(BlockIDCheckpoint, id), nil
 	}
 
 	if strings.HasPrefix(id, "0x") {
@@ -120,6 +123,8 @@ func (t BlockIDType) String() string {
 		return string(IDGenesis)
 	case BlockIDFinalized:
 		return string(IDFinalized)
+	case BlockIDCheckpoint:
+		return string(IDCheckpoint)
 	case BlockIDSlot:
 		return string(IDSlot)
 	case BlockIDRoot:

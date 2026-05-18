@@ -15,6 +15,7 @@ const (
 	StateIDHead
 	StateIDGenesis
 	StateIDFinalized
+	StateIDCheckpoint
 	StateIDSlot
 	StateIDRoot
 )
@@ -60,6 +61,8 @@ func NewStateIdentifier(id string) (StateIdentifier, error) {
 		return newStateIdentifier(StateIDGenesis, id), nil
 	case "finalized":
 		return newStateIdentifier(StateIDFinalized, id), nil
+	case "checkpoint":
+		return newStateIdentifier(StateIDCheckpoint, id), nil
 	}
 
 	if strings.HasPrefix(id, "0x") {
@@ -88,6 +91,8 @@ func (t StateIDType) String() string {
 		return string(IDGenesis)
 	case StateIDFinalized:
 		return string(IDFinalized)
+	case StateIDCheckpoint:
+		return string(IDCheckpoint)
 	case StateIDSlot:
 		return string(IDSlot)
 	case StateIDRoot:

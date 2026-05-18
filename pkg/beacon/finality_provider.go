@@ -51,6 +51,12 @@ type FinalityProvider interface {
 	GetBeaconStateByStateRoot(ctx context.Context, root phase0.Root) (*spec.VersionedBeaconState, error)
 	// GetBeaconStateByRoot returns the beacon sate with the given root.
 	GetBeaconStateByRoot(ctx context.Context, root phase0.Root) (*spec.VersionedBeaconState, error)
+	// GetBeaconStateByCheckpoint returns the beacon state at the epoch-start slot
+	// for checkpoint sync. Uses epoch-1 by default. Fetches from upstream directly.
+	GetBeaconStateByCheckpoint(ctx context.Context) (*spec.VersionedBeaconState, error)
+	// GetBlockByCheckpoint returns the last block at or before the epoch-start slot
+	// for checkpoint sync. Uses epoch-1 by default. Fetches from upstream directly.
+	GetBlockByCheckpoint(ctx context.Context) (*spec.VersionedSignedBeaconBlock, error)
 	// GetBlobSidecarsBySlot returns the blob sidecars for the given slot.
 	GetBlobSidecarsBySlot(ctx context.Context, slot phase0.Slot) ([]*deneb.BlobSidecar, error)
 	// ListFinalizedSlots returns a slice of finalized slots.

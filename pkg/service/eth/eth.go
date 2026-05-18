@@ -76,6 +76,8 @@ func (h *Handler) BeaconBlock(ctx context.Context, blockID BlockIdentifier) (*sp
 		}
 
 		return h.provider.GetBlockByRoot(ctx, finality.Finalized.Root)
+	case BlockIDCheckpoint:
+		return h.provider.GetBlockByCheckpoint(ctx)
 	default:
 		return nil, fmt.Errorf("invalid block id: %v", blockID.String())
 	}
@@ -306,6 +308,8 @@ func (h *Handler) BeaconState(ctx context.Context, stateID StateIdentifier) (*sp
 		}
 
 		return h.provider.GetBeaconStateByRoot(ctx, finality.Finalized.Root)
+	case StateIDCheckpoint:
+		return h.provider.GetBeaconStateByCheckpoint(ctx)
 	case StateIDGenesis:
 		return h.provider.GetBeaconStateBySlot(ctx, phase0.Slot(0))
 	default:
@@ -433,6 +437,17 @@ func (h *Handler) BlockRoot(ctx context.Context, blockID BlockIdentifier) (phase
 		}
 
 		return h.provider.SSZEncoder().GetBlockRoot(block)
+	case BlockIDCheckpoint:
+		block, err := h.provider.GetBlockByCheckpoint(ctx)
+		if err != nil {
+			return phase0.Root{}, err
+		}
+
+		if block == nil {
+			return phase0.Root{}, fmt.Errorf("no block for checkpoint")
+		}
+
+		return h.provider.SSZEncoder().GetBlockRoot(block)
 	default:
 		return phase0.Root{}, fmt.Errorf("invalid block id: %v", blockID.String())
 	}
@@ -540,6 +555,24 @@ func (h *Handler) BlobSidecars(ctx context.Context, blockID BlockIdentifier, ind
 
 		if block == nil {
 			return nil, dataVersion, fmt.Errorf("no block for finalized root %v", finality.Finalized.Root)
+		}
+
+		sl, err := block.Slot()
+		if err != nil {
+			return nil, dataVersion, err
+		}
+
+		dataVersion = block.Version
+
+		slot = sl
+	case BlockIDCheckpoint:
+		block, err := h.provider.GetBlockByCheckpoint(ctx)
+		if err != nil {
+			return nil, dataVersion, err
+		}
+
+		if block == nil {
+			return nil, dataVersion, fmt.Errorf("no block for checkpoint")
 		}
 
 		sl, err := block.Slot()

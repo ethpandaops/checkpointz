@@ -182,6 +182,7 @@ func (h *Handler) handleEthV2BeaconBlocks(ctx context.Context, r *http.Request, 
 		},
 	})
 
+	rsp.SetEthConsensusVersion(block.Version.String())
 	rsp.AddExtraData("version", block.Version.String())
 	rsp.AddExtraData("execution_optimistic", false)
 	rsp.AddExtraData("finalized", true) // We only serve finalized data

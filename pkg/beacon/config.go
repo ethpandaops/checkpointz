@@ -19,6 +19,21 @@ type Config struct {
 	// HistoricalEpochCount determines how many historical epochs the provider will cache.
 	HistoricalEpochCount int `yaml:"historical_epoch_count" default:"20"`
 
+	// CheckpointEpochOffset determines how many epochs behind the current head
+	// the "checkpoint" state ID should resolve to. 0 means use the latest epoch.
+	CheckpointEpochOffset int `yaml:"checkpoint_epoch_offset" default:"0"`
+
+	// FixedCheckpointRoot, if set, forces the "checkpoint" state ID to always
+	// resolve to this specific block root instead of computing one dynamically.
+	FixedCheckpointRoot string `yaml:"fixed_checkpoint_root" default:""`
+
+	// UnfinalizedCheckpointMinEpochGap is the minimum number of epochs between
+	// the current epoch and the finalized epoch before checkpointz will serve
+	// an unfinalized checkpoint state. If the gap is smaller than this value,
+	// the "checkpoint" endpoint falls back to serving the finalized state/block.
+	// Default is 5 epochs.
+	UnfinalizedCheckpointMinEpochGap int `yaml:"unfinalized_checkpoint_min_epoch_gap" default:"5"`
+
 	// Cache holds configuration for the caches.
 	Frontend FrontendConfig `yaml:"frontend"`
 }

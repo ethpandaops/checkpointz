@@ -789,3 +789,216 @@ func (d *Default) GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTi
 func (d *Default) GetDepositSnapshot(ctx context.Context, epoch phase0.Epoch) (*types.DepositSnapshot, error) {
 	return d.depositSnapshots.GetByEpoch(epoch)
 }
+
+// shouldFallbackToFinalized checks if the "checkpoint" endpoint should fall back
+// to serving the finalized state/block. This happens when the network is finalizing
+// normally (unfinality gap < UnfinalizedCheckpointMinEpochGap, default 5 epochs).
+// We should only serve unfinalized checkpoints when the network has been non-finalizing
+// for a significant period.
+func (d *Default) shouldFallbackToFinalized(ctx context.Context) bool {
+	minGap := d.config.UnfinalizedCheckpointMinEpochGap
+	if minGap <= 0 {
+		minGap = 5
+	}
+
+	sp, err := d.Spec()
+	if err != nil {
+		d.log.WithError(err).Debug("Cannot determine unfinality gap: spec not available")
+		return true // Safe default: serve finalized
+	}
+
+	if d.head == nil || d.head.Finalized == nil {
+		d.log.Debug("Cannot determine unfinality gap: head finality unknown")
+		return true // Safe default: serve finalized
+	}
+
+	// Get current epoch from wallclock
+	upstream, err := d.nodes.DataProviders(ctx).RandomNode(ctx)
+	if err != nil {
+		d.log.WithError(err).Debug("Cannot determine unfinality gap: no upstream nodes")
+		return true // Safe default: serve finalized
+	}
+
+	currentSlot := upstream.Beacon.Wallclock().Slots().Current()
+	currentEpoch := phase0.Epoch(uint64(currentSlot.Number()) / uint64(sp.SlotsPerEpoch))
+	finalizedEpoch := d.head.Finalized.Epoch
+
+	gap := int(currentEpoch) - int(finalizedEpoch)
+
+	d.log.WithFields(logrus.Fields{
+		"currentEpoch":   currentEpoch,
+		"finalizedEpoch": finalizedEpoch,
+		"gap":            gap,
+		"minGap":         minGap,
+	}).Debug("Checking unfinality gap for checkpoint fallback")
+
+	return gap < minGap
+}
+
+// getCheckpointEpochStartSlot returns the epoch-start slot for checkpoint sync.
+// By default it returns the start of (current_epoch - 1) to avoid serving
+// blocks from an incomplete epoch. The offset is configurable via
+// CheckpointEpochOffset (default 1).
+func (d *Default) getCheckpointEpochStartSlot(ctx context.Context) (phase0.Slot, error) {
+	sp, err := d.Spec()
+	if err != nil {
+		return 0, errors.New("chain spec not known")
+	}
+
+	// Use DataProviders directly without Healthy/Ready filters because on
+	// non-finalizing networks nodes may report is_syncing=true or even
+	// temporarily unhealthy (e.g., when EL is offline), but they can still
+	// serve state data from their CL.
+	upstream, err := d.nodes.DataProviders(ctx).RandomNode(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("no upstream nodes available: %w", err)
+	}
+
+	currentSlot := upstream.Beacon.Wallclock().Slots().Current()
+	headSlot := currentSlot.Number()
+	spe := uint64(sp.SlotsPerEpoch)
+	currentEpoch := headSlot / spe
+
+	// Default offset is 1 (previous epoch), configurable via CheckpointEpochOffset.
+	// Minimum offset is 1 to avoid serving blocks from the current incomplete epoch.
+	offset := uint64(d.config.CheckpointEpochOffset)
+	if offset < 1 {
+		offset = 1
+	}
+	if offset >= currentEpoch {
+		return 0, fmt.Errorf("checkpoint epoch offset %d is too large for current epoch %d", offset, currentEpoch)
+	}
+
+	targetEpoch := currentEpoch - offset
+	epochStartSlot := phase0.Slot(targetEpoch * spe)
+
+	d.log.WithField("currentEpoch", currentEpoch).
+		WithField("targetEpoch", targetEpoch).
+		WithField("epochStartSlot", epochStartSlot).
+		Info("Computed checkpoint epoch-start slot")
+
+	return epochStartSlot, nil
+}
+
+// getCheckpointUpstream returns a random upstream data provider.
+func (d *Default) getCheckpointUpstream(ctx context.Context) (*Node, error) {
+	upstream, err := d.nodes.DataProviders(ctx).RandomNode(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("no upstream nodes available: %w", err)
+	}
+	return upstream, nil
+}
+
+// GetBeaconStateByCheckpoint returns the beacon state for the checkpoint.
+// If the network unfinality gap is less than UnfinalizedCheckpointMinEpochGap (default 5),
+// falls back to serving the finalized state instead.
+// Otherwise fetches the state at the epoch-start slot (always available even for empty slots).
+func (d *Default) GetBeaconStateByCheckpoint(ctx context.Context) (*spec.VersionedBeaconState, error) {
+	// Check if we should fall back to finalized state
+	if d.shouldFallbackToFinalized(ctx) {
+		d.log.Info("Checkpoint request falling back to finalized state (unfinality gap below threshold)")
+
+		finality, err := d.Finalized(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get finalized checkpoint for fallback: %w", err)
+		}
+
+		if finality == nil || finality.Finalized == nil {
+			return nil, fmt.Errorf("no finalized checkpoint available for fallback")
+		}
+
+		return d.GetBeaconStateByRoot(ctx, finality.Finalized.Root)
+	}
+
+	if d.config.FixedCheckpointRoot != "" {
+		upstream, err := d.getCheckpointUpstream(ctx)
+		if err != nil {
+			return nil, err
+		}
+		d.log.WithField("root", d.config.FixedCheckpointRoot).Info("Fetching checkpoint state by fixed root")
+		return upstream.Beacon.FetchBeaconState(ctx, d.config.FixedCheckpointRoot)
+	}
+
+	epochStartSlot, err := d.getCheckpointEpochStartSlot(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute checkpoint slot: %w", err)
+	}
+
+	upstream, err := d.getCheckpointUpstream(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch state at the epoch-start slot. The state always exists even if
+	// no block was proposed at that slot (the CL processes empty slots).
+	slotStr := eth.SlotAsString(epochStartSlot)
+	d.log.WithField("slot", slotStr).Info("Fetching checkpoint state from upstream")
+
+	beaconState, err := upstream.Beacon.FetchBeaconState(ctx, slotStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch checkpoint state at slot %s: %w", slotStr, err)
+	}
+
+	return beaconState, nil
+}
+
+// GetBlockByCheckpoint returns the block for the checkpoint.
+// If the network unfinality gap is less than UnfinalizedCheckpointMinEpochGap (default 5),
+// falls back to serving the finalized block instead.
+// Otherwise finds the last block at or before the epoch-start slot.
+func (d *Default) GetBlockByCheckpoint(ctx context.Context) (*spec.VersionedSignedBeaconBlock, error) {
+	// Check if we should fall back to finalized block
+	if d.shouldFallbackToFinalized(ctx) {
+		d.log.Info("Checkpoint request falling back to finalized block (unfinality gap below threshold)")
+
+		finality, err := d.Finalized(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get finalized checkpoint for fallback: %w", err)
+		}
+
+		if finality == nil || finality.Finalized == nil {
+			return nil, fmt.Errorf("no finalized checkpoint available for fallback")
+		}
+
+		return d.GetBlockByRoot(ctx, finality.Finalized.Root)
+	}
+
+	if d.config.FixedCheckpointRoot != "" {
+		upstream, err := d.getCheckpointUpstream(ctx)
+		if err != nil {
+			return nil, err
+		}
+		d.log.WithField("root", d.config.FixedCheckpointRoot).Info("Fetching checkpoint block by fixed root")
+		return upstream.Beacon.FetchBlock(ctx, d.config.FixedCheckpointRoot)
+	}
+
+	epochStartSlot, err := d.getCheckpointEpochStartSlot(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute checkpoint slot: %w", err)
+	}
+
+	upstream, err := d.getCheckpointUpstream(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try the epoch-start slot first, then walk backwards to find the last
+	// block at or before it (in case the epoch-start slot was empty).
+	for slot := epochStartSlot; slot > 0; slot-- {
+		slotStr := eth.SlotAsString(slot)
+		block, err := upstream.Beacon.FetchBlock(ctx, slotStr)
+		if err != nil {
+			d.log.WithField("slot", slotStr).Debug("No block at slot, trying previous")
+			continue
+		}
+		if block == nil {
+			continue
+		}
+
+		d.log.WithField("slot", slotStr).WithField("epochStartSlot", epochStartSlot).
+			Info("Found checkpoint block")
+		return block, nil
+	}
+
+	return nil, errors.New("no block found for checkpoint")
+}
