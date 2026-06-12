@@ -66,7 +66,7 @@ func NewStateIdentifier(id string) (StateIdentifier, error) {
 		return newStateIdentifier(StateIDRoot, id), nil
 	}
 
-	if _, err := strconv.ParseInt(id, 10, 64); err == nil {
+	if _, err := strconv.ParseUint(id, 10, 64); err == nil {
 		return newStateIdentifier(StateIDSlot, id), nil
 	}
 
