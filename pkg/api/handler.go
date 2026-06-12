@@ -113,18 +113,14 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 
 		response, err = handler(ctx, r, p, contentType)
 		if err != nil {
-			if writeErr := WriteErrorResponse(w, err.Error(), response.StatusCode); writeErr != nil {
-				h.log.WithError(writeErr).Error("Failed to write error response")
-			}
+			h.writeError(w, registeredPath, response.StatusCode, err)
 
 			return
 		}
 
 		data, err := response.MarshalAs(contentType)
 		if err != nil {
-			if writeErr := WriteErrorResponse(w, err.Error(), http.StatusInternalServerError); writeErr != nil {
-				h.log.WithError(writeErr).Error("Failed to write error response")
-			}
+			h.writeError(w, registeredPath, http.StatusInternalServerError, err)
 
 			return
 		}
@@ -136,6 +132,23 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 		if err := WriteContentAwareResponse(w, data, contentType); err != nil {
 			h.log.WithError(err).Error("Failed to write response")
 		}
+	}
+}
+
+// writeError responds with an error, hiding internal error detail from clients
+// on 5xx responses while still logging it server-side. Client errors (4xx) keep
+// their message since it is actionable feedback about the request.
+func (h *Handler) writeError(w http.ResponseWriter, path string, statusCode int, err error) {
+	msg := err.Error()
+
+	if statusCode >= http.StatusInternalServerError {
+		h.log.WithError(err).WithField("path", path).Error("Request failed")
+
+		msg = http.StatusText(statusCode)
+	}
+
+	if writeErr := WriteErrorResponse(w, msg, statusCode); writeErr != nil {
+		h.log.WithError(writeErr).Error("Failed to write error response")
 	}
 }
 
