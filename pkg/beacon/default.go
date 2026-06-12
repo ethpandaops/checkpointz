@@ -485,6 +485,15 @@ func (d *Default) checkFinality(ctx context.Context) error {
 			continue
 		}
 
+		if finality == nil ||
+			finality.Finalized == nil ||
+			finality.Justified == nil ||
+			finality.PreviousJustified == nil {
+			d.log.Infof("Node %s returned incomplete finality", node.Config.Name)
+
+			continue
+		}
+
 		aggFinality = append(aggFinality, finality)
 	}
 
