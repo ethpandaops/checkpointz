@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/attestantio/go-eth2-client/spec/deneb"
-	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/ethpandaops/go-eth2-client/spec/deneb"
+	"github.com/ethpandaops/go-eth2-client/spec/phase0"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )

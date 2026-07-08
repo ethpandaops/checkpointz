@@ -17,6 +17,7 @@ var rootCmd = &cobra.Command{
 	Short: "Checkpoint sync provider for Ethereum beacon nodes",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := initCommon()
+
 		p := checkpointz.NewServer(log, cfg)
 		if err := p.Start(context.Background()); err != nil {
 			log.WithError(err).Fatal("failed to serve")
@@ -54,7 +55,6 @@ func loadConfigFromFile(file string) (*checkpointz.Config, error) {
 	}
 
 	yamlFile, err := os.ReadFile(file)
-
 	if err != nil {
 		return nil, err
 	}

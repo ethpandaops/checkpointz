@@ -3,7 +3,7 @@ package eth
 import (
 	"fmt"
 
-	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/ethpandaops/go-eth2-client/spec/phase0"
 )
 
 func RootAsString(root phase0.Root) string {
