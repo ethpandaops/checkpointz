@@ -389,6 +389,20 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		return errors.New("beacon state is nil")
 	}
 
+	// Verify that the state the node returned for this slot actually hashes to the
+	// state root committed to in the block. Nodes that are behind can otherwise
+	// respond to a by-slot state request with a state from a different chain (e.g.
+	// their stale head dialed forward through empty slots), which would then be
+	// stored and served under a state root it does not match.
+	computedRoot, err := d.sszEncoder.GetStateRoot(beaconState)
+	if err != nil {
+		return fmt.Errorf("failed to compute state root: %w", err)
+	}
+
+	if computedRoot != stateRoot {
+		return fmt.Errorf("beacon state root mismatch: node %s returned a state for slot %d with root %#x, expected %#x", node.Config.Name, slot, computedRoot, stateRoot)
+	}
+
 	expiresAt := time.Now().Add(FinalityHaltedServingPeriod)
 	if slot == phase0.Slot(0) {
 		expiresAt = time.Now().Add(999999 * time.Hour)
