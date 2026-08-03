@@ -16,13 +16,13 @@ jobs:
           # Mainnet
           - {consensus: lighthouse, network: mainnet, image: 'sigp/lighthouse:latest'}
           - {consensus: teku, network: mainnet, image: 'consensys/teku:latest'}
-          - {consensus: prysm, network: mainnet, image: 'gcr.io/prysmaticlabs/prysm/beacon-chain:latest'}
+          - {consensus: prysm, network: mainnet, image: 'gcr.io/offchainlabs/prysm/beacon-chain:latest'}
           - {consensus: nimbus, network: mainnet, image: 'statusim/nimbus-eth2:amd64-latest'}
           - {consensus: lodestar, network: mainnet, image: 'chainsafe/lodestar:latest'}
           # Hoodi
           - {consensus: lighthouse, network: hoodi, image: 'sigp/lighthouse:latest'}
           - {consensus: teku, network: hoodi, image: 'consensys/teku:latest'}
-          - {consensus: prysm, network: hoodi, image: 'gcr.io/prysmaticlabs/prysm/beacon-chain:latest'}
+          - {consensus: prysm, network: hoodi, image: 'gcr.io/offchainlabs/prysm/beacon-chain:latest'}
           - {consensus: nimbus, network: hoodi, image: 'statusim/nimbus-eth2:amd64-latest'}
           - {consensus: lodestar, network: hoodi, image: 'chainsafe/lodestar:latest'}
     runs-on: ubuntu-latest
