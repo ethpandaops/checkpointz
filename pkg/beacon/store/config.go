@@ -2,6 +2,8 @@ package store
 
 import "errors"
 
+const logFieldExpiresAt = "expires_at"
+
 type Config struct {
 	MaxItems int `yaml:"max_items"`
 }
