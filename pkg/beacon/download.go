@@ -380,7 +380,11 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		return nil
 	}
 
-	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.SlotAsString(slot))
+	// Fetch by state root rather than slot. A node that is behind can answer a
+	// by-slot request with a state from a different chain view (e.g. its stale
+	// head dialed forward through empty slots) instead of erroring; asked for
+	// the exact root it errors, and the caller retries with another node.
+	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.RootAsString(stateRoot))
 	if err != nil {
 		return fmt.Errorf("failed to fetch beacon state: %w", err)
 	}
