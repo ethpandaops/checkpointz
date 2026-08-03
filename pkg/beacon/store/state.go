@@ -38,8 +38,8 @@ func (c *BeaconState) Add(stateRoot phase0.Root, state *spec.VersionedBeaconStat
 
 	c.log.WithFields(
 		logrus.Fields{
-			"state_root": eth.RootAsString(stateRoot),
-			"expires_at": expiresAt.String(),
+			"state_root":      eth.RootAsString(stateRoot),
+			logFieldExpiresAt: expiresAt.String(),
 		},
 	).Debug("Added state")
 

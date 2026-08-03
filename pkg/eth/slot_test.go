@@ -18,7 +18,7 @@ func TestCalculateSlotTime(t *testing.T) {
 		want SlotTime
 	}{
 		{
-			name: "Test 1",
+			name: "genesis slot",
 			slot: phase0.Slot(0),
 			want: SlotTime{
 				StartTime: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -26,7 +26,7 @@ func TestCalculateSlotTime(t *testing.T) {
 			},
 		},
 		{
-			name: "Test 2",
+			name: "first slot",
 			slot: phase0.Slot(1),
 			want: SlotTime{
 				StartTime: time.Date(2020, 1, 1, 0, 0, 12, 0, time.UTC),
@@ -34,7 +34,7 @@ func TestCalculateSlotTime(t *testing.T) {
 			},
 		},
 		{
-			name: "Test 3",
+			name: "slot 100",
 			slot: phase0.Slot(100),
 			want: SlotTime{
 				StartTime: time.Date(2020, 1, 1, 0, 20, 0, 0, time.UTC),
