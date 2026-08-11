@@ -17,7 +17,18 @@ func New() *Decider {
 	return &Decider{}
 }
 
-func (m *Decider) Decide(checkpoints []*v1.Finality) (*v1.Finality, error) {
+// Decide picks the checkpoint that a majority of the configured upstreams agree on.
+//
+// totalUpstreams is the number of configured upstreams eligible to vote, not the
+// number of entries in checkpoints. Only nodes that are currently ready respond,
+// so checkpoints can be a strict subset of the configured set; thresholding against
+// len(checkpoints) instead of totalUpstreams would let a single responder (or any
+// minority that happens to be the only one currently ready) declare itself a
+// majority. Requiring count > totalUpstreams/2 means a majority can only ever be
+// reached once more than half of the *configured* upstreams agree, and naturally
+// requires at least two agreeing responses whenever more than one upstream is
+// configured.
+func (m *Decider) Decide(checkpoints []*v1.Finality, totalUpstreams int) (*v1.Finality, error) {
 	common := make(map[string]struct {
 		Finality *v1.Finality
 		Count    int
@@ -46,7 +57,7 @@ func (m *Decider) Decide(checkpoints []*v1.Finality) (*v1.Finality, error) {
 	}
 
 	for _, v := range common {
-		if v.Count > len(checkpoints)/2 {
+		if v.Count > totalUpstreams/2 {
 			return v.Finality, nil
 		}
 	}

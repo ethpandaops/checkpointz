@@ -54,7 +54,7 @@ func TestBasicMajority(t *testing.T) {
 		finalityA,
 	}
 
-	finality, err := majority.Decide(payload)
+	finality, err := majority.Decide(payload, len(payload))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestNonMajority(t *testing.T) {
 		finalityC,
 	}
 
-	_, err := majority.Decide(payload)
+	_, err := majority.Decide(payload, len(payload))
 	if err != ErrNoMajorityFound {
 		t.Errorf("Expected %v, got %v", ErrNoMajorityFound, err)
 	}
@@ -83,7 +83,59 @@ func TestSplitMajority(t *testing.T) {
 		finalityB,
 	}
 
-	_, err := majority.Decide(payload)
+	_, err := majority.Decide(payload, len(payload))
+	if err != ErrNoMajorityFound {
+		t.Errorf("Expected %v, got %v", ErrNoMajorityFound, err)
+	}
+}
+
+// A lone responder must never be treated as a majority when other upstreams are
+// configured but not currently ready. The threshold has to be measured against
+// the configured upstream count, not against how many nodes happened to answer.
+func TestLoneResponderIsNotMajorityWhenMoreUpstreamsAreConfigured(t *testing.T) {
+	payload := []*v1.Finality{finalityA}
+
+	_, err := majority.Decide(payload, 4)
+	if err != ErrNoMajorityFound {
+		t.Errorf("Expected %v, got %v", ErrNoMajorityFound, err)
+	}
+}
+
+// With four configured upstreams, three agreeing responses clears the bar.
+func TestThreeOfFourUpstreamsFormMajority(t *testing.T) {
+	payload := []*v1.Finality{finalityA, finalityA, finalityA}
+
+	finality, err := majority.Decide(payload, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if finality.Finalized.Root != finalityA.Finalized.Root {
+		t.Errorf("Expected %v, got %v", finalityA, finality)
+	}
+}
+
+// With only one upstream configured, that upstream's answer is by definition the
+// only opinion available and must still be accepted.
+func TestSingleConfiguredUpstreamFormsMajority(t *testing.T) {
+	payload := []*v1.Finality{finalityA}
+
+	finality, err := majority.Decide(payload, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if finality.Finalized.Root != finalityA.Finalized.Root {
+		t.Errorf("Expected %v, got %v", finalityA, finality)
+	}
+}
+
+// With two configured upstreams, a single response cannot form a majority; both
+// must agree.
+func TestTwoConfiguredUpstreamsRequireBothToAgree(t *testing.T) {
+	payload := []*v1.Finality{finalityA}
+
+	_, err := majority.Decide(payload, 2)
 	if err != ErrNoMajorityFound {
 		t.Errorf("Expected %v, got %v", ErrNoMajorityFound, err)
 	}
