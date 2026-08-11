@@ -63,6 +63,15 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 		return fmt.Errorf("block slot is not aligned from an epoch boundary: %d", blockSlot)
 	}
 
+	// Never move the serving checkpoint backward, even if a caller somehow
+	// requests it. This mirrors the guard in checkForNewServingCheckpoint so the
+	// invariant holds regardless of call path.
+	if d.servingBundle != nil && d.servingBundle.Finalized != nil &&
+		checkpoint.Finalized.Epoch < d.servingBundle.Finalized.Epoch {
+		return fmt.Errorf("refusing to move serving checkpoint backward from epoch %d to epoch %d",
+			d.servingBundle.Finalized.Epoch, checkpoint.Finalized.Epoch)
+	}
+
 	d.servingBundle = checkpoint
 	d.metrics.ObserveServingEpoch(checkpoint.Finalized.Epoch)
 

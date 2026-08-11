@@ -351,8 +351,10 @@ func (d *Default) checkForNewServingCheckpoint(ctx context.Context) error {
 		return d.downloadServingCheckpoint(ctx, d.head)
 	}
 
-	// If the head has moved on, download a new serving bundle.
-	if d.servingBundle.Finalized.Epoch != d.head.Finalized.Epoch {
+	// If the head has advanced, download a new serving bundle. A lower or equal
+	// head epoch never triggers a re-download, so a byzantine minority cannot
+	// move what we serve backward to an older, different-fork checkpoint.
+	if d.head.Finalized.Epoch > d.servingBundle.Finalized.Epoch {
 		logCtx.
 			WithField("serving_epoch", d.servingBundle.Finalized.Epoch).
 			WithField("serving_root", fmt.Sprintf("%#x", d.servingBundle.Finalized.Root)).
@@ -488,25 +490,58 @@ func (d *Default) checkFinality(ctx context.Context) error {
 		aggFinality = append(aggFinality, finality)
 	}
 
-	majority, err := checkpoints.NewMajorityDecider().Decide(aggFinality)
+	majority, err := checkpoints.NewMajorityDecider().Decide(aggFinality, len(d.nodes))
 	if err != nil {
 		return perrors.Wrap(err, "failed to decide majority finality")
 	}
 
-	if d.head == nil || d.head.Finalized == nil || d.head.Finalized.Root != majority.Finalized.Root {
-		d.head = majority
+	next, updated, rejected := nextHeadCheckpoint(d.head, majority)
+	if rejected {
+		d.log.
+			WithField("head_epoch", d.head.Finalized.Epoch).
+			WithField("majority_epoch", majority.Finalized.Epoch).
+			WithField("majority_root", fmt.Sprintf("%#x", majority.Finalized.Root)).
+			Warn("Rejected a majority finality checkpoint that would move the head backward")
 
-		d.publishFinalityCheckpointHeadUpdated(ctx, majority)
+		return nil
+	}
+
+	if updated {
+		d.head = next
+
+		d.publishFinalityCheckpointHeadUpdated(ctx, next)
 
 		d.log.
-			WithField("epoch", majority.Finalized.Epoch).
-			WithField("root", fmt.Sprintf("%#x", majority.Finalized.Root)).
+			WithField("epoch", next.Finalized.Epoch).
+			WithField("root", fmt.Sprintf("%#x", next.Finalized.Root)).
 			Info("New finalized head checkpoint")
 
-		d.metrics.ObserveHeadEpoch(majority.Finalized.Epoch)
+		d.metrics.ObserveHeadEpoch(next.Finalized.Epoch)
 	}
 
 	return nil
+}
+
+// nextHeadCheckpoint decides whether a newly-decided majority checkpoint should
+// replace the current head. It enforces epoch-monotonicity: a majority at a lower
+// epoch than the current head is rejected outright, so a byzantine minority that
+// is temporarily the only ready responder can never move the head backward onto
+// an older, different-fork checkpoint. Kept as a pure function so the decision
+// logic can be unit tested without standing up real upstream nodes.
+func nextHeadCheckpoint(current, majority *v1.Finality) (next *v1.Finality, updated bool, rejected bool) {
+	if majority == nil || majority.Finalized == nil {
+		return current, false, false
+	}
+
+	if current != nil && current.Finalized != nil && majority.Finalized.Epoch < current.Finalized.Epoch {
+		return current, false, true
+	}
+
+	if current == nil || current.Finalized == nil || current.Finalized.Root != majority.Finalized.Root {
+		return majority, true, false
+	}
+
+	return current, false, false
 }
 
 func (d *Default) refreshSpec(ctx context.Context) error {

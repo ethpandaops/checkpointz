@@ -6,7 +6,7 @@ import (
 )
 
 type Decider interface {
-	Decide(checkpoints []*v1.Finality) (*v1.Finality, error)
+	Decide(checkpoints []*v1.Finality, totalUpstreams int) (*v1.Finality, error)
 }
 
 var _ Decider = (*majority.Decider)(nil)
