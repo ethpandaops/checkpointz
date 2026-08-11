@@ -8,6 +8,7 @@ import (
 
 	v1 "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/spec"
+	"github.com/attestantio/go-eth2-client/spec/deneb"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
 	perrors "github.com/pkg/errors"
@@ -358,7 +359,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 				d.log.WithField("epoch", epoch).Debug("Skipping blob sidecar download - Fulu fork active")
 			} else {
 				// Download and store blob sidecars
-				if err := d.downloadAndStoreBlobSidecars(ctx, slot, upstream); err != nil {
+				if err := d.downloadAndStoreBlobSidecars(ctx, block, slot, upstream); err != nil {
 					return nil, fmt.Errorf("failed to download and store blob sidecars: %w", err)
 				}
 			}
@@ -389,6 +390,10 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		return errors.New("beacon state is nil")
 	}
 
+	if err := verifyBeaconStateRoot(beaconState, stateRoot); err != nil {
+		return fmt.Errorf("beacon state failed verification: %w", err)
+	}
+
 	expiresAt := time.Now().Add(FinalityHaltedServingPeriod)
 	if slot == phase0.Slot(0) {
 		expiresAt = time.Now().Add(999999 * time.Hour)
@@ -401,6 +406,30 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 	return nil
 }
 
+// verifyBeaconStateRoot confirms a fetched beacon state actually hashes to the
+// state_root the block committed to. Without this, an upstream that returns the
+// correct finalized block (required to pass fetchBundle's block re-hash) could
+// pair it with a fabricated state for that slot and have it stored and served
+// as if it were genuine.
+func verifyBeaconStateRoot(beaconState *spec.VersionedBeaconState, claimedRoot phase0.Root) error {
+	actual, err := beaconState.HashTreeRoot()
+	if err != nil {
+		return fmt.Errorf("failed to compute state hash tree root: %w", err)
+	}
+
+	if phase0.Root(actual) != claimedRoot {
+		return fmt.Errorf("state hash tree root %#x does not match block's claimed state root %#x", actual, claimedRoot)
+	}
+
+	return nil
+}
+
+// downloadAndStoreDepositSnapshot does not verify the snapshot's deposit_root
+// against its EIP-4881 finalized branch before storing it. Unlike the block,
+// state, and blob sidecar paths, that would require implementing the EIP-4881
+// root calculation ourselves, and this codebase has no dependency that already
+// provides it. Left unverified for now rather than shipping an unvalidated
+// implementation of that algorithm.
 func (d *Default) downloadAndStoreDepositSnapshot(ctx context.Context, epoch phase0.Epoch, node *Node) error {
 	// Check if we already have the deposit snapshot.
 	if _, err := d.depositSnapshots.GetByEpoch(epoch); err == nil {
@@ -436,7 +465,7 @@ func (d *Default) downloadAndStoreDepositSnapshot(ctx context.Context, epoch pha
 	return nil
 }
 
-func (d *Default) downloadAndStoreBlobSidecars(ctx context.Context, slot phase0.Slot, node *Node) error {
+func (d *Default) downloadAndStoreBlobSidecars(ctx context.Context, block *spec.VersionedSignedBeaconBlock, slot phase0.Slot, node *Node) error {
 	// Check if we already have the blob sidecars.
 	if _, err := d.blobSidecars.GetBySlot(slot); err == nil {
 		return nil
@@ -450,6 +479,15 @@ func (d *Default) downloadAndStoreBlobSidecars(ctx context.Context, slot phase0.
 
 	if blobSidecars == nil {
 		return errors.New("invalid blob sidecars")
+	}
+
+	commitments, err := block.BlobKZGCommitments()
+	if err != nil {
+		return fmt.Errorf("failed to get blob KZG commitments from block: %w", err)
+	}
+
+	if err := verifyBlobSidecarCommitments(commitments, blobSidecars); err != nil {
+		return fmt.Errorf("blob sidecars failed verification: %w", err)
 	}
 
 	// Store for the FinalityHaltedServingPeriod to ensure we have them in case of non-finality.
@@ -466,6 +504,32 @@ func (d *Default) downloadAndStoreBlobSidecars(ctx context.Context, slot phase0.
 			"node": node.Config.Name,
 		}).
 		Infof("Downloaded and stored blob sidecar for slot %d", slot)
+
+	return nil
+}
+
+// verifyBlobSidecarCommitments confirms every fetched blob sidecar's KZG
+// commitment matches the commitment the block itself carries at that index.
+// Without this, an upstream that returns the correct finalized block could
+// pair it with fabricated blob data and have it stored and served as if it
+// belonged to that block.
+func verifyBlobSidecarCommitments(commitments []deneb.KZGCommitment, sidecars []*deneb.BlobSidecar) error {
+	for _, sidecar := range sidecars {
+		if sidecar == nil {
+			return errors.New("blob sidecar is nil")
+		}
+
+		index := int(sidecar.Index)
+
+		if index < 0 || index >= len(commitments) {
+			return fmt.Errorf("blob sidecar index %d is out of range for block with %d committed blobs",
+				sidecar.Index, len(commitments))
+		}
+
+		if sidecar.KZGCommitment != commitments[index] {
+			return fmt.Errorf("blob sidecar %d commitment does not match the block's committed value", sidecar.Index)
+		}
+	}
 
 	return nil
 }
