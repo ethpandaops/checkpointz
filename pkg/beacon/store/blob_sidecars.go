@@ -36,8 +36,8 @@ func (d *BlobSidecar) Add(slot phase0.Slot, sidecars []*deneb.BlobSidecar, expir
 
 	d.log.WithFields(
 		logrus.Fields{
-			"slot":       eth.SlotAsString(slot),
-			"expires_at": expiresAt.String(),
+			"slot":            eth.SlotAsString(slot),
+			logFieldExpiresAt: expiresAt.String(),
 		},
 	).Debug("Added blob sidecar")
 

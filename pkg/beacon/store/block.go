@@ -68,10 +68,10 @@ func (c *Block) Add(root phase0.Root, block *spec.VersionedSignedBeaconBlock, ex
 
 	c.log.WithFields(
 		logrus.Fields{
-			"block_root": eth.RootAsString(root),
-			"slot":       eth.SlotAsString(slot),
-			"state_root": eth.RootAsString(stateRoot),
-			"expires_at": expiresAt.String(),
+			"block_root":      eth.RootAsString(root),
+			"slot":            eth.SlotAsString(slot),
+			"state_root":      eth.RootAsString(stateRoot),
+			logFieldExpiresAt: expiresAt.String(),
 		},
 	).Debug("Added block")
 

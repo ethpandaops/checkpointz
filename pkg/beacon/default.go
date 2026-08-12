@@ -26,6 +26,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	logFieldNode  = "node"
+	logFieldEpoch = "epoch"
+	logFieldRoot  = "root"
+)
+
 type Default struct {
 	log logrus.FieldLogger
 
@@ -147,14 +153,14 @@ func (d *Default) Start(ctx context.Context) error {
 		n := node
 
 		logCtx := d.log.WithFields(logrus.Fields{
-			"node":   n.Config.Name,
-			"reason": "serving_updater",
+			logFieldNode: n.Config.Name,
+			"reason":     "serving_updater",
 		})
 
 		n.Beacon.OnFinalityCheckpointUpdated(ctx, func(ctx context.Context, event *beacon.FinalityCheckpointUpdated) error {
 			logCtx.WithFields(logrus.Fields{
-				"epoch": event.Finality.Finalized.Epoch,
-				"root":  fmt.Sprintf("%#x", event.Finality.Finalized.Root),
+				logFieldEpoch: event.Finality.Finalized.Epoch,
+				logFieldRoot:  fmt.Sprintf("%#x", event.Finality.Finalized.Root),
 			}).Info("Node has a new finalized checkpoint")
 
 			// Check if we have a new majority finality.
@@ -499,8 +505,8 @@ func (d *Default) checkFinality(ctx context.Context) error {
 		d.publishFinalityCheckpointHeadUpdated(ctx, majority)
 
 		d.log.
-			WithField("epoch", majority.Finalized.Epoch).
-			WithField("root", fmt.Sprintf("%#x", majority.Finalized.Root)).
+			WithField(logFieldEpoch, majority.Finalized.Epoch).
+			WithField(logFieldRoot, fmt.Sprintf("%#x", majority.Finalized.Root)).
 			Info("New finalized head checkpoint")
 
 		d.metrics.ObserveHeadEpoch(majority.Finalized.Epoch)

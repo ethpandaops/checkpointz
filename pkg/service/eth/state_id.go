@@ -54,11 +54,11 @@ func (id StateIdentifier) AsSlot() (phase0.Slot, error) {
 
 func NewStateIdentifier(id string) (StateIdentifier, error) {
 	switch id {
-	case "head":
+	case string(IDHead):
 		return newStateIdentifier(StateIDHead, id), nil
-	case "genesis":
+	case string(IDGenesis):
 		return newStateIdentifier(StateIDGenesis, id), nil
-	case "finalized":
+	case string(IDFinalized):
 		return newStateIdentifier(StateIDFinalized, id), nil
 	}
 

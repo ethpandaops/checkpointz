@@ -9,9 +9,9 @@ func TestStateIDMapping(t *testing.T) {
 		id   string
 		want StateIDType
 	}{
-		{"head", StateIDHead},
-		{"genesis", StateIDGenesis},
-		{"finalized", StateIDFinalized},
+		{string(IDHead), StateIDHead},
+		{string(IDGenesis), StateIDGenesis},
+		{string(IDFinalized), StateIDFinalized},
 		{"100", StateIDSlot},
 		{"0x4a74943698817939e32aa6b2c688ccf1336bbff9190e400cc1360013d635da59", StateIDRoot},
 	}
