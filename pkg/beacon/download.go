@@ -34,7 +34,7 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 	}
 
 	d.log.
-		WithField("epoch", checkpoint.Finalized.Epoch).
+		WithField(logFieldEpoch, checkpoint.Finalized.Epoch).
 		WithField("fork_name", fork.Name).
 		Info("Downloading serving checkpoint")
 
@@ -68,8 +68,8 @@ func (d *Default) downloadServingCheckpoint(ctx context.Context, checkpoint *v1.
 
 	d.log.WithFields(
 		logrus.Fields{
-			"epoch": checkpoint.Finalized.Epoch,
-			"root":  fmt.Sprintf("%#x", checkpoint.Finalized.Root),
+			logFieldEpoch: checkpoint.Finalized.Epoch,
+			logFieldRoot:  fmt.Sprintf("%#x", checkpoint.Finalized.Root),
 		},
 	).Info("Serving a new finalized checkpoint bundle")
 
@@ -131,7 +131,7 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 	}
 
 	d.log.WithFields(logrus.Fields{
-		"root": fmt.Sprintf("%#x", genesisBlockRoot),
+		logFieldRoot: fmt.Sprintf("%#x", genesisBlockRoot),
 	}).Info("Fetched genesis bundle")
 
 	return nil
@@ -270,9 +270,9 @@ func (d *Default) downloadBlock(ctx context.Context, slot phase0.Slot, upstream 
 	d.log.
 		WithFields(logrus.Fields{
 			"slot":       slot,
-			"root":       eth.RootAsString(root),
+			logFieldRoot: eth.RootAsString(root),
 			"state_root": eth.RootAsString(stateRoot),
-			"node":       upstream.Config.Name,
+			logFieldNode: upstream.Config.Name,
 		}).
 		Infof("Downloaded and stored block for slot %d", slot)
 
@@ -316,7 +316,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 
 	d.log.
 		WithField("slot", slot).
-		WithField("root", fmt.Sprintf("%#x", blockRoot)).
+		WithField(logFieldRoot, fmt.Sprintf("%#x", blockRoot)).
 		WithField("state_root", fmt.Sprintf("%#x", stateRoot)).
 		Info("Fetched beacon block")
 
@@ -355,7 +355,7 @@ func (d *Default) fetchBundle(ctx context.Context, root phase0.Root, upstream *N
 			fuluActive := fuluErr == nil && fuluFork != nil && fuluFork.Active(epoch)
 
 			if fuluActive {
-				d.log.WithField("epoch", epoch).Debug("Skipping blob sidecar download - Fulu fork active")
+				d.log.WithField(logFieldEpoch, epoch).Debug("Skipping blob sidecar download - Fulu fork active")
 			} else {
 				// Download and store blob sidecars
 				if err := d.downloadAndStoreBlobSidecars(ctx, slot, upstream); err != nil {
@@ -380,7 +380,11 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		return nil
 	}
 
-	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.SlotAsString(slot))
+	// Fetch by state root rather than slot. A node that is behind can answer a
+	// by-slot request with a state from a different chain view (e.g. its stale
+	// head dialed forward through empty slots) instead of erroring; asked for
+	// the exact root it errors, and the caller retries with another node.
+	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.RootAsString(stateRoot))
 	if err != nil {
 		return fmt.Errorf("failed to fetch beacon state: %w", err)
 	}
@@ -428,8 +432,8 @@ func (d *Default) downloadAndStoreDepositSnapshot(ctx context.Context, epoch pha
 
 	d.log.
 		WithFields(logrus.Fields{
-			"epoch": epoch,
-			"node":  node.Config.Name,
+			logFieldEpoch: epoch,
+			logFieldNode:  node.Config.Name,
 		}).
 		Infof("Downloaded and stored deposit snapshot for epoch %d", epoch)
 
@@ -462,8 +466,8 @@ func (d *Default) downloadAndStoreBlobSidecars(ctx context.Context, slot phase0.
 
 	d.log.
 		WithFields(logrus.Fields{
-			"slot": slot,
-			"node": node.Config.Name,
+			"slot":       slot,
+			logFieldNode: node.Config.Name,
 		}).
 		Infof("Downloaded and stored blob sidecar for slot %d", slot)
 

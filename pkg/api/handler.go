@@ -95,8 +95,8 @@ func (h *Handler) wrappedHandler(handler func(ctx context.Context, r *http.Reque
 		registeredPath := deriveRegisteredPath(r, p)
 
 		h.log.WithFields(logrus.Fields{
-			"method":       r.Method,
-			"path":         r.URL.Path,
+			labelMethod:    r.Method,
+			labelPath:      r.URL.Path,
 			"content_type": contentType,
 			"accept":       r.Header.Get("Accept"),
 		}).Trace("Handling request")

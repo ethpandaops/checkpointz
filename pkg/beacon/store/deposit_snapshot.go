@@ -36,8 +36,8 @@ func (d *DepositSnapshot) Add(epoch phase0.Epoch, snapshot *types.DepositSnapsho
 
 	d.log.WithFields(
 		logrus.Fields{
-			"epoch":      eth.EpochAsString(epoch),
-			"expires_at": expiresAt.String(),
+			"epoch":           eth.EpochAsString(epoch),
+			logFieldExpiresAt: expiresAt.String(),
 		},
 	).Debug("Added deposit snapshot")
 
