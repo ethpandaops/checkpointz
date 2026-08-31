@@ -68,7 +68,7 @@ func NewBlockIdentifier(id string) (BlockIdentifier, error) {
 		return newBlockIdentifier(BlockIDRoot, id), nil
 	}
 
-	if _, err := strconv.ParseInt(id, 10, 64); err == nil {
+	if _, err := strconv.ParseUint(id, 10, 64); err == nil {
 		return newBlockIdentifier(BlockIDSlot, id), nil
 	}
 
@@ -83,12 +83,12 @@ func newBlockIdentifier(id BlockIDType, value string) BlockIdentifier {
 }
 
 func NewSlotFromString(id string) (phase0.Slot, error) {
-	slot, err := strconv.ParseInt(id, 10, 64)
+	slot, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		return 0, err
 	}
 
-	return phase0.Slot(uint64(slot)), nil //nolint:gosec // slot parsed from string is validated
+	return phase0.Slot(slot), nil
 }
 
 func NewRootFromString(id string) (phase0.Root, error) {

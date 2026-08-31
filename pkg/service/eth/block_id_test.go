@@ -30,3 +30,30 @@ func TestBlockIDMapping(t *testing.T) {
 		})
 	}
 }
+
+func TestBlockIDRejectsNegativeSlot(t *testing.T) {
+	t.Parallel()
+
+	for _, id := range []string{"-1", "-100"} {
+		t.Run(id, func(t *testing.T) {
+			t.Parallel()
+
+			parsed, err := NewBlockIdentifier(id)
+			if err == nil {
+				t.Errorf("Expected error for %q, got type %d", id, parsed.Type())
+			}
+
+			if parsed.Type() != BlockIDInvalid {
+				t.Errorf("Expected BlockIDInvalid for %q, got %d", id, parsed.Type())
+			}
+		})
+	}
+}
+
+func TestNewSlotFromStringRejectsNegative(t *testing.T) {
+	t.Parallel()
+
+	if _, err := NewSlotFromString("-1"); err == nil {
+		t.Error("Expected error for negative slot, got nil")
+	}
+}
