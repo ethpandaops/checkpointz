@@ -24,8 +24,8 @@ github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 h1:YLtO71vCjJRCBcrPMtQ9nqBsqpA1
 github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1/go.mod h1:hyedUtir6IdtD/7lIxGeCxkaw7y45JueMRL4DIyJDKs=
 github.com/ethereum/go-ethereum v1.17.2-0.20260324190457-8f361e342cb9 h1:87oCZDemf+tvCIUtKt9EUtkfXbU/llIl41ML8+vZ8Mo=
 github.com/ethereum/go-ethereum v1.17.2-0.20260324190457-8f361e342cb9/go.mod h1:KHcRXfGOUfUmKg51IhQ0IowiqZ6PqZf08CMtk0g5K1o=
-github.com/ethpandaops/beacon v0.67.1-0.20260414085454-4de46d12471e h1:SVNjoOoy1OrEdhpO+MYCxh/ChssgBMZy47U29Z2AirU=
-github.com/ethpandaops/beacon v0.67.1-0.20260414085454-4de46d12471e/go.mod h1:huTiadnAh+6EfLqDu+HhI72Zfr2alJh4tjTt5Rt7C2g=
+github.com/ethpandaops/beacon v0.69.0 h1:qGfy9y+zp8qLna6dgxvzLfAsAdGez0JL8BFJjr1Zudo=
+github.com/ethpandaops/beacon v0.69.0/go.mod h1:TSvV8MOrn2kfWgWEFOg5b3AvlMLF5BWbkpsMPPGf4/I=
 github.com/ethpandaops/ethwallclock v0.2.0 h1:EeFKtZ7v6TAdn/oAh0xaPujD7N4amjBxrWIByraUfLM=
 github.com/ethpandaops/ethwallclock v0.2.0/go.mod h1:y0Cu+mhGLlem19vnAV2x0hpFS5KZ7oOi2SWYayv9l24=
 github.com/ethpandaops/go-eth2-client v0.1.6 h1:lG7Xz767YQQ+mN1ldzqJlj9Klg6zOElcemjXbCgJV5o=
