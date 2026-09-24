@@ -38,6 +38,8 @@ export default function Slot(props: { slot: number }) {
         return data?.data?.block?.Electra;
       case 'FULU':
         return data?.data?.block?.Fulu;
+      case 'GLOAS':
+        return data?.data?.block?.Gloas;
       case 'PHASE0':
         return data?.data?.block?.Phase0;
     }

@@ -3,7 +3,7 @@ package eth
 import (
 	"time"
 
-	"github.com/attestantio/go-eth2-client/spec/phase0"
+	"github.com/ethpandaops/go-eth2-client/spec/phase0"
 )
 
 type SlotTime struct {
@@ -14,7 +14,8 @@ type SlotTime struct {
 }
 
 func CalculateSlotTime(slot phase0.Slot, genesisTime time.Time, durationPerSlot time.Duration) SlotTime {
-	slotStartTime := genesisTime.Add(time.Duration(int64(slot)) * durationPerSlot).UTC() //nolint:gosec // slot fits in int64
+	//nolint:gosec // slot values are within safe range for time.Duration
+	slotStartTime := genesisTime.Add(time.Duration(slot) * durationPerSlot).UTC()
 
 	return SlotTime{
 		StartTime: slotStartTime,

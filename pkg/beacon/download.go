@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	v1 "github.com/attestantio/go-eth2-client/api/v1"
-	"github.com/attestantio/go-eth2-client/spec"
-	"github.com/attestantio/go-eth2-client/spec/phase0"
 	"github.com/ethpandaops/checkpointz/pkg/eth"
+	v1 "github.com/ethpandaops/go-eth2-client/api/v1"
+	"github.com/ethpandaops/go-eth2-client/spec"
+	"github.com/ethpandaops/go-eth2-client/spec/phase0"
 	perrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -177,9 +177,7 @@ func (d *Default) fetchHistoricalCheckpoints(ctx context.Context, checkpoint *v1
 			break
 		}
 
-		slot := phase0.Slot(currentSlot - uint64(i)*uint64(sp.SlotsPerEpoch))
-
-		slotsInScope[slot] = struct{}{}
+		slotsInScope[phase0.Slot(currentSlot-uint64(i)*uint64(sp.SlotsPerEpoch))] = struct{}{}
 	}
 
 	for slot := range slotsInScope {
@@ -380,7 +378,11 @@ func (d *Default) downloadAndStoreBeaconState(ctx context.Context, stateRoot pha
 		return nil
 	}
 
-	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.SlotAsString(slot))
+	// Fetch by state root rather than slot. A node that is behind can answer a
+	// by-slot request with a state from a different chain view (e.g. its stale
+	// head dialed forward through empty slots) instead of erroring; asked for
+	// the exact root it errors, and the caller retries with another node.
+	beaconState, err := node.Beacon.FetchBeaconState(ctx, eth.RootAsString(stateRoot))
 	if err != nil {
 		return fmt.Errorf("failed to fetch beacon state: %w", err)
 	}
