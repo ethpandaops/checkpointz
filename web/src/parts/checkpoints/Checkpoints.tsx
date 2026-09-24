@@ -26,6 +26,9 @@ export default function Checkpoints() {
     if (!finalizedEpoch) return;
     return finalizedEpoch;
   }, [statusData]);
+  const latestRoot = useMemo(() => {
+    return statusData?.data?.finality?.finalized?.root;
+  }, [statusData]);
 
   if (isLoading)
     return (
@@ -48,6 +51,7 @@ export default function Checkpoints() {
       <CheckpointsTable
         slots={Object.values(data?.data?.slots ?? {})}
         latestEpoch={latestEpoch}
+        latestRoot={latestRoot}
         showCheckpoint={statusData?.data?.operating_mode === 'full'}
         onSlotClick={setSlot}
       />
