@@ -4,8 +4,6 @@ github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608
 github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6/go.mod h1:ioLG6R+5bUSO1oeGSDxOV3FADARuMoytZCSX6MEMQkI=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
-github.com/casbin/govaluate v1.10.0 h1:ffGw51/hYH3w3rZcxO/KcaUIDOLP84w7nsidMVgaDG0=
-github.com/casbin/govaluate v1.10.0/go.mod h1:G/UnbIjZk/0uMNaLwZZmFQrR72tYRZWQkO70si/iR7A=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9 h1:xz6Nv3zcwO2Lila35hcb0QloCQsc38Al13RNEzWRpX4=
@@ -28,8 +26,8 @@ github.com/ethpandaops/beacon v0.69.0 h1:qGfy9y+zp8qLna6dgxvzLfAsAdGez0JL8BFJjr1
 github.com/ethpandaops/beacon v0.69.0/go.mod h1:TSvV8MOrn2kfWgWEFOg5b3AvlMLF5BWbkpsMPPGf4/I=
 github.com/ethpandaops/ethwallclock v0.2.0 h1:EeFKtZ7v6TAdn/oAh0xaPujD7N4amjBxrWIByraUfLM=
 github.com/ethpandaops/ethwallclock v0.2.0/go.mod h1:y0Cu+mhGLlem19vnAV2x0hpFS5KZ7oOi2SWYayv9l24=
-github.com/ethpandaops/go-eth2-client v0.1.6 h1:lG7Xz767YQQ+mN1ldzqJlj9Klg6zOElcemjXbCgJV5o=
-github.com/ethpandaops/go-eth2-client v0.1.6/go.mod h1:97Oq3omOQSGPPYgrbsOIIw2Pc4T5Ph21f8ZRyHJQBHU=
+github.com/ethpandaops/go-eth2-client v0.1.8-0.20260921153827-562eb77e8259 h1:QzcjfCjzGxf0eZsptNtmnmtVL4V2eaBbi2PznLlD27w=
+github.com/ethpandaops/go-eth2-client v0.1.8-0.20260921153827-562eb77e8259/go.mod h1:sIVbaug0GsltsJS+hj8ID4dmWBIt8TXoNIesvuBCGt0=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
@@ -146,10 +144,10 @@ github.com/onsi/ginkgo v1.14.0/go.mod h1:iSB4RoI2tjJc9BBv4NKIKWKya62Rps+oPG/Lv9k
 github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7JYyY=
 github.com/onsi/gomega v1.10.1 h1:o0+MgICZLuZ7xjH7Vx6zS/zcu93/BEp1VwkIW1mEXCE=
 github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1ybHNo=
-github.com/pk910/dynamic-ssz v1.3.2 h1:65UR/O+ss+U2Dn86Rdl7LwehHo3u2ElutduS/pcuUXE=
-github.com/pk910/dynamic-ssz v1.3.2/go.mod h1:lqmnou2bjr2UWQ3C/L3082TGW0SFl/SwT7ionwM0+FU=
-github.com/pk910/hashtree-bindings v0.2.2 h1:gkczxxekBW2NeMK9N3OLj7Jepe7zPmJGVwr8LyofGsA=
-github.com/pk910/hashtree-bindings v0.2.2/go.mod h1:zrWt88783JmhBfcgni6kkIMYRdXTZi/FL//OyI5T/l4=
+github.com/pk910/dynamic-ssz v1.3.3-0.20260921152246-990798fa9718 h1:ctdxKDq6c360JEH5gkS6jupRpyRO9BYTTPEdE6RUDuQ=
+github.com/pk910/dynamic-ssz v1.3.3-0.20260921152246-990798fa9718/go.mod h1:mnRbhjX+4YMyP4jYMncTUA3aDpMzBLqAbjcvfCyOyRI=
+github.com/pk910/hashtree-bindings v0.2.6 h1:BjRQho04nWzGrXwBCLVTyQRNV30O59iPcvQRcidFt2o=
+github.com/pk910/hashtree-bindings v0.2.6/go.mod h1:zrWt88783JmhBfcgni6kkIMYRdXTZi/FL//OyI5T/l4=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
