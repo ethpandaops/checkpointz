@@ -88,3 +88,48 @@ func TestSplitMajority(t *testing.T) {
 		t.Errorf("Expected %v, got %v", ErrNoMajorityFound, err)
 	}
 }
+
+func TestNilFinalityIgnored(t *testing.T) {
+	payload := []*v1.Finality{
+		nil,
+		finalityA,
+		finalityA,
+		nil,
+	}
+
+	finality, err := majority.Decide(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if finality.Finalized.Root != finalityA.Finalized.Root {
+		t.Errorf("Expected %v, got %v", finalityA, finality)
+	}
+}
+
+func TestNilCheckpointFieldsIgnored(t *testing.T) {
+	payload := []*v1.Finality{
+		{Finalized: nil, Justified: checkpointB, PreviousJustified: checkpointB},
+		{Finalized: checkpointA, Justified: nil, PreviousJustified: checkpointB},
+		{Finalized: checkpointA, Justified: checkpointB, PreviousJustified: nil},
+		finalityA,
+	}
+
+	finality, err := majority.Decide(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if finality.Finalized.Root != finalityA.Finalized.Root {
+		t.Errorf("Expected %v, got %v", finalityA, finality)
+	}
+}
+
+func TestAllNilNoMajority(t *testing.T) {
+	payload := []*v1.Finality{nil, nil}
+
+	_, err := majority.Decide(payload)
+	if err != ErrNoMajorityFound {
+		t.Errorf("Expected %v, got %v", ErrNoMajorityFound, err)
+	}
+}

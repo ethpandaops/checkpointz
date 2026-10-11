@@ -60,6 +60,17 @@ func (s *Server) Start(ctx context.Context) error {
 
 	router := httprouter.New()
 
+	router.PanicHandler = func(w http.ResponseWriter, r *http.Request, rcv any) {
+		s.log.
+			WithField("panic", rcv).
+			WithField("path", r.URL.Path).
+			Error("Recovered from panic while handling request")
+
+		if err := api.WriteErrorResponse(w, "internal server error", http.StatusInternalServerError); err != nil {
+			s.log.WithError(err).Error("Failed to write panic error response")
+		}
+	}
+
 	if err := s.http.Register(ctx, router); err != nil {
 		return err
 	}
