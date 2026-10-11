@@ -79,8 +79,12 @@ func (s *Server) Start(ctx context.Context) error {
 
 	server := &http.Server{
 		Addr:              s.Cfg.GlobalConfig.ListenAddr,
-		ReadHeaderTimeout: 3 * time.Minute,
-		WriteTimeout:      15 * time.Minute,
+		ReadHeaderTimeout: 30 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		// Sized for beacon state downloads, which can be hundreds of MB
+		// and take minutes on slow links.
+		WriteTimeout: 5 * time.Minute,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	// Gzip any content longer than 1024 bytes if requested via the Accept-Encoding header
