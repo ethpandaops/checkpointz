@@ -100,24 +100,30 @@ func (d *Default) checkGenesis(ctx context.Context) error {
 		return errors.New("no nodes ready")
 	}
 
-	// Grab the genesis root
-	randomNode, err := readyNodes.RandomNode(ctx)
-	if err != nil {
-		return err
+	// Ask every ready node for the genesis root and only accept it once more
+	// than half of the configured upstreams agree. A single node can no longer
+	// unilaterally decide what "genesis" means for this instance.
+	roots := make([]phase0.Root, 0, len(readyNodes))
+
+	for _, n := range readyNodes {
+		genesisBlock, err := n.Beacon.FetchBlock(ctx, "genesis")
+		if err != nil || genesisBlock == nil {
+			d.log.WithError(err).WithField("node", n.Config.Name).Debug("Failed to fetch genesis block from node")
+
+			continue
+		}
+
+		root, err := d.sszEncoder.GetBlockRoot(genesisBlock)
+		if err != nil {
+			continue
+		}
+
+		roots = append(roots, root)
 	}
 
-	genesisBlock, err := randomNode.Beacon.FetchBlock(ctx, "genesis")
+	genesisBlockRoot, err := majorityRoot(roots, len(d.nodes))
 	if err != nil {
-		return err
-	}
-
-	if genesisBlock == nil {
-		return errors.New("invalid genesis block")
-	}
-
-	genesisBlockRoot, err := d.sszEncoder.GetBlockRoot(genesisBlock)
-	if err != nil {
-		return err
+		return perrors.Wrap(err, "failed to decide majority genesis block root")
 	}
 
 	upstream, err := d.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
