@@ -76,7 +76,7 @@ export interface APIBeaconBlockMessage {
 }
 
 export interface APIBeaconBlock {
-  Version: 'BELLATRIX' | 'ALTAIR' | 'PHASE0' | 'CAPELLA' | 'DENEB' | 'ELECTRA' | 'FULU' | 'GLOAS';
+  Version: 'BELLATRIX' | 'ALTAIR' | 'PHASE0' | 'CAPELLA' | 'DENEB' | 'ELECTRA' | 'FULU' | 'GLOAS' | 'HEZE';
   Altair?: APIBeaconBlockMessage;
   Bellatrix?: APIBeaconBlockMessage;
   Capella?: APIBeaconBlockMessage;
@@ -85,6 +85,7 @@ export interface APIBeaconBlock {
   Electra?: APIBeaconBlockMessage;
   Fulu?: APIBeaconBlockMessage;
   Gloas?: APIBeaconBlockMessage;
+  Heze?: APIBeaconBlockMessage;
 }
 
 export interface APIBeaconSlotBlock {
