@@ -6,7 +6,7 @@ require (
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
 	github.com/creasty/defaults v1.6.0
 	github.com/ethpandaops/beacon v0.69.0
-	github.com/ethpandaops/ethwallclock v0.2.0
+	github.com/ethpandaops/ethwallclock v0.5.0
 	github.com/ethpandaops/go-eth2-client v0.1.11
 	github.com/go-co-op/gocron v1.18.0
 	github.com/julienschmidt/httprouter v1.3.0
@@ -15,6 +15,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sirupsen/logrus v1.9.3
+	github.com/spf13/cast v1.10.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.12.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -57,7 +58,6 @@ require (
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rs/zerolog v1.32.0 // indirect
 	github.com/signalsciences/ac v1.2.0 // indirect
-	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/ugorji/go/codec v1.2.6 // indirect

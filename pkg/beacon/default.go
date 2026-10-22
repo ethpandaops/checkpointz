@@ -24,6 +24,7 @@ import (
 	"github.com/go-co-op/gocron"
 	perrors "github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 )
 
 const (
@@ -52,6 +53,9 @@ type Default struct {
 	specMutex sync.Mutex
 	spec      *state.Spec
 	genesis   *v1.Genesis
+
+	clockMutex sync.Mutex
+	clock      *ethwallclock.EthereumBeaconChain
 
 	historicalSlotFailures map[phase0.Slot]int
 
@@ -786,18 +790,46 @@ func (d *Default) PeerCount(ctx context.Context) (uint64, error) {
 }
 
 func (d *Default) GetSlotTime(ctx context.Context, slot phase0.Slot) (eth.SlotTime, error) {
-	SlotTime := eth.SlotTime{}
-
-	_, err := d.Spec()
+	clock, err := d.wallclock()
 	if err != nil {
-		return SlotTime, errors.New("no upstream beacon state spec available")
+		return eth.SlotTime{}, err
+	}
+
+	s := clock.Slots().FromNumber(uint64(slot))
+	window := s.TimeWindow()
+
+	return eth.SlotTime{
+		StartTime: window.Start().UTC(),
+		EndTime:   window.End().UTC(),
+	}, nil
+}
+
+func (d *Default) wallclock() (*ethwallclock.EthereumBeaconChain, error) {
+	sp, err := d.Spec()
+	if err != nil {
+		return nil, errors.New("no upstream beacon state spec available")
 	}
 
 	if d.genesis == nil {
-		return SlotTime, errors.New("genesis time is unknown")
+		return nil, errors.New("genesis time is unknown")
 	}
 
-	return eth.CalculateSlotTime(slot, d.genesis.GenesisTime, d.spec.SecondsPerSlot.AsDuration()), nil
+	d.clockMutex.Lock()
+	defer d.clockMutex.Unlock()
+
+	if d.clock == nil {
+		d.clock = ethwallclock.NewEthereumBeaconChain(
+			d.genesis.GenesisTime,
+			sp.SecondsPerSlot.AsDuration(),
+			uint64(sp.SlotsPerEpoch),
+			ethwallclock.WithHezeSlotDuration(
+				cast.ToUint64(sp.FullSpec["HEZE_FORK_EPOCH"]),
+				time.Duration(cast.ToInt64(sp.FullSpec["SLOT_DURATION_MS_HEZE"]))*time.Millisecond,
+			),
+		)
+	}
+
+	return d.clock, nil
 }
 
 func (d *Default) GetDepositSnapshot(ctx context.Context, epoch phase0.Epoch) (*types.DepositSnapshot, error) {
