@@ -7,7 +7,7 @@ require (
 	github.com/creasty/defaults v1.6.0
 	github.com/ethpandaops/beacon v0.69.0
 	github.com/ethpandaops/ethwallclock v0.2.0
-	github.com/ethpandaops/go-eth2-client v0.1.8-0.20260921153827-562eb77e8259
+	github.com/ethpandaops/go-eth2-client v0.1.11
 	github.com/go-co-op/gocron v1.18.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/nanmu42/gzip v1.2.0
