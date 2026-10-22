@@ -1,6 +1,6 @@
 module github.com/ethpandaops/checkpointz
 
-go 1.26.1
+go 1.26.10
 
 require (
 	github.com/chuckpreslar/emission v0.0.0-20170206194824-a7ddd980baf9
