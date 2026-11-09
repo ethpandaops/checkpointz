@@ -1,89 +1,290 @@
 name: goreleaser
 
+# Releases run in two jobs on fresh GitHub-hosted runners:
+#
+# - build: checks out the tag and runs the repository's build (Go, npm,
+#   GoReleaser hooks, Dockerfiles) with a read-only token and no secrets. It
+#   uploads the release archives, checksums, SBOMs, and OCI image archives.
+# - publish: never checks out or runs repository code. It verifies the build
+#   output, signs and attests it, pushes the images by digest, and creates the
+#   GitHub release. Only this job gets contents: write, an OIDC token, and the
+#   Docker Hub credentials, and it runs in the `release` environment so
+#   maintainers can require approval and restrict it to release tags.
+
 on:
   push:
     tags:
-      - '*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+      # Alpha releases tagged by alpha-releases.yaml, e.g. 0.0.1-gloas.
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: docker.io/ethpandaops/checkpointz
 
 jobs:
-  goreleaser:
+  build:
+    runs-on: ubuntu-24.04
     permissions:
-      contents: write
-    runs-on:
-      - self-hosted-ghr
-      - size-l-x64
+      contents: read
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      suffix: ${{ steps.meta.outputs.suffix }}
+      checksums-sha256: ${{ steps.stage.outputs.checksums-sha256 }}
+      scratch-digest: ${{ steps.images.outputs.scratch-digest }}
+      debian-digest: ${{ steps.images.outputs.debian-digest }}
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-      - name: Derive release suffix from tag (if it exists)
+          persist-credentials: false
+
+      - name: Derive release metadata from tag
+        id: meta
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
-          # Strip the 'refs/tags/' prefix
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-
-          # Extract suffix from tag name after the last '-' (e.g., 'dencun' from 'v1.0.0-dencun')
-          RELEASE_SUFFIX=${TAG_NAME##*-}
-
-          # Check if the suffix is still a version pattern (e.g., 'v0.0.44'), in which case there's no suffix
-          if [[ $RELEASE_SUFFIX =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            RELEASE_SUFFIX=""
+          # v1.2.3 is a stable release. 1.2.3-<suffix> or v1.2.3-<suffix> is a
+          # pre-release whose floating image tags are <suffix>-latest and
+          # <suffix>-debian-latest.
+          if [[ ! "$TAG" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+(-([0-9A-Za-z][0-9A-Za-z.-]*))?$ ]]; then
+            echo "::error::Tag $TAG does not match v1.2.3, v1.2.3-<suffix> or 1.2.3-<suffix>"
+            exit 1
           fi
+          SUFFIX="${BASH_REMATCH[2]}"
+          {
+            echo "tag=$TAG"
+            echo "version=${TAG#v}"
+            echo "suffix=$SUFFIX"
+          } >> "$GITHUB_OUTPUT"
+          echo "Release $TAG (version ${TAG#v}, suffix '${SUFFIX}')"
 
-          echo "RELEASE_SUFFIX=$RELEASE_SUFFIX" >> $GITHUB_ENV
-
-          echo "Release suffix: $RELEASE_SUFFIX"
+      # Caching is disabled so release builds start from an empty module and
+      # build cache.
       - name: Set up Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
-          go-version: '1.26'
-          check-latest: true
-      -
-        name: Set up NodeJS
+          go-version-file: go.mod
+          cache: false
+
+      - name: Set up NodeJS
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
-          node-version: 18
-      - name: Run apt-get update
-        run: sudo apt-get update
-      - name: Install cross-compiler for linux/arm64
-        run: sudo apt-get -y install gcc-aarch64-linux-gnu
-      - name: Install make
-        run: sudo apt-get -y install make
+          node-version: 18.20.8
+          package-manager-cache: false
+
+      # GoReleaser shells out to syft for the per-archive SBOMs.
+      - name: Install syft
+        uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          syft-version: v1.55.0
+
+      - name: Build release artifacts
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        with:
+          distribution: goreleaser
+          version: v2.19.0
+          args: release --clean --skip=publish
+        env:
+          GORELEASER_CURRENT_TAG: ${{ steps.meta.outputs.tag }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
-      - name: Set up Docker Context for Buildx
-        shell: bash
-        id: buildx-context
-        run: |
-          docker context create builders
+        with:
+          image: docker.io/tonistiigi/binfmt:qemu-v10.2.3@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+          cache-image: false
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
         with:
-          endpoint: builders
-      -
-        name: Login to DockerHub
+          driver-opts: image=docker.io/moby/buildkit:v0.34.1@sha256:99368f3e46177c6405b9740e4461d91cee004128daeecca78d4ceac50ec1da5c
+
+      # Builds the scratch and debian images from the GoReleaser binaries as
+      # OCI archives. The publish job pushes these exact archives, so the
+      # pushed digests are the ones computed here.
+      - name: Build images
+        id: images
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+          SYFT_SCANNER: docker.io/docker/buildkit-syft-scanner:1.12.0@sha256:ae4f3b554449e7e25548e7d8ccc029d17357348e30c6e3df01b92bc93654d6a9
+        run: |
+          set -euo pipefail
+          context="$RUNNER_TEMP/image-context"
+          mkdir -p dist/images
+          for arch in amd64 arm64; do
+            mkdir -p "$context/linux/$arch"
+            binary=$(jq -er --arg arch "$arch" \
+              '[.[] | select(.type == "Binary" and .goos == "linux" and .goarch == $arch) | .path] | if length == 1 then .[0] else error("expected one linux/\($arch) binary") end' \
+              dist/artifacts.json)
+            cp "$binary" "$context/linux/$arch/"
+          done
+
+          created=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          for variant in scratch debian; do
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --file "goreleaser-$variant.Dockerfile" \
+              --label "org.opencontainers.image.created=$created" \
+              --label "org.opencontainers.image.title=checkpointz" \
+              --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+              --label "org.opencontainers.image.version=$VERSION" \
+              --provenance=mode=max \
+              --attest "type=sbom,generator=$SYFT_SCANNER" \
+              --output "type=oci,dest=dist/images/$variant.tar" \
+              "$context"
+            digest=$(tar -xOf "dist/images/$variant.tar" index.json \
+              | jq -er '.manifests | if length == 1 then .[0].digest else error("expected one image index") end')
+            echo "$variant image digest: $digest"
+            echo "$variant-digest=$digest" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Stage release files
+        id: stage
+        run: |
+          set -euo pipefail
+          mkdir -p release/assets release/images
+          jq -r '.[] | select(.type == "Archive" or .type == "Checksum" or .type == "SBOM") | .path' dist/artifacts.json \
+            | xargs -I{} cp {} release/assets/
+          cp dist/CHANGELOG.md release/CHANGELOG.md
+          cp dist/images/*.tar release/images/
+          (cd release/assets && sha256sum --strict --check checksums.txt)
+          echo "checksums-sha256=$(sha256sum release/assets/checksums.txt | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          ls -l release/assets release/images
+
+      - name: Upload release files
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: release
+          path: release/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write # create the GitHub release
+      id-token: write # keyless cosign signing and attestations
+      attestations: write # actions/attest
+    env:
+      TAG: ${{ needs.build.outputs.tag }}
+      VERSION: ${{ needs.build.outputs.version }}
+      SUFFIX: ${{ needs.build.outputs.suffix }}
+      SCRATCH_DIGEST: ${{ needs.build.outputs.scratch-digest }}
+      DEBIAN_DIGEST: ${{ needs.build.outputs.debian-digest }}
+    steps:
+      # No checkout: this job only handles the files the build job produced.
+      - name: Download release files
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: release
+
+      - name: Verify release files
+        env:
+          CHECKSUMS_SHA256: ${{ needs.build.outputs.checksums-sha256 }}
+        run: |
+          set -euo pipefail
+          echo "$CHECKSUMS_SHA256  release/assets/checksums.txt" | sha256sum --strict --check
+          (cd release/assets && sha256sum --strict --check checksums.txt)
+          # Every asset except checksums.txt must be listed in it.
+          for f in release/assets/*; do
+            name=$(basename "$f")
+            [[ "$name" == checksums.txt ]] && continue
+            awk '{print $2}' release/assets/checksums.txt | grep -Fxq "$name" \
+              || { echo "::error::$name is not in checksums.txt"; exit 1; }
+          done
+          for variant in scratch debian; do
+            expected=SCRATCH_DIGEST; [[ "$variant" == debian ]] && expected=DEBIAN_DIGEST
+            actual=$(tar -xOf "release/images/$variant.tar" index.json | jq -er '.manifests | if length == 1 then .[0].digest else error("expected one image index") end')
+            [[ "$actual" == "${!expected}" ]] || { echo "::error::$variant digest $actual != ${!expected}"; exit 1; }
+          done
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v2.6.5
+
+      # checksums.txt lists every archive and SBOM, so one signature covers
+      # them all.
+      - name: Sign checksums
+        working-directory: release/assets
+        run: |
+          cosign sign-blob --yes \
+            --output-signature checksums.txt.sig \
+            --output-certificate checksums.txt.pem \
+            checksums.txt
+
+      - name: Attest release archives and SBOMs
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: release/assets/checksums.txt
+
+      - name: Login to DockerHub
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Update GoReleaser config
-        run: |
-          cp .goreleaser.yaml ../.goreleaser.yaml.new
 
-          # If we have a RELEASE_SUFFIX, update the goreleaser config to not set
-          # the release as the latest
-          if [[ -n "$RELEASE_SUFFIX" ]]; then
-            echo "release:" >> ../.goreleaser.yaml.new
-            echo "  prerelease: true" >> ../.goreleaser.yaml.new
-            echo "  make_latest: false" >> ../.goreleaser.yaml.new
-          fi
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+      # skopeo (preinstalled on the runner) pushes the OCI archives unchanged,
+      # so every tag points at the digest the build job computed.
+      - name: Push images
+        run: |
+          set -euo pipefail
+          latest="${SUFFIX:+$SUFFIX-}latest"
+          push() {
+            local archive=$1 digest=$2 tag=$3
+            skopeo copy --all --preserve-digests --retry-times 3 \
+              "oci-archive:$archive" "docker://$IMAGE:$tag"
+            pushed=$(skopeo inspect --raw --retry-times 3 "docker://$IMAGE:$tag" | sha256sum | cut -d' ' -f1)
+            [[ "sha256:$pushed" == "$digest" ]] || { echo "::error::$IMAGE:$tag is sha256:$pushed, expected $digest"; exit 1; }
+            echo "$IMAGE:$tag -> $digest"
+          }
+          push release/images/scratch.tar "$SCRATCH_DIGEST" "$VERSION"
+          push release/images/scratch.tar "$SCRATCH_DIGEST" "$latest"
+          push release/images/debian.tar "$DEBIAN_DIGEST" "$VERSION-debian"
+          push release/images/debian.tar "$DEBIAN_DIGEST" "${SUFFIX:+$SUFFIX-}debian-latest"
+
+      - name: Sign images
+        run: |
+          set -euo pipefail
+          for digest in "$SCRATCH_DIGEST" "$DEBIAN_DIGEST"; do
+            cosign sign --yes --recursive "$IMAGE@$digest"
+          done
+
+      - name: Attest scratch image
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean --config ../.goreleaser.yaml.new
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ env.SCRATCH_DIGEST }}
+
+      - name: Attest debian image
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ env.DEBIAN_DIGEST }}
+
+      # Created last so a release only appears once its images are published.
+      # gh uploads the assets to a draft and then publishes it, which also
+      # works with GitHub immutable releases.
+      - name: Create GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_SUFFIX: ${{ env.RELEASE_SUFFIX }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          args=(--repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --notes-file release/CHANGELOG.md)
+          if [[ -n "$SUFFIX" ]]; then
+            args+=(--prerelease --latest=false)
+          else
+            args+=(--latest)
+          fi
+          gh release create "$TAG" "${args[@]}" release/assets/*

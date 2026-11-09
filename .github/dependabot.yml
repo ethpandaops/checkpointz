@@ -8,6 +8,14 @@ updates:
         actions:
            patterns:
               - '*'
+   - package-ecosystem: docker
+     directory: /
+     schedule:
+        interval: weekly
+     groups:
+        docker-images:
+           patterns:
+              - '*'
    - package-ecosystem: gomod
      directory: /
      schedule:

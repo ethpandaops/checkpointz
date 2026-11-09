@@ -4,7 +4,9 @@ project_name: checkpointz
 
 before:
   hooks:
-    - go mod tidy
+    # Verify downloaded modules against go.sum. The release build does not
+    # modify go.mod or go.sum.
+    - go mod verify
     - go generate ./...
     - make build-web
 builds:
@@ -29,6 +31,11 @@ builds:
     mod_timestamp: "{{ .CommitTimestamp }}"
 checksum:
   name_template: 'checksums.txt'
+# SPDX SBOM per release archive (syft must be on PATH). SBOMs are listed in
+# checksums.txt, so the release workflow's signature over checksums.txt
+# covers them too.
+sboms:
+  - artifacts: archive
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 changelog:
@@ -38,37 +45,7 @@ changelog:
       - '^docs:'
       - '^test:'
 
-dockers_v2:
-  ## Scratch
-  - id: scratch
-    dockerfile: goreleaser-scratch.Dockerfile
-    images:
-      - "ethpandaops/{{ .ProjectName }}"
-    tags:
-      - "{{ .Version }}"
-      - "{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest"
-    platforms:
-      - linux/amd64
-      - linux/arm64
-    labels:
-      "org.opencontainers.image.created": "{{.Date}}"
-      "org.opencontainers.image.title": "{{.ProjectName}}"
-      "org.opencontainers.image.revision": "{{.FullCommit}}"
-      "org.opencontainers.image.version": "{{.Version}}"
-
-  ## Debian
-  - id: debian
-    dockerfile: goreleaser-debian.Dockerfile
-    images:
-      - "ethpandaops/{{ .ProjectName }}"
-    tags:
-      - "{{ .Version }}-debian"
-      - "{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest"
-    platforms:
-      - linux/amd64
-      - linux/arm64
-    labels:
-      "org.opencontainers.image.created": "{{.Date}}"
-      "org.opencontainers.image.title": "{{.ProjectName}}"
-      "org.opencontainers.image.revision": "{{.FullCommit}}"
-      "org.opencontainers.image.version": "{{.Version}}"
+# Container images are not built here. The release workflow
+# (.github/workflows/goreleaser.yaml) builds them from the binaries in dist/
+# with goreleaser-*.Dockerfile in a job without credentials, and a separate
+# publish job pushes them by digest.

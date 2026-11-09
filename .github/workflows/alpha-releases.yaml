@@ -5,6 +5,10 @@ on:
     branches:
       - 'release/*'
 
+# The tag is pushed with EPOBOT_TOKEN so that it starts the goreleaser workflow.
+permissions:
+  contents: read
+
 jobs:
   tag-release:
     runs-on: ubuntu-24.04

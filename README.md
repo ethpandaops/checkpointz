@@ -192,15 +192,49 @@ Download the latest release from the [Releases page](https://github.com/ethpanda
 ### Docker
 Available as a docker image at [ethpandaops/checkpointz](https://hub.docker.com/r/ethpandaops/checkpointz/tags)
 #### Images
-- `latest` - distroless, multiarch
-- `latest-debian` - debian, multiarch
 - `$version` - distroless, multiarch, pinned to a release (i.e. `0.4.0`)
 - `$version-debian` - debian, multiarch, pinned to a release (i.e. `0.4.0-debian`)
+- `latest` - distroless, multiarch, moves to each new release
+- `debian-latest` - debian, multiarch, moves to each new release
+
+Use a version tag, or a digest from `docker buildx imagetools inspect ethpandaops/checkpointz:$version`, for deployments.
 
 **Quick start**
 ```
-docker run -d  --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/checkpointz/config.yaml -p 9090:9090 -p 5555:5555 -it ethpandaops/checkpointz:latest --config /opt/checkpointz/config.yaml;
+docker run -d  --name checkpointz -v $HOST_DIR_CHANGE_ME/config.yaml:/opt/checkpointz/config.yaml -p 9090:9090 -p 5555:5555 -it ethpandaops/checkpointz:$version --config /opt/checkpointz/config.yaml;
 docker logs -f checkpointz;
+```
+
+### Verifying releases
+Releases are built by the [goreleaser workflow](.github/workflows/goreleaser.yaml). Release archives, SBOMs and images have GitHub build provenance attestations, `checksums.txt` has a keyless [cosign](https://github.com/sigstore/cosign) signature (`checksums.txt.sig` and `checksums.txt.pem`), and images are signed with cosign.
+
+Verify a downloaded archive with the [GitHub CLI](https://cli.github.com/):
+```sh
+gh attestation verify checkpointz_${version}_linux_amd64.tar.gz \
+  --repo ethpandaops/checkpointz \
+  --signer-workflow ethpandaops/checkpointz/.github/workflows/goreleaser.yaml
+```
+
+Or verify `checksums.txt` with cosign v2 and check the archives against it:
+```sh
+cosign verify-blob \
+  --certificate checksums.txt.pem \
+  --signature checksums.txt.sig \
+  --certificate-identity "https://github.com/ethpandaops/checkpointz/.github/workflows/goreleaser.yaml@refs/tags/v${version}" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  checksums.txt
+sha256sum --ignore-missing --check checksums.txt
+```
+
+Verify an image:
+```sh
+gh attestation verify oci://docker.io/ethpandaops/checkpointz:${version} \
+  --repo ethpandaops/checkpointz \
+  --signer-workflow ethpandaops/checkpointz/.github/workflows/goreleaser.yaml
+
+cosign verify docker.io/ethpandaops/checkpointz:${version} \
+  --certificate-identity "https://github.com/ethpandaops/checkpointz/.github/workflows/goreleaser.yaml@refs/tags/v${version}" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
 
