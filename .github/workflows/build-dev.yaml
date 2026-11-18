@@ -1,0 +1,137 @@
+name: Build DEV docker image
+
+# Builds and pushes a docker image for pull requests labelled `build-docker-image`,
+# tagged with the branch name. Can also be dispatched manually with a custom tag.
+#
+# This intentionally triggers on `pull_request` (NOT `pull_request_target`): PRs from
+# forks run without secrets and are skipped. Dispatch the workflow manually to publish
+# a trusted build of a fork branch.
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+  workflow_dispatch:
+    inputs:
+      docker_tag:
+        description: "Docker tag (defaults to the branch name)"
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  prinfo:
+    name: "Get PR info"
+    runs-on: ubuntu-24.04
+    outputs:
+      build_docker: ${{ steps.loadinfo.outputs.build_docker }}
+      docker_tag: ${{ steps.loadinfo.outputs.docker_tag }}
+      # commit_ref = the EXACT PR head sha, so the image is built from the real branch code
+      # and not from the auto-generated PR/master merge commit.
+      commit_ref: ${{ steps.loadinfo.outputs.commit_ref }}
+    steps:
+      - name: "Load PR info"
+        id: loadinfo
+        env:
+          HAS_DOCKER_IMAGE_LABEL: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
+          SAME_REPOSITORY_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+          MANUAL_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
+          MANUAL_DOCKER_TAG: ${{ inputs.docker_tag }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          FALLBACK_SHA: ${{ github.sha }}
+        run: |
+          build_docker="false"
+          echo "docker image label: $HAS_DOCKER_IMAGE_LABEL"
+          echo "same repository PR: $SAME_REPOSITORY_PR"
+
+          docker_tag="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          if [[ -n "$MANUAL_DOCKER_TAG" ]]; then
+            docker_tag="$MANUAL_DOCKER_TAG"
+          fi
+          # Docker tags allow [A-Za-z0-9_.-] only.
+          docker_tag="$(echo "$docker_tag" | sed 's/[^A-Za-z0-9_.-]/-/g')"
+          echo "docker tag: $docker_tag"
+
+          commit_ref="$HEAD_SHA"
+          if [[ -z "$commit_ref" ]]; then
+            commit_ref="$FALLBACK_SHA"
+          fi
+          echo "commit ref: $commit_ref"
+
+          if [[ "$MANUAL_DISPATCH" == "true" ]]; then
+            build_docker="true"
+          elif [[ "$HAS_DOCKER_IMAGE_LABEL" == "true" ]] && [[ "$SAME_REPOSITORY_PR" == "true" ]]; then
+            build_docker="true"
+          elif [[ "$HAS_DOCKER_IMAGE_LABEL" == "true" ]]; then
+            echo "Skipping docker push for forked PR; dispatch this workflow manually to publish a trusted build."
+          fi
+
+          # Never overwrite release tags from a dev build.
+          if [[ "$docker_tag" == "master" ]] || [[ "$docker_tag" == "latest" ]] || [[ "$docker_tag" == *-latest ]] || [[ "$docker_tag" =~ ^v?[0-9] ]]; then
+            echo "Invalid docker tag! Skipping build"
+            build_docker="false"
+          fi
+
+          echo "build_docker=$build_docker" >> $GITHUB_OUTPUT
+          echo "docker_tag=$docker_tag" >> $GITHUB_OUTPUT
+          echo "commit_ref=$commit_ref" >> $GITHUB_OUTPUT
+
+  build_docker:
+    name: "Build docker image"
+    needs: [prinfo]
+    if: ${{ needs.prinfo.outputs.build_docker == 'true' }}
+    runs-on: ubuntu-24.04
+    env:
+      DOCKER_REPOSITORY: ethpandaops/checkpointz
+      DOCKER_TAG: ${{ needs.prinfo.outputs.docker_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.prinfo.outputs.commit_ref }} # exact branch HEAD, NOT the PR/master merge.
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: '1.26'
+          check-latest: true
+      - name: Set up NodeJS
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 18
+      - name: Build web frontend
+        run: make build-web
+      - name: Build binaries
+        run: |
+          sha_short="$(git rev-parse --short HEAD)"
+          echo "SHA_SHORT=$sha_short" >> $GITHUB_ENV
+
+          # Same layout the release Dockerfile expects: <os>/<arch>/checkpointz
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build \
+              -ldflags "-s -w -X github.com/ethpandaops/checkpointz/pkg/version.Release=$DOCKER_TAG -X github.com/ethpandaops/checkpointz/pkg/version.GitCommit=$sha_short" \
+              -o "dist-docker/linux/$arch/checkpointz" .
+          done
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Login to DockerHub
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push docker image
+        run: |
+          # The release Dockerfile only copies the prebuilt binary, so both platforms
+          # build without emulation.
+          docker buildx build dist-docker \
+            --file goreleaser-scratch.Dockerfile \
+            --platform linux/amd64,linux/arm64 \
+            --label "org.opencontainers.image.title=checkpointz" \
+            --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" \
+            --label "org.opencontainers.image.version=$DOCKER_TAG" \
+            --tag "$DOCKER_REPOSITORY:$DOCKER_TAG" \
+            --tag "$DOCKER_REPOSITORY:$DOCKER_TAG-$SHA_SHORT" \
+            --push
