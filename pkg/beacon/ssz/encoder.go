@@ -84,6 +84,8 @@ func (e *Encoder) GetBlockRoot(block *spec.VersionedSignedBeaconBlock) (root pha
 		blockObj = block.Fulu.Message
 	case spec.DataVersionGloas:
 		blockObj = block.Gloas.Message
+	case spec.DataVersionHeze:
+		blockObj = block.Heze.Message
 	default:
 		return phase0.Root{}, errors.New("unknown block version")
 	}
@@ -121,6 +123,8 @@ func (e *Encoder) EncodeBlockSSZ(block *spec.VersionedSignedBeaconBlock) ([]byte
 		blockObj = block.Fulu
 	case spec.DataVersionGloas:
 		blockObj = block.Gloas
+	case spec.DataVersionHeze:
+		blockObj = block.Heze
 	default:
 		return nil, errors.New("unknown block version")
 	}
@@ -148,6 +152,8 @@ func (e *Encoder) EncodeBlockJSON(block *spec.VersionedSignedBeaconBlock) ([]byt
 		blockObj = block.Fulu
 	case spec.DataVersionGloas:
 		blockObj = block.Gloas
+	case spec.DataVersionHeze:
+		blockObj = block.Heze
 	default:
 		return nil, errors.New("unknown block version")
 	}
@@ -180,6 +186,8 @@ func (e *Encoder) GetStateRoot(beaconState *spec.VersionedBeaconState) (root pha
 		stateObj = beaconState.Fulu
 	case spec.DataVersionGloas:
 		stateObj = beaconState.Gloas
+	case spec.DataVersionHeze:
+		stateObj = beaconState.Heze
 	default:
 		return phase0.Root{}, errors.New("unknown state version")
 	}
@@ -216,6 +224,8 @@ func (e *Encoder) EncodeStateSSZ(beaconState *spec.VersionedBeaconState) ([]byte
 		stateObj = beaconState.Fulu
 	case spec.DataVersionGloas:
 		stateObj = beaconState.Gloas
+	case spec.DataVersionHeze:
+		stateObj = beaconState.Heze
 	default:
 		return nil, errors.New("unknown state version")
 	}
