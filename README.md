@@ -218,7 +218,7 @@ helm install checkpointz ethereum-helm-charts/checkpointz -f your_values.yaml
 
 1. Clone the repo
    ```sh
-   go get github.com/ethpandaops/checkpointz
+   git clone https://github.com/ethpandaops/checkpointz.git
    ```
 2. Change directories
    ```sh
