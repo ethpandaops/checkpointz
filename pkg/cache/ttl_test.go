@@ -96,45 +96,39 @@ func TestMaxItemsEvictsOldest(t *testing.T) {
 func TestCallbacks(t *testing.T) {
 	instance := NewTTLMap(10, "", "")
 
-	evictedCallback := false
+	// Callbacks fire in their own goroutines, so synchronise on channels
+	// rather than reading shared state after a sleep.
+	evicted := make(chan [2]string, 1)
+	added := make(chan [2]string, 1)
 
 	instance.OnItemDeleted(func(key string, value interface{}, expiresAt time.Time) {
-		if key != "key4" {
-			t.Fatalf("Expected key to be key4, got %s", key)
-		}
-
-		if value != "value4" {
-			t.Fatalf("Expected value to be value4, got %s", value)
-		}
-
-		evictedCallback = true
+		str, _ := value.(string)
+		evicted <- [2]string{key, str}
 	})
 
-	addedCallback := false
-
 	instance.OnItemAdded(func(key string, value interface{}, expiresAt time.Time) {
-		if key != "key4" {
-			t.Fatalf("Expected key to be key4, got %s", key)
-		}
-
-		if value != "value4" {
-			t.Fatalf("Expected value to be value4, got %s", value)
-		}
-
-		addedCallback = true
+		str, _ := value.(string)
+		added <- [2]string{key, str}
 	})
 
 	instance.Add("key4", "value4", time.Now().Add(time.Hour), false)
 	instance.Delete("key4")
 
-	time.Sleep(time.Second * 1)
-
-	if !evictedCallback {
-		t.Fatalf("Expected evicted callback to have been called")
-	}
-
-	if !addedCallback {
-		t.Fatalf("Expected added callback to have been called")
+	for _, tc := range []struct {
+		name string
+		ch   chan [2]string
+	}{
+		{"added", added},
+		{"evicted", evicted},
+	} {
+		select {
+		case got := <-tc.ch:
+			if got[0] != "key4" || got[1] != "value4" {
+				t.Fatalf("%s callback: expected key4/value4, got %s/%s", tc.name, got[0], got[1])
+			}
+		case <-time.After(time.Second * 5):
+			t.Fatalf("Expected %s callback to have been called", tc.name)
+		}
 	}
 }
 
