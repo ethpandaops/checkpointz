@@ -554,22 +554,62 @@ func (d *Default) checkGenesisTime(ctx context.Context) error {
 
 	d.log.Debug("Fetching genesis time")
 
-	upstream, err := d.nodes.Ready(ctx).DataProviders(ctx).RandomNode(ctx)
-	if err != nil {
-		return err
+	readyProviders := d.nodes.Ready(ctx).DataProviders(ctx)
+
+	responses := make([]*v1.Genesis, 0, len(readyProviders))
+	roots := make([]phase0.Root, 0, len(readyProviders))
+
+	for _, n := range readyProviders {
+		g, err := n.Beacon.Genesis()
+		if err != nil || g == nil {
+			d.log.WithError(err).WithField("node", n.Config.Name).Debug("Failed to fetch genesis from node")
+
+			continue
+		}
+
+		responses = append(responses, g)
+		roots = append(roots, g.GenesisValidatorsRoot)
 	}
 
-	g, err := upstream.Beacon.Genesis()
+	majority, err := majorityRoot(roots, len(d.nodes.DataProviders(ctx)))
 	if err != nil {
-		return err
+		return perrors.Wrap(err, "failed to decide majority genesis_validators_root")
 	}
 
-	// store the genesis time
-	d.genesis = g
+	for _, g := range responses {
+		if g.GenesisValidatorsRoot == majority {
+			d.genesis = g
+
+			break
+		}
+	}
 
 	d.log.Info("Fetched genesis time")
 
 	return nil
+}
+
+// majorityRoot returns the root that more than half of totalUpstreams agree on.
+// The same quorum rule used for finalized-checkpoint majority applies here: the
+// threshold is measured against the number of configured upstreams, not the
+// number of roots supplied, so a lone or minority responder can never
+// unilaterally decide the answer. Used to reach agreement on genesis_validators_root
+// and the genesis block root, neither of which was previously cross-checked
+// against more than one upstream.
+func majorityRoot(roots []phase0.Root, totalUpstreams int) (phase0.Root, error) {
+	counts := make(map[phase0.Root]int, len(roots))
+
+	for _, root := range roots {
+		counts[root]++
+	}
+
+	for root, count := range counts {
+		if count > totalUpstreams/2 {
+			return root, nil
+		}
+	}
+
+	return phase0.Root{}, errors.New("no majority root found")
 }
 
 func (d *Default) OnFinalityCheckpointHeadUpdated(ctx context.Context, cb func(ctx context.Context, checkpoint *v1.Finality) error) {
