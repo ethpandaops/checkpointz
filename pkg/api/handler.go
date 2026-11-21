@@ -18,6 +18,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// maxBlobSidecarIndices bounds how many `indices` query parameters a single
+// blob sidecars request may supply. Far above any fork's maximum blobs per
+// block, while preventing arbitrarily large requests.
+const maxBlobSidecarIndices = 1024
+
 // Handler is an API handler that is responsible for negotiating with a HTTP api.
 // All http-level concerns should be handled in this package, with the "namespaces" (eth/checkpointz)
 // handling all business logic and dealing with concrete types.
@@ -582,18 +587,9 @@ func (h *Handler) handleEthV1BeaconBlobSidecars(ctx context.Context, r *http.Req
 		return NewBadRequestResponse(nil), err
 	}
 
-	queryParams := r.URL.Query()
-	indicesRaw := queryParams["indices"]
-
-	indices := make([]int, 0, len(indicesRaw))
-
-	for _, index := range indicesRaw {
-		converted, errr := strconv.Atoi(index)
-		if errr != nil {
-			return NewBadRequestResponse(nil), errr
-		}
-
-		indices = append(indices, converted)
+	indices, err := parseBlobSidecarIndices(r.URL.Query()["indices"])
+	if err != nil {
+		return NewBadRequestResponse(nil), err
 	}
 
 	sidecars, dataVersion, err := h.eth.BlobSidecars(ctx, id, indices)
@@ -621,4 +617,37 @@ func (h *Handler) handleEthV1BeaconBlobSidecars(ctx context.Context, r *http.Req
 	}
 
 	return rsp, nil
+}
+
+// parseBlobSidecarIndices parses the `indices` query parameters as a bounded
+// set: values must be non-negative integers, duplicates are collapsed, and the
+// total number of supplied values is capped.
+func parseBlobSidecarIndices(raw []string) ([]int, error) {
+	if len(raw) > maxBlobSidecarIndices {
+		return nil, fmt.Errorf("too many indices: %d (max %d)", len(raw), maxBlobSidecarIndices)
+	}
+
+	seen := make(map[int]struct{}, len(raw))
+	indices := make([]int, 0, len(raw))
+
+	for _, value := range raw {
+		converted, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if converted < 0 {
+			return nil, fmt.Errorf("invalid index: %d", converted)
+		}
+
+		if _, exists := seen[converted]; exists {
+			continue
+		}
+
+		seen[converted] = struct{}{}
+
+		indices = append(indices, converted)
+	}
+
+	return indices, nil
 }
