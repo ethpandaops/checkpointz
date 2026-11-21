@@ -43,7 +43,7 @@ dockers_v2:
   - id: scratch
     dockerfile: goreleaser-scratch.Dockerfile
     images:
-      - "ethpandaops/{{ .ProjectName }}"
+      - "ghcr.io/ethpandaops/{{ .ProjectName }}"
     tags:
       - "{{ .Version }}"
       - "{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}latest"
@@ -60,7 +60,7 @@ dockers_v2:
   - id: debian
     dockerfile: goreleaser-debian.Dockerfile
     images:
-      - "ethpandaops/{{ .ProjectName }}"
+      - "ghcr.io/ethpandaops/{{ .ProjectName }}"
     tags:
       - "{{ .Version }}-debian"
       - "{{ if .Env.RELEASE_SUFFIX }}{{ .Env.RELEASE_SUFFIX }}-{{ end }}debian-latest"
