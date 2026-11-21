@@ -167,7 +167,7 @@ func (h *Handler) DepositContract(ctx context.Context) (*DepositContract, error)
 	}, nil
 }
 
-// DepositContract gets the deposit snapshot at the finalized checkpoint.
+// DepositSnapshot gets the deposit snapshot at the finalized checkpoint.
 func (h *Handler) DepositSnapshot(ctx context.Context) (*types.DepositSnapshot, error) {
 	var err error
 
