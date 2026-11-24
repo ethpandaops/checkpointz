@@ -87,8 +87,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write      # push to ghcr.io/ethpandaops
-      id-token: write      # attest, and authenticate to the image mirror
+      packages: write
+      id-token: write
       attestations: write
     env:
       DOCKER_REPOSITORY: ghcr.io/ethpandaops/checkpointz
