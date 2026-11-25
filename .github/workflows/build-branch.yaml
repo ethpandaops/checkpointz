@@ -106,12 +106,34 @@ jobs:
               echo "Invalid docker tag $name! Skipping build"
               build_docker="false"
             else
+              # Prints the names whose tags include tags of $1: $1 itself, and
+              # $1 without a -debian and then a -<sha7> suffix.
+              roots() {
+                local x=$1
+                echo "$x"
+                if [[ "$x" =~ ^(.+)-debian$ ]]; then
+                  x="${BASH_REMATCH[1]}"
+                  echo "$x"
+                fi
+                if [[ "$x" =~ ^(.+)-[0-9a-f]{7}$ ]]; then
+                  echo "${BASH_REMATCH[1]}"
+                fi
+              }
               # A failed lookup fails the job rather than risk overwriting release tags.
-              release_heads="$(git ls-remote --heads origin "release/$name")"
-              if [[ -n "$release_heads" ]]; then
-                echo "Docker tag $name belongs to branch release/$name! Skipping build"
-                build_docker="false"
-              fi
+              release_heads="$(git ls-remote --heads origin 'release/*')"
+              while read -r _ ref; do
+                [[ "$ref" == refs/heads/release/* ]] || continue
+                taken="${ref#refs/heads/release/}"
+                taken="${taken//[^A-Za-z0-9_.-]/-}"
+                # Skip when a tag this build publishes (<name>, <name>-debian,
+                # <name>-<sha7>, <name>-<sha7>-debian) is also one the release
+                # branch publishes, e.g. name gloas-debian for release/gloas.
+                if grep -qxF -- "$taken" <<< "$(roots "$name")" || grep -qxF -- "$name" <<< "$(roots "$taken")"; then
+                  echo "Docker tag $name overlaps the tags of ${ref#refs/heads/}! Skipping build"
+                  build_docker="false"
+                  break
+                fi
+              done <<< "$release_heads"
             fi
           fi
 
