@@ -1,0 +1,228 @@
+name: Build branch docker image
+
+# Builds scratch and debian docker images from a branch and publishes them to
+# ghcr.io/ethpandaops/checkpointz and Docker Hub:
+#
+# - Pushes to release/<name> publish <name>-latest, <name> and <name>-<sha7>,
+#   plus <name>-debian-latest, <name>-debian and <name>-<sha7>-debian.
+# - Pull requests labelled `build-docker-image` publish <branch> and
+#   <branch>-<sha7>, plus <branch>-debian and <branch>-<sha7>-debian.
+# - Manual dispatch builds the selected branch the same way, optionally under
+#   a custom tag.
+#
+# This intentionally triggers on `pull_request` (NOT `pull_request_target`): PRs from
+# forks run without secrets and are skipped. Dispatch the workflow manually to publish
+# a trusted build of a fork branch.
+
+on:
+  push:
+    branches:
+      - 'release/**'
+  pull_request:
+    types: [labeled, synchronize]
+  workflow_dispatch:
+    inputs:
+      docker_tag:
+        description: "Docker tag (defaults to the branch name; ignored on release/ branches)"
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  prepare:
+    name: "Resolve image tags"
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      build_docker: ${{ steps.resolve.outputs.build_docker }}
+      name: ${{ steps.resolve.outputs.name }}
+      tags: ${{ steps.resolve.outputs.tags }}
+      debian_tags: ${{ steps.resolve.outputs.debian_tags }}
+      # commit_ref = the EXACT PR head sha, so the image is built from the real branch code
+      # and not from the auto-generated PR/master merge commit.
+      commit_ref: ${{ steps.resolve.outputs.commit_ref }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Resolve name and tags
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HAS_DOCKER_IMAGE_LABEL: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'build-docker-image') }}
+          SAME_REPOSITORY_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+          MANUAL_DOCKER_TAG: ${{ inputs.docker_tag }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          FALLBACK_SHA: ${{ github.sha }}
+        run: |
+          build_docker="false"
+          release="false"
+
+          if [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
+            release="true"
+            name="${GITHUB_REF#refs/heads/release/}"
+          else
+            name="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+            if [[ -n "$MANUAL_DOCKER_TAG" ]]; then
+              name="$MANUAL_DOCKER_TAG"
+            fi
+          fi
+          # Docker tags allow [A-Za-z0-9_.-] only.
+          name="${name//[^A-Za-z0-9_.-]/-}"
+          echo "name: $name (release branch: $release)"
+
+          commit_ref="${HEAD_SHA:-$FALLBACK_SHA}"
+          echo "commit ref: $commit_ref"
+
+          case "$EVENT_NAME" in
+            push | workflow_dispatch)
+              build_docker="true"
+              ;;
+            pull_request)
+              echo "docker image label: $HAS_DOCKER_IMAGE_LABEL"
+              echo "same repository PR: $SAME_REPOSITORY_PR"
+              if [[ "$HAS_DOCKER_IMAGE_LABEL" == "true" ]] && [[ "$SAME_REPOSITORY_PR" == "true" ]]; then
+                build_docker="true"
+              elif [[ "$HAS_DOCKER_IMAGE_LABEL" == "true" ]]; then
+                echo "Skipping docker push for forked PR; dispatch this workflow manually to publish a trusted build."
+              fi
+              ;;
+          esac
+
+          if [[ -z "$name" ]]; then
+            echo "Empty docker tag! Skipping build"
+            build_docker="false"
+          fi
+
+          # Branch builds must never overwrite release tags.
+          if [[ "$build_docker" == "true" ]] && [[ "$release" != "true" ]]; then
+            if [[ "$name" == "master" ]] || [[ "$name" == "main" ]] || [[ "$name" == "latest" ]] || [[ "$name" == *-latest ]] || [[ "$name" =~ ^v?[0-9] ]]; then
+              echo "Invalid docker tag $name! Skipping build"
+              build_docker="false"
+            else
+              # A failed lookup fails the job rather than risk overwriting release tags.
+              release_heads="$(git ls-remote --heads origin "release/$name")"
+              if [[ -n "$release_heads" ]]; then
+                echo "Docker tag $name belongs to branch release/$name! Skipping build"
+                build_docker="false"
+              fi
+            fi
+          fi
+
+          sha_short="${commit_ref:0:7}"
+          if [[ "$release" == "true" ]]; then
+            tags="$name-latest $name $name-$sha_short"
+            debian_tags="$name-debian-latest $name-debian $name-$sha_short-debian"
+          else
+            tags="$name $name-$sha_short"
+            debian_tags="$name-debian $name-$sha_short-debian"
+          fi
+          echo "build docker: $build_docker"
+          echo "tags: $tags"
+          echo "debian tags: $debian_tags"
+
+          {
+            echo "build_docker=$build_docker"
+            echo "name=$name"
+            echo "tags=$tags"
+            echo "debian_tags=$debian_tags"
+            echo "commit_ref=$commit_ref"
+          } >> "$GITHUB_OUTPUT"
+
+  build_docker:
+    name: "Build docker image"
+    needs: [prepare]
+    if: ${{ needs.prepare.outputs.build_docker == 'true' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      DOCKER_REPOSITORY: ghcr.io/ethpandaops/checkpointz
+      NAME: ${{ needs.prepare.outputs.name }}
+      TAGS: ${{ needs.prepare.outputs.tags }}
+      DEBIAN_TAGS: ${{ needs.prepare.outputs.debian_tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.prepare.outputs.commit_ref }} # exact branch HEAD, NOT the PR/master merge.
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: '1.26'
+          check-latest: true
+      - name: Set up NodeJS
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 18
+      - name: Build web frontend
+        run: make build-web
+      - name: Build binaries
+        run: |
+          sha_short="$(git rev-parse --short=7 HEAD)"
+
+          # Same layout the release Dockerfiles expect: <os>/<arch>/checkpointz
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build \
+              -ldflags "-s -w -X github.com/ethpandaops/checkpointz/pkg/version.Release=$NAME -X github.com/ethpandaops/checkpointz/pkg/version.GitCommit=$sha_short" \
+              -o "dist-docker/linux/$arch/checkpointz" .
+          done
+      # The debian image runs apt-get, which needs emulation for linux/arm64.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Login to GHCR
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build and push docker images
+        id: build
+        run: |
+          # The release Dockerfiles copy the prebuilt binary from
+          # dist-docker/<os>/<arch>/, so no Go toolchain runs under emulation.
+          build() {
+            local dockerfile=$1 output=$2 tag_args=() tag
+            shift 2
+            for tag in "$@"; do
+              tag_args+=(--tag "$DOCKER_REPOSITORY:$tag")
+            done
+            docker buildx build dist-docker \
+              --file "$dockerfile" \
+              --platform linux/amd64,linux/arm64 \
+              --label "org.opencontainers.image.title=checkpointz" \
+              --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" \
+              --label "org.opencontainers.image.version=$NAME" \
+              "${tag_args[@]}" \
+              --metadata-file "$RUNNER_TEMP/$output.json" \
+              --push
+            echo "$output=$(jq -r '."containerimage.digest"' "$RUNNER_TEMP/$output.json")" >> "$GITHUB_OUTPUT"
+          }
+
+          read -ra tags <<<"$TAGS"
+          read -ra debian_tags <<<"$DEBIAN_TAGS"
+          build goreleaser-scratch.Dockerfile digest "${tags[@]}"
+          build goreleaser-debian.Dockerfile debian_digest "${debian_tags[@]}"
+      - name: Attest and mirror to Docker Hub
+        uses: ethpandaops/actions/mirror-image@738aeadbcdc54f1c9af659d35f8ef29dd5c0fae6
+        with:
+          tags: ${{ env.TAGS }}
+          digest: ${{ steps.build.outputs.digest }}
+          mirror-url: ${{ secrets.IMAGE_MIRROR_URL }}
+      - name: Attest and mirror debian image to Docker Hub
+        uses: ethpandaops/actions/mirror-image@738aeadbcdc54f1c9af659d35f8ef29dd5c0fae6
+        with:
+          tags: ${{ env.DEBIAN_TAGS }}
+          digest: ${{ steps.build.outputs.debian_digest }}
+          mirror-url: ${{ secrets.IMAGE_MIRROR_URL }}
